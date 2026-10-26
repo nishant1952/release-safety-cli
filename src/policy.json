@@ -1,0 +1,44 @@
+{
+  "source": "writeup.md, section 2: What we do when we cannot know",
+  "gates": {
+    "rule": "Gates (1a): if a condition cannot be verified, route to a human, do not block.",
+    "unverifiable": "human"
+  },
+  "damage": {
+    "rule": "Damage (1b): missing data rounds up. Assume the path is live, the reach is wide and the data is touched.",
+    "assume": {
+      "Path": "live",
+      "Reach": "high"
+    },
+    "notApplied": {
+      "the data is touched": "data writes are read from the diff (gate 3, reversibility), and 'The diff is always present, so signals derived from it are never missing.' (W 2)"
+    }
+  },
+  "reversibility": {
+    "rule": "Reversibility (1c): missing data rounds to slow. Assume no flag, no alert on the changed path, an all-at-once rollout and a full build and deploy to revert, never 'instant'.",
+    "assume": {
+      "Feature flag": "none",
+      "Detection apparatus": "not alerted",
+      "Rollout mechanism": "all-at-once",
+      "Time to revert": "full build and deploy"
+    }
+  },
+  "probability": {
+    "rule": "Probability (1d): missing data lowers confidence. It does not raise risk on its own. Missing history is reported as 'history unavailable', never 'zero incidents'.",
+    "signals": [
+      "Failure mode",
+      "Failure mode (LLM second opinion)",
+      "History",
+      "Provenance",
+      "Confidence: test coverage",
+      "Confidence: familiarity",
+      "Confidence: review depth",
+      "Confidence: diff vs task (LLM)"
+    ],
+    "lowerConfidenceSteps": 1
+  },
+  "disagreement": {
+    "rule": "Two measured signals that disagree lower confidence, and the brief says so.",
+    "lowerConfidenceSteps": 1
+  }
+}
