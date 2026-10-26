@@ -15,6 +15,7 @@ test("PR 13: rules on touched paths give domain and infra", () => {
   ]);
   const s = failureModeSignal(facts);
   expect([s.value, s.source]).toEqual(["domain, infra", "measured"]);
+  expect(s.note).toEndWith("Matched on file path; each evidence line is the file's first change");
 });
 
 test("PR 13 without a key: LLM second opinion marked unavailable", async () => {

@@ -22,7 +22,7 @@ test("PR 13: Human plan proposes the staged preset, guardrails per failure mode,
   expect(row("Guardrails")).toBe(
     "Same as staged, plus whatever the owner adds. domain: business checks, none found on the changed path; " +
       "infra: resources and latency, watch latency metric arcade_web_profile_menu_load_ms, measured (apps/web/src/App.tsx:456, apps/web/src/App.tsx:471); " +
-      "error rate metric arcade_web_profile_menu_load_errors_total, measured (apps/web/src/App.tsx:466); deploy health check, declared (docker/compose.prod.yml:13, docker/compose.prod.yml:49, scripts/deploy-prod.sh:74)",
+      "error rate metric arcade_web_profile_menu_load_errors_total, measured (apps/web/src/App.tsx:466); deploy health check, declared (docker/compose.prod.yml:49, scripts/deploy-prod.sh:74)",
   );
   expect(row("Undo")).toBe(
     "flip `profile-avatar-menu` off (flag partial, measured) for the code inside the flag; revert and redeploy (time to revert: full build and deploy, assumed) for the edits outside it.",

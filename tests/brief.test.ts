@@ -22,13 +22,14 @@ const UNREAD: { source: RegExp; honest: RegExp }[] = [
   { source: /rollout mechanism/i, honest: /rollout mechanism is not extracted/ },
   { source: /exists in production|both states are tested/i, honest: /is not checked/ },
   { source: /\bincidents?\b|\bRCA\b|on-call schedule|freeze calendar/, honest: /^$/ },
+  { source: /outside the repo/i, honest: /alert config outside the repo \(OpenObserve\) is not an input/ },
 ];
 
 test("the brief never describes the contents of an input the run did not read", async () => {
   const lines = (await render()).split("\n");
   for (const { source, honest } of UNREAD)
     for (const line of lines.filter((l) => source.test(l)))
-      for (const clause of line.split(/[;.(|]/).filter((c) => source.test(c))) expect({ clause, honest: honest.test(clause) }).toEqual({ clause, honest: true });
+      for (const clause of line.split(/[;.|]/).filter((c) => source.test(c))) expect({ clause, honest: honest.test(clause) }).toEqual({ clause, honest: true });
 }, 30_000);
 
 test("LLM prose only for reasons with evidence, and never without a key or when a secret was found", async () => {

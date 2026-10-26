@@ -43,7 +43,7 @@ export function failureModeSignal(facts: FailureModeFacts): Signal {
     value: facts.modes.length ? facts.modes.join(", ") : "none (docs- or test-only)",
     source: "measured",
     evidence: facts.perFile.map((p) => p.at),
-    note: `rules on touched paths: ${facts.perFile.map((p) => `${p.path} -> ${p.mode}`).join("; ")}`,
+    note: `rules on touched paths: ${facts.perFile.map((p) => `${p.path} -> ${p.mode}`).join("; ")}. Matched on file path; each evidence line is the file's first change`,
   };
 }
 

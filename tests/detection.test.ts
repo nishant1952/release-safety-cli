@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { loadDiff } from "../src/diff";
-import { detectionDisagreements, detectionFacts, detectionSignal } from "../src/signals/detection";
+import { detectionDisagreements, detectionFacts, detectionSignal, underDatabase } from "../src/signals/detection";
 import { failureModeFacts } from "../src/signals/failureMode";
 import { RANGE, REPO } from "./fixture";
 
@@ -19,7 +19,8 @@ test("PR 13: five metric calls through the `metric as record` import, classed by
 });
 
 test("PR 13: deploy health checks come only from files the deploy workflow runs", () => {
-  expect(facts.healthChecks).toEqual(["docker/compose.prod.yml:13", "docker/compose.prod.yml:49", "scripts/deploy-prod.sh:74"]);
+  // compose.prod.yml:13 is the postgres `pg_isready` check: it watches the database, not the deploy.
+  expect(facts.healthChecks).toEqual(["docker/compose.prod.yml:49", "scripts/deploy-prod.sh:74"]);
   expect([facts.alertFiles, facts.domainTests]).toEqual([[], []]);
 });
 
@@ -33,7 +34,6 @@ test("PR 13: infra has detectors, domain has no business-level check, so detecti
     "apps/web/src/App.tsx:456",
     "apps/web/src/App.tsx:466",
     "apps/web/src/App.tsx:471",
-    "docker/compose.prod.yml:13",
     "docker/compose.prod.yml:49",
     "scripts/deploy-prod.sh:74",
   ]);
@@ -51,4 +51,15 @@ test("fast only when every failure mode has its detector; a value metric is a bu
   expect([detectionSignal(infraOnlyDeclared).value, detectionSignal(infraOnlyDeclared).source]).toEqual(["fast", "declared"]);
   const securityNoAlert = { ...facts, modes: ["security" as const] };
   expect([detectionSignal(securityNoAlert).value, detectionSignal(securityNoAlert).source]).toEqual(["slow", "assumed"]);
+});
+
+test("a compose healthcheck under a database service is not a deploy health check", () => {
+  const yml = ["services:", "  db:", "    image: postgres:16", "    healthcheck:", "      test: x", "  cache:", "    image: redis:7",
+    "    healthcheck:", "      test: y", "  redis:", "    build: .", "    healthcheck:", "      test: z", "  app:", "    image: arcade-app:prod", "    healthcheck:", "      test: w"];
+  expect([3, 7, 11, 15].map((i) => underDatabase(yml, i))).toEqual([true, true, true, false]);
+  expect(underDatabase(['  if curl -fsS "http://127.0.0.1/api/health"; then'], 0)).toBe(false);
+});
+
+test("PR 13: slow detection keeps its measured tag and says it was checked in the repo only", () => {
+  expect(detectionSignal(facts).note).toEndWith("Checked in the repo only; alert config outside the repo (OpenObserve) is not an input");
 });

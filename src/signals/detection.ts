@@ -16,6 +16,21 @@ const GENERIC_EMIT = /\b(logger|log)\.(debug|info|warn|error|fatal)\s*\(|\bconso
 const ALERT_FILE = /(^|\/)(alerts?|alerting|alertmanager|slos?|monitors?|prometheus|grafana|pagerduty|datadog)([/._-]|$)/i;
 const WORKFLOW = /^\.github\/workflows\/[^/]+\.ya?ml$/;
 const HEALTH_LINE = /^\s*(healthcheck:|HEALTHCHECK\b)|curl\b.*\/health\b/i;
+const DATABASE = /postgres|mysql|mariadb|redis|mongo/i;
+const indentOf = (l: string) => l.match(/^\s*/)![0].length;
+
+/** A compose `healthcheck:` under a database service watches the database, not the deploy. */
+export function underDatabase(lines: string[], i: number): boolean {
+  if (!/^\s*healthcheck:/.test(lines[i])) return false;
+  const h = indentOf(lines[i]);
+  let s = i - 1;
+  while (s >= 0 && !(lines[s].trim() && indentOf(lines[s]) < h && /^\s*[\w.-]+:\s*$/.test(lines[s]))) s--;
+  if (s < 0) return false;
+  let end = s + 1;
+  while (end < lines.length && (!lines[end].trim() || indentOf(lines[end]) > indentOf(lines[s]))) end++;
+  const image = lines.slice(s, end).find((l) => /^\s*image:/.test(l)) ?? "";
+  return DATABASE.test(lines[s]) || DATABASE.test(image);
+}
 const ERROR_NAME = /error|fail/i;
 const LATENCY_NAME = /_ms\b|_seconds\b|duration|latency/i;
 const TIMING_VALUE = /elapsed|duration|latency|_?ms\b|millis|seconds|time/i;
@@ -104,7 +119,10 @@ export function detectionFacts(diff: Diff, failure: FailureModeFacts): Detection
   const files = git.listFiles(diff.head);
 
   const healthChecks = deployFiles(git, diff.head, files)
-    .flatMap((p) => (git.show(diff.head, p) ?? "").split("\n").flatMap((l, i) => (HEALTH_LINE.test(l) ? [`${p}:${i + 1}`] : [])));
+    .flatMap((p) => {
+      const lines = (git.show(diff.head, p) ?? "").split("\n");
+      return lines.flatMap((l, i) => (HEALTH_LINE.test(l) && !underDatabase(lines, i) ? [`${p}:${i + 1}`] : []));
+    });
   // Prose (Markdown, editor rules) describes alerts but configures none, so it is not alert config.
   const alertFiles = files.filter((p) => ALERT_FILE.test(p) && !/\.(md|mdc)$/.test(p));
   const watched: string[] = [];
@@ -179,7 +197,7 @@ export function detectionSignal(f: DetectionFacts): Signal<"fast" | "slow"> {
       value: "slow",
       source: missing.every((r) => r.absenceMeasured) ? "measured" : "assumed",
       evidence,
-      note: `${results.map(describe).join("; ")}. Every failure mode needs its detector, so detection is slow. ${emitText}`,
+      note: `${results.map(describe).join("; ")}. Every failure mode needs its detector, so detection is slow. ${emitText}. Checked in the repo only; alert config outside the repo (OpenObserve) is not an input`,
     };
   const declaredOnly = results.some((r) => r.detectors.every((d) => d.source === "declared"));
   return {
