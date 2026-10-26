@@ -16,10 +16,11 @@ const GENERIC_EMIT = /\b(logger|log)\.(debug|info|warn|error|fatal)\s*\(|\bconso
 const ALERT_FILE = /(^|\/)(alerts?|alerting|alertmanager|slos?|monitors?|prometheus|grafana|pagerduty|datadog)([/._-]|$)/i;
 const WORKFLOW = /^\.github\/workflows\/[^/]+\.ya?ml$/;
 const HEALTH_LINE = /^\s*(healthcheck:|HEALTHCHECK\b)|curl\b.*\/health\b/i;
-const DATABASE = /postgres|mysql|mariadb|redis|mongo/i;
+// Database images, matched exactly on the image name (last path segment, before the tag or digest).
+const DATABASE_IMAGES = new Set(["postgres", "postgresql", "mysql", "mariadb", "redis", "mongo", "mongodb"]);
 const indentOf = (l: string) => l.match(/^\s*/)![0].length;
 
-/** A compose `healthcheck:` under a database service watches the database, not the deploy. */
+/** A compose `healthcheck:` under a service whose image is a database watches the database, not the deploy. */
 export function underDatabase(lines: string[], i: number): boolean {
   if (!/^\s*healthcheck:/.test(lines[i])) return false;
   const h = indentOf(lines[i]);
@@ -28,8 +29,11 @@ export function underDatabase(lines: string[], i: number): boolean {
   if (s < 0) return false;
   let end = s + 1;
   while (end < lines.length && (!lines[end].trim() || indentOf(lines[end]) > indentOf(lines[s]))) end++;
-  const image = lines.slice(s, end).find((l) => /^\s*image:/.test(l)) ?? "";
-  return DATABASE.test(lines[s]) || DATABASE.test(image);
+  const image = lines.slice(s, end).find((l) => /^\s*image:/.test(l));
+  // Image ref [registry[:port]/]path/name[:tag][@digest]: drop the digest, take the last segment, drop the tag.
+  const ref = image?.replace(/^\s*image:\s*/, "").replace(/\s+#.*$/, "").trim().replace(/^["']|["']$/g, "");
+  const name = ref?.split("@")[0].split("/").pop()?.split(":")[0].toLowerCase();
+  return name !== undefined && DATABASE_IMAGES.has(name);
 }
 const ERROR_NAME = /error|fail/i;
 const LATENCY_NAME = /_ms\b|_seconds\b|duration|latency/i;

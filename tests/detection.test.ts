@@ -53,11 +53,16 @@ test("fast only when every failure mode has its detector; a value metric is a bu
   expect([detectionSignal(securityNoAlert).value, detectionSignal(securityNoAlert).source]).toEqual(["slow", "assumed"]);
 });
 
-test("a compose healthcheck under a database service is not a deploy health check", () => {
-  const yml = ["services:", "  db:", "    image: postgres:16", "    healthcheck:", "      test: x", "  cache:", "    image: redis:7",
-    "    healthcheck:", "      test: y", "  redis:", "    build: .", "    healthcheck:", "      test: z", "  app:", "    image: arcade-app:prod", "    healthcheck:", "      test: w"];
-  expect([3, 7, 11, 15].map((i) => underDatabase(yml, i))).toEqual([true, true, true, false]);
+test("a compose healthcheck under a database image is not a deploy health check; names alone do not count", () => {
+  const yml = ["services:", "  db:", "    image: postgres:16", "    healthcheck:", "      test: x", "  cache:", "    image: docker.io/library/redis:7",
+    "    healthcheck:", "      test: y", "  redis:", "    build: .", "    healthcheck:", "      test: z", "  app:", "    image: acme/redis-proxy:1", "    healthcheck:", "      test: w"];
+  // postgres and redis images are databases; a built service named redis and a redis-proxy image are not.
+  expect([3, 7, 11, 15].map((i) => underDatabase(yml, i))).toEqual([true, true, false, false]);
   expect(underDatabase(['  if curl -fsS "http://127.0.0.1/api/health"; then'], 0)).toBe(false);
+  const one = (image: string) => underDatabase(["services:", "  db:", `    image: ${image}`, "    healthcheck:"], 3);
+  for (const img of ["localhost:5000/postgres:16", '"postgres:16"', "Postgres", "mongo@sha256:abc", "registry.io:443/team/mysql:8.0@sha256:def", "postgres # the database"])
+    expect([img, one(img)]).toEqual([img, true]);
+  for (const img of ["localhost:5000/app:1", "postgres-exporter:1", "acme/redis-proxy"]) expect([img, one(img)]).toEqual([img, false]);
 });
 
 test("PR 13: slow detection keeps its measured tag and says it was checked in the repo only", () => {
