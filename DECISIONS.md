@@ -53,3 +53,8 @@ One line each. "Spec" means PROMPT.md; "W" means writeup.md.
 
 ## Plan presets (W 3)
 - src/plans.json holds the section 3 table cells verbatim. Human proposes the staged preset ("Proposed by the system, approved or edited by the owner"). Guardrails list the detectors the detection unit found per failure mode, or say none is on the path yet. Undo and slice follow the flag and time-to-revert signals (W 3 line 106); with a partial flag, the code inside it is sliced by flag percentage and the edits outside ship at deploy. Rollout mechanism is not extracted, so all-at-once is assumed (W 2). Soak is not scaled: no traffic data. The named owner is the earlier git author of the most touched files (no CODEOWNERS in the repo); Block has no plan.
+
+## The one unknown (W 2)
+- Flips are tried in decision order: unverifiable gate checks first, then assumed signals in the write-up's top-five order (reversibility, path, reach, failure mode, detection), then flag and time to revert. Favourable values: reversible, path unreached, reach low, detection fast, flag full, a measured fast pipeline, gate check pass. The first single flip that changes the mode is reported.
+- Assumed probability inputs are listed but cannot move the mode: they only lower confidence (W 2), and the shift uses measured confidence.
+- When no single flip changes the mode, the brief says so and reruns once with every assumed input favourable. If the mode still holds, it names each known input that, made favourable on top of that, would change the mode (and to what).

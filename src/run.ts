@@ -2,6 +2,7 @@
 import type { Brief } from "./brief";
 import { decide, modeLine } from "./decide";
 import { buildPlan } from "./plan";
+import { oneUnknown, unknownText } from "./unknown";
 import { diffText, loadDiff } from "./diff";
 import { runGates } from "./gates";
 import { Git } from "./git";
@@ -71,7 +72,10 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
   const signals = policy.signals;
   const finalLevel = coherent === false && policy.level !== "low" ? "low" : policy.level;
 
-  const decision = decide({ gates, signals, measuredConfidence: conf.measuredLevel, coherent });
+  const decisionInput = { gates, signals, measuredConfidence: conf.measuredLevel, coherent };
+  const decision = decide(decisionInput);
+  const assumedProbability = signals.filter((s) => s.source === "assumed" && policy.why.some((w) => w.startsWith(`${s.name}:`))).map((s) => s.name);
+  const unknown = unknownText(oneUnknown(decisionInput, assumedProbability));
   const plan = buildPlan({
     decision,
     signals,
@@ -93,7 +97,7 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
     plan,
     reasons: decision.reasons,
     confidence: { level: finalLevel, why: [...measuredWhy, ...policy.why] },
-    unknown: null,
+    unknown,
     disagreements,
   };
 }

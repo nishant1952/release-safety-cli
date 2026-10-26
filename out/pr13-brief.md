@@ -44,7 +44,7 @@ Range `30ac194..c5da112`, 5 files changed.
 
 ## The one unknown
 
-Not computed.
+No single assumed input changes the mode. Considered: gate 1 required CI checks (unverifiable); Reach (high); Time to revert (full build and deploy); Failure mode (LLM second opinion) (cannot move the mode); History (cannot move the mode); Confidence: review depth (cannot move the mode); Confidence: diff vs task (LLM) (cannot move the mode). With all of them at their favourable value the mode is Human, so the call rests on what is known: Detection apparatus slow (measured), without which it would be Staged; confidence low (measured), without which it would be Staged.
 
 ## Disagreements
 
