@@ -3,7 +3,7 @@ import { makeQuoter, renderBrief } from "../src/render";
 import { buildBrief } from "../src/run";
 import { RANGE, REPO } from "./fixture";
 
-const opts = { repo: REPO, range: RANGE, ignoreDeclared: false, prFile: null };
+const opts = { repo: REPO, range: RANGE, prFile: null };
 
 test("PR 13: quoter reads head lines and base-side lines from git", async () => {
   const b = await buildBrief(opts);
@@ -32,7 +32,7 @@ test("PR 13: brief sections in order, with title, reasons, quoted gate evidence 
     "## Changed files",
   ]);
   expect(md).toContain(
-    "1. Gate 1 (Table stakes) is unverifiable, so it routes to a human: required CI checks: no CI status was declared for this range.",
+    "1. Gate 1 (Table stakes) is unverifiable, so it routes to a human: required CI checks: the PR export has no CI check results.",
   );
   expect(md).toContain(
     '- `apps/api/src/infrastructure/observability/metrics-catalog.ts:128` `name: "arcade_web_profile_menu_opens_total",`',

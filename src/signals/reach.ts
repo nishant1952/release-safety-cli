@@ -29,7 +29,7 @@ export interface Handler {
 export interface ReachFacts {
   endpoints: Endpoint[];
   handlers: Handler[];
-  /** catalog entries and how many declare a tier; null when the catalog was not read */
+  /** catalog entries and how many declare a tier; null when the catalog file is not in the repo */
   catalog: { entries: number; tiers: { name: string; tier: string; source: string }[] } | null;
 }
 
@@ -141,12 +141,12 @@ function readCatalog(diff: Diff): ReachFacts["catalog"] {
   return { entries: entries.length, tiers };
 }
 
-export function reachFacts(diff: Diff, ignoreDeclared = false): ReachFacts {
+export function reachFacts(diff: Diff): ReachFacts {
   const endpoints = followCalls(diff);
   return {
     endpoints,
     handlers: findHandlers(diff, endpoints),
-    catalog: ignoreDeclared ? null : readCatalog(diff),
+    catalog: readCatalog(diff),
   };
 }
 
@@ -162,7 +162,7 @@ export function reachSignal(facts: ReachFacts): Signal<"high" | "low"> {
   );
   if (!facts.catalog || !matched.length) {
     const why = !facts.catalog
-      ? "the metrics catalog was not read"
+      ? `the metrics catalog (${CATALOG}) is not in the repo`
       : facts.catalog.tiers.length
         ? "no catalog tier matches the reached systems"
         : `the metrics catalog declares no tier for any of its ${facts.catalog.entries} entries`;

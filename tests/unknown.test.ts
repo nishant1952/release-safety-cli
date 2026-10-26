@@ -6,20 +6,12 @@ import { oneUnknown, unknownText } from "../src/unknown";
 import { RANGE, REPO } from "./fixture";
 
 test("PR 13: no single assumed input changes Human; with all favourable it stays Human on measured facts", async () => {
-  const b = await buildBrief({ repo: REPO, range: RANGE, ignoreDeclared: false, prFile: null });
+  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: null });
   expect(b.unknown).toBe(
     "No single assumed input changes the mode. Considered: gate 1 required CI checks (unverifiable); Reach (high); Time to revert (full build and deploy); " +
       "Failure mode (LLM second opinion) (cannot move the mode); History (cannot move the mode); Confidence: review depth (cannot move the mode); " +
       "Confidence: diff vs task (LLM) (cannot move the mode). With all of them at their favourable value the mode is Human, so the call rests on what is known: " +
       "Detection apparatus slow (measured), without which it would be Staged; confidence low (measured), without which it would be Staged.",
-  );
-}, 30_000);
-
-test("PR 13 with --ignore-declared: Path joins the assumed inputs and drops out of what is known", async () => {
-  const b = await buildBrief({ repo: REPO, range: RANGE, ignoreDeclared: true, prFile: null });
-  expect(b.unknown).toContain("Considered: gate 1 required CI checks (unverifiable); Path (live); Reach (high); Time to revert (full build and deploy);");
-  expect(b.unknown).toEndWith(
-    "the call rests on what is known: Detection apparatus slow (measured), without which it would be Staged; confidence low (measured), without which it would be Staged.",
   );
 }, 30_000);
 

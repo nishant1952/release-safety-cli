@@ -63,7 +63,7 @@ switch (unit) {
     break;
   }
   case "reach": {
-    const facts = reachFacts(diff, process.argv.includes("--ignore-declared"));
+    const facts = reachFacts(diff);
     for (const e of facts.endpoints) console.log(`endpoint ${e.path}\n    ${e.via.join("\n    ")}`);
     for (const h of facts.handlers) console.log(`handler ${h.method} ${h.path} at ${h.at}: ${h.calls.join(", ")}`);
     console.log("catalog:", JSON.stringify(facts.catalog));
@@ -77,7 +77,7 @@ switch (unit) {
     break;
   }
   case "detection": {
-    const facts = detectionFacts(diff, failureModeFacts(diff), process.argv.includes("--ignore-declared"));
+    const facts = detectionFacts(diff, failureModeFacts(diff));
     console.log(JSON.stringify({ ...facts, emits: facts.emits.length }));
     for (const e of facts.emits) console.log(`  ${e.at} ${e.via} ${e.name} [${e.kind}]`);
     printSignal(detectionSignal(facts));
@@ -92,10 +92,9 @@ switch (unit) {
     break;
   }
   case "confidence": {
-    const ignore = process.argv.includes("--ignore-declared");
-    const facts = confidenceFacts(diff, ignore ? null : pr);
+    const facts = confidenceFacts(diff, pr);
     console.log(JSON.stringify({ ...facts, fileAuthors: facts.fileAuthors.map((f) => `${f.file}:${f.authors.length}`) }));
-    const r = confidenceSignals(facts, !ignore);
+    const r = confidenceSignals(facts, pr !== null);
     for (const s of r.signals) printSignal(s);
     const { coherent, ...coh } = await coherenceCheck("", pr, "");
     printSignal(coh);
@@ -103,7 +102,7 @@ switch (unit) {
     break;
   }
   case "revert": {
-    const facts = revertFacts(diff, process.argv.includes("--ignore-declared"));
+    const facts = revertFacts(diff);
     console.log(JSON.stringify(facts));
     printSignal(revertSignal(facts));
     break;

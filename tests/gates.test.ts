@@ -64,6 +64,7 @@ test("trip paths: changed export signature, removed route, raw UPDATE, secret, r
     body: "",
     author: { login: "", is_bot: false },
     checks: [{ name: "build", conclusion: "FAILURE" }],
+    reviews: null,
   });
   expect(gates.map((g) => [g.status, g.route])).toEqual([
     ["trip", "block"],

@@ -7,7 +7,7 @@ One line each. "Spec" means PROMPT.md; "W" means writeup.md.
 - The diff is `git diff --unified=0 --find-renames` over the range; it is checked against data/pr13/pr13.diff in the test.
 - Files are bucketed by their immediate directory (`dirname`).
 - PR metadata is located by matching the resolved range against `data/*/REFS.txt`; `--pr <file>` overrides. It is a declared input.
-- `--ignore-declared` drops every declared input: the PR export, the metrics catalog, and the entry points read from package.json scripts and index.html.
+- `--ignore-declared` was removed: the flag proved nothing on PR 13 because the repo has no declared inputs that the engine uses. Measured / declared / assumed tagging stays on every signal.
 - Dev dependency `@types/bun` is for editor types only; no runtime dependency beyond ts-morph and the Anthropic SDK.
 
 ## Gates (W 1a)
@@ -58,3 +58,8 @@ One line each. "Spec" means PROMPT.md; "W" means writeup.md.
 - Flips are tried in decision order: unverifiable gate checks first, then assumed signals in the write-up's top-five order (reversibility, path, reach, failure mode, detection), then flag and time to revert. Favourable values: reversible, path unreached, reach low, detection fast, flag full, a measured fast pipeline, gate check pass. The first single flip that changes the mode is reported.
 - Assumed probability inputs are listed but cannot move the mode: they only lower confidence (W 2), and the shift uses measured confidence.
 - When no single flip changes the mode, the brief says so and reruns once with every assumed input favourable. If the mode still holds, it names each known input that, made favourable on top of that, would change the mode (and to what).
+
+## Brief
+- The LLM may word a reason in two sentences only when the reason already has evidence lines; the wording is shown beside the reason, marked "(LLM wording)", and is skipped without a key or when gate 1 found a secret.
+- Without the PR export (declared), the brief's title is the head commit's subject (git).
+- Tests delete ANTHROPIC_API_KEY so the pinned brief never depends on the network; out/pr13-brief.md is a golden file checked by `bun test`, and one honesty test checks that no line describes the contents of a source the run did not read (traffic, CI run history, rollout mechanism, flag service, incident tracker).

@@ -10,6 +10,8 @@ export interface PrMeta {
   author: { login: string; is_bot: boolean };
   /** gh's statusCheckRollup, when the export includes it */
   checks: { name: string; conclusion: string }[] | null;
+  /** review count from gh's `reviews` or `latestReviews`, null when the export has neither field */
+  reviews: number | null;
 }
 
 const DATA_DIR = new URL("../data", import.meta.url).pathname;
@@ -49,5 +51,6 @@ export async function loadPr(file: string | null): Promise<PrMeta | null> {
     body: j.body ?? "",
     author: { login: j.author?.login ?? "", is_bot: Boolean(j.author?.is_bot) },
     checks: rollup,
+    reviews: Array.isArray(j.reviews) ? j.reviews.length : Array.isArray(j.latestReviews) ? j.latestReviews.length : null,
   };
 }

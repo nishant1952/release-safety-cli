@@ -33,17 +33,17 @@ export interface Emit {
 export interface DetectionFacts {
   modes: Mode[];
   emits: Emit[];
-  /** deploy health check lines; null when declared config was not read */
-  healthChecks: string[] | null;
-  /** alert, SLO or dashboard config files; null when not read */
-  alertFiles: string[] | null;
+  /** deploy health check lines (declared config) */
+  healthChecks: string[];
+  /** alert, SLO or dashboard config files */
+  alertFiles: string[];
   /** alert files that name an emitted metric */
   watched: string[];
   /** alert files that watch auth errors */
   authAlerts: string[];
   /** tests that import a changed domain file */
   domainTests: string[];
-  /** emitted metric names vs the metrics catalog; null when the catalog was not read */
+  /** emitted metric names vs the metrics catalog; null when the catalog file is not in the repo */
   catalog: { missing: string[]; declaredOnly: string[] } | null;
 }
 
@@ -77,7 +77,7 @@ function kindOf(name: string | null, value: string | null, via: string): EmitKin
   return "count";
 }
 
-export function detectionFacts(diff: Diff, failure: FailureModeFacts, ignoreDeclared = false): DetectionFacts {
+export function detectionFacts(diff: Diff, failure: FailureModeFacts): DetectionFacts {
   const git = new Git(diff.repo);
   const emits: Emit[] = [];
   for (const f of diff.files.filter((f) => /\.(tsx?|jsx?)$/.test(f.path))) {
@@ -103,30 +103,26 @@ export function detectionFacts(diff: Diff, failure: FailureModeFacts, ignoreDecl
   const emitted = [...new Set(emits.map((e) => e.name).filter((n): n is string => !!n))].sort();
   const files = git.listFiles(diff.head);
 
-  let healthChecks: string[] | null = null;
-  let alertFiles: string[] | null = null;
+  const healthChecks = deployFiles(git, diff.head, files)
+    .flatMap((p) => (git.show(diff.head, p) ?? "").split("\n").flatMap((l, i) => (HEALTH_LINE.test(l) ? [`${p}:${i + 1}`] : [])));
+  // Prose (Markdown, editor rules) describes alerts but configures none, so it is not alert config.
+  const alertFiles = files.filter((p) => ALERT_FILE.test(p) && !/\.(md|mdc)$/.test(p));
   const watched: string[] = [];
   const authAlerts: string[] = [];
+  for (const p of alertFiles) {
+    const t = git.show(diff.head, p) ?? "";
+    if (emitted.some((n) => t.includes(n))) watched.push(p);
+    if (AUTH_ALERT.test(t)) authAlerts.push(p);
+  }
   let catalog: DetectionFacts["catalog"] = null;
-  if (!ignoreDeclared) {
-    healthChecks = deployFiles(git, diff.head, files)
-      .flatMap((p) => (git.show(diff.head, p) ?? "").split("\n").flatMap((l, i) => (HEALTH_LINE.test(l) ? [`${p}:${i + 1}`] : [])));
-    // Prose (Markdown, editor rules) describes alerts but configures none, so it is not alert config.
-    alertFiles = files.filter((p) => ALERT_FILE.test(p) && !/\.(md|mdc)$/.test(p));
-    for (const p of alertFiles) {
-      const t = git.show(diff.head, p) ?? "";
-      if (emitted.some((n) => t.includes(n))) watched.push(p);
-      if (AUTH_ALERT.test(t)) authAlerts.push(p);
-    }
-    const t = git.show(diff.head, CATALOG);
-    if (t) {
-      const declared = [...t.matchAll(/name:\s*["']([^"']+)["']/g)].map((m) => m[1]);
-      const fromDiff = new Set(diff.added.filter((l) => l.file === CATALOG).flatMap((l) => l.text.match(/name:\s*["']([^"']+)["']/)?.[1] ?? []));
-      catalog = {
-        missing: emitted.filter((n) => !declared.includes(n)),
-        declaredOnly: [...fromDiff].filter((n) => !emitted.includes(n)).sort(),
-      };
-    }
+  const catalogText = git.show(diff.head, CATALOG);
+  if (catalogText) {
+    const declared = [...catalogText.matchAll(/name:\s*["']([^"']+)["']/g)].map((m) => m[1]);
+    const fromDiff = new Set(diff.added.filter((l) => l.file === CATALOG).flatMap((l) => l.text.match(/name:\s*["']([^"']+)["']/)?.[1] ?? []));
+    catalog = {
+      missing: emitted.filter((n) => !declared.includes(n)),
+      declaredOnly: [...fromDiff].filter((n) => !emitted.includes(n)).sort(),
+    };
   }
 
   const domainFiles = failure.perFile.filter((p) => p.mode === "domain").map((p) => p.path);
@@ -150,7 +146,7 @@ export function perMode(f: DetectionFacts): ModeResult[] {
     if (mode === "infra") {
       for (const e of f.emits.filter((e) => e.kind === "error rate" || e.kind === "latency"))
         d.push({ what: `${e.kind} metric ${e.name}`, at: e.at, source: "measured" });
-      for (const h of f.healthChecks ?? []) d.push({ what: "deploy health check", at: h, source: "declared" });
+      for (const h of f.healthChecks) d.push({ what: "deploy health check", at: h, source: "declared" });
       for (const w of f.watched) d.push({ what: "alert on an emitted metric", at: `${w}:1`, source: "declared" });
       return { mode, detectors: d, absenceMeasured: false };
     }
@@ -174,7 +170,6 @@ export function detectionSignal(f: DetectionFacts): Signal<"fast" | "slow"> {
   const emitText = f.emits.length
     ? `${f.emits.length} metric/log calls on changed lines (${f.emits.map((e) => `${e.name ?? e.via}: ${e.kind}`).filter((v, i, a) => a.indexOf(v) === i).join(", ")})`
     : "no metric or log call on changed lines";
-  const unread = f.healthChecks === null ? "; deploy and alert config not read" : "";
   const evidence = [...new Set(results.flatMap((r) => r.detectors.map((d) => d.at)))];
   if (!results.length)
     return { name: "Detection apparatus", value: "fast", source: "measured", evidence, note: "no failure mode (docs- or test-only change)" };
@@ -184,7 +179,7 @@ export function detectionSignal(f: DetectionFacts): Signal<"fast" | "slow"> {
       value: "slow",
       source: missing.every((r) => r.absenceMeasured) ? "measured" : "assumed",
       evidence,
-      note: `${results.map(describe).join("; ")}. Every failure mode needs its detector, so detection is slow. ${emitText}${unread}`,
+      note: `${results.map(describe).join("; ")}. Every failure mode needs its detector, so detection is slow. ${emitText}`,
     };
   const declaredOnly = results.some((r) => r.detectors.every((d) => d.source === "declared"));
   return {
@@ -192,7 +187,7 @@ export function detectionSignal(f: DetectionFacts): Signal<"fast" | "slow"> {
     value: "fast",
     source: declaredOnly ? "declared" : "measured",
     evidence,
-    note: `${results.map(describe).join("; ")}. ${emitText}${unread}`,
+    note: `${results.map(describe).join("; ")}. ${emitText}`,
   };
 }
 

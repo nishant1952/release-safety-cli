@@ -47,10 +47,8 @@ test("PR 13: path is live, declared (entry points come from config)", () => {
   expect(s.note).toContain("not imported from any entry point: apps/web/src/fireweave/fw-tracker.ts");
 });
 
-test("PR 13 with --ignore-declared: no entry points, so the path is assumed live (W 2)", () => {
-  const s = pathSignal(pathFacts(loadDiff(REPO, RANGE), true));
-  expect(s.value).toBe("live");
-  expect(s.source).toBe("assumed");
-  expect(s.evidence).toEqual(["apps/web/src/App.tsx:554", "apps/web/src/App.tsx:596", "apps/web/src/App.tsx:593"]);
-  expect(s.note).toStartWith("no entry points known (package.json scripts and index.html not read), so the path is assumed live");
+test("no entry point found: the path is assumed live (W 2)", () => {
+  const s = pathSignal({ entries: [], chains: new Map([["a.ts", null]]), routes: [] });
+  expect([s.value, s.source]).toEqual(["live", "assumed"]);
+  expect(s.note).toBe("no entry point found in workspace package.json scripts or index.html, so the path is assumed live");
 });

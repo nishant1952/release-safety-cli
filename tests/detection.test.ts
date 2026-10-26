@@ -43,14 +43,6 @@ test("PR 13: catalog and code agree on the metric names", () => {
   expect(detectionDisagreements(facts)).toEqual([]);
 });
 
-test("PR 13 with --ignore-declared: no deploy or alert config; infra still detected by measured metrics", () => {
-  const f = detectionFacts(diff, failure, true);
-  expect([f.healthChecks, f.alertFiles, f.catalog]).toEqual([null, null, null]);
-  const s = detectionSignal(f);
-  expect([s.value, s.source]).toEqual(["slow", "measured"]);
-  expect(s.note).toEndWith("; deploy and alert config not read");
-});
-
 test("fast only when every failure mode has its detector; a value metric is a business-level check", () => {
   const withValue = { ...facts, emits: [...facts.emits, { at: "a.ts:1", via: "record", name: "wins_shown", kind: "value" as const }] };
   const s = detectionSignal(withValue);

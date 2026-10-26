@@ -14,7 +14,7 @@ test("policy.json quotes section 2 verbatim", async () => {
 });
 
 test("PR 13: four assumed probability inputs lower an already-low confidence; the measured level stays separate", async () => {
-  const b = await buildBrief({ repo: REPO, range: RANGE, ignoreDeclared: false, prFile: null });
+  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: null });
   expect(b.confidence!.level).toBe("low");
   expect(b.confidence!.why.filter((w) => w.endsWith("(W 2)"))).toEqual([
     "Failure mode (LLM second opinion): unavailable (assumed), lowers confidence, does not raise risk (W 2)",

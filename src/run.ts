@@ -3,6 +3,8 @@ import type { Brief } from "./brief";
 import { decide, modeLine } from "./decide";
 import { buildPlan } from "./plan";
 import { oneUnknown, unknownText } from "./unknown";
+import { addProse } from "./prose";
+import { makeQuoter } from "./render";
 import { diffText, loadDiff } from "./diff";
 import { runGates } from "./gates";
 import { Git } from "./git";
@@ -21,20 +23,19 @@ import { reversibility } from "./signals/reversible";
 export interface RunOptions {
   repo: string;
   range: string;
-  ignoreDeclared: boolean;
   prFile: string | null;
 }
 
 export async function buildBrief(opts: RunOptions): Promise<Brief> {
   const diff = loadDiff(opts.repo, opts.range);
-  // --ignore-declared drops every declared input; the PR export is one.
-  const pr = opts.ignoreDeclared ? null : await loadPr(opts.prFile ?? findPrFile(diff.base, diff.head));
+  // The PR export is a declared input; it may be absent for a range.
+  const pr = await loadPr(opts.prFile ?? findPrFile(diff.base, diff.head));
   const gates = runGates(diff, pr);
   const flags = flagFacts(diff);
-  const paths = pathFacts(diff, opts.ignoreDeclared);
-  const reach = reachFacts(diff, opts.ignoreDeclared);
+  const paths = pathFacts(diff);
+  const reach = reachFacts(diff);
   const failure = failureModeFacts(diff);
-  const detection = detectionFacts(diff, failure, opts.ignoreDeclared);
+  const detection = detectionFacts(diff, failure);
   // Never send a diff with a detected secret to the API.
   const secretHit = gates[0].checks.some((c) => c.name === "secrets" && c.status === "trip");
   const { agrees: llmAgrees, ...failureLlm } = await failureModeSecondOpinion(
@@ -54,7 +55,7 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
     failureModeSignal(failure),
     failureLlm,
     detectionSignal(detection),
-    revertSignal(revertFacts(diff, opts.ignoreDeclared)),
+    revertSignal(revertFacts(diff)),
     historySignal(historyFacts(diff)),
     ...conf.signals,
     coherence,
@@ -88,14 +89,16 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
   return {
     base: diff.base,
     head: diff.head,
-    title: pr?.title ?? null,
+    // Without the PR export (declared), the head commit's subject (git) names the change.
+    title: pr?.title ?? new Git(diff.repo).run(["log", "-1", "--format=%s", diff.head]).trim().replace(/\.$/, ""),
+    titleSource: pr ? "PR title, declared" : "head commit subject, measured from git (no PR export found)",
     files: diff.files.map((f) => ({ path: f.path, status: f.status, added: f.added.length, removed: f.removed.length })),
     gates,
     signals,
     mode: decision.mode,
     modeLine: modeLine(decision),
     plan,
-    reasons: decision.reasons,
+    reasons: await addProse(decision.reasons, makeQuoter(diff.repo, diff.base, diff.head), undefined, undefined, secretHit),
     confidence: { level: finalLevel, why: [...measuredWhy, ...policy.why] },
     unknown,
     disagreements,

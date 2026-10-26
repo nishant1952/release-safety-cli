@@ -44,9 +44,9 @@ function undoAndSlice(signals: Signal[], flagKey: string | null) {
   if (flag === "partial")
     return {
       undo: `${flip} for the code inside the flag; ${redeploy} for the edits outside it.`,
-      slice: `flag percentage on \`${flagKey}\` for the code inside it; edits outside the flag reach everyone at deploy (rollout mechanism not found, so all-at-once is assumed)`,
+      slice: `flag percentage on \`${flagKey}\` for the code inside it; edits outside the flag reach everyone at deploy (rollout mechanism is not extracted, so all-at-once is assumed)`,
     };
-  return { undo: `${PLANS.undo.noFlag}. Undo: ${redeploy}.`, slice: "canary or percentage deploy (rollout mechanism not found, so all-at-once is assumed)" };
+  return { undo: `${PLANS.undo.noFlag}. Undo: ${redeploy}.`, slice: "canary or percentage deploy (rollout mechanism is not extracted, so all-at-once is assumed)" };
 }
 
 export function buildPlan(p: PlanInput): PlanRow[] {
@@ -64,7 +64,7 @@ export function buildPlan(p: PlanInput): PlanRow[] {
     rows.push({ row: "Guardrails", value: preset.Guardrails });
   } else {
     const exposure = `${staged.Exposure}; slice by ${slice}`;
-    const soak = `${staged["Soak per step"]} (no traffic data in the input, so the hours are not scaled)`;
+    const soak = `${staged["Soak per step"]} (traffic is not an input, so the hours are not scaled)`;
     rows.push({ row: "Exposure", value: mode === "Staged" ? exposure : proposed(exposure) });
     rows.push({ row: "Soak per step", value: mode === "Staged" ? soak : proposed(soak) });
     rows.push({ row: "Guardrails", value: `${preset.Guardrails}. ${guardrails(p.detectors)}` });

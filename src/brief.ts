@@ -5,12 +5,16 @@ import type { GateResult, Signal } from "./types";
 export interface Reason {
   text: string;
   evidence: string[];
+  /** optional LLM wording of the reason; never changes the reason itself */
+  prose?: string;
 }
 
 export interface Brief {
   base: string;
   head: string;
   title: string | null;
+  /** where the title came from */
+  titleSource: string;
   files: { path: string; status: string; added: number; removed: number }[];
   gates: GateResult[];
   signals: Signal<string>[];

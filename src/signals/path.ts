@@ -206,7 +206,7 @@ function routeReach(sf: SourceFile, changedLines: number[]): RouteReach[] {
   return out;
 }
 
-export function pathFacts(diff: Diff, ignoreDeclared = false): PathFacts {
+export function pathFacts(diff: Diff): PathFacts {
   const git = new Git(diff.repo);
   const all = git.listFiles(diff.head);
   const files = new Set(all);
@@ -215,7 +215,7 @@ export function pathFacts(diff: Diff, ignoreDeclared = false): PathFacts {
   const pkgs = workspacePackages(git, diff.head, all);
   const importers = importEdges(project.getSourceFiles(), files, pkgs);
   // Entry points are read from package.json scripts and index.html: declared config.
-  const entries = ignoreDeclared ? [] : entryPoints(git, diff.head, all);
+  const entries = entryPoints(git, diff.head, all);
   const entrySet = new Set(entries);
   const chains = new Map<string, Hop[] | null>();
   const routes: RouteReach[] = [];
@@ -241,7 +241,7 @@ export function pathSignal(facts: PathFacts): Signal<"live" | "unreached"> {
       value: "live",
       source: "assumed",
       evidence: [...new Set(routeEvidence)],
-      note: `no entry points known (package.json scripts and index.html not read), so the path is assumed live` +
+      note: `no entry point found in workspace package.json scripts or index.html, so the path is assumed live` +
         (routeText.length ? `; measured in code: ${routeText.join("; ")}` : ""),
     };
   const live = [...facts.chains].filter(([, c]) => c !== null);

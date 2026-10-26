@@ -28,7 +28,8 @@ export interface ConfidenceFacts {
   fileAuthors: { file: string; authors: string[] }[];
   changeAuthors: string[];
   agent: { measured: string[]; declared: string | null; commit: string };
-  reviewData: boolean;
+  /** reviews in the PR export; null when no export was found or it has no reviews field */
+  reviews: number | null;
 }
 
 export function importsFile(testPath: string, text: string, file: string): boolean {
@@ -61,8 +62,11 @@ export function confidenceFacts(diff: Diff, pr: PrMeta | null): ConfidenceFacts 
   const measured = [...new Set([...messages.matchAll(AGENT_TRAILER)].filter((m) => AGENT_NAME.test(m[0])).map((m) => `${m[1]} <${m[2]}>`))].sort();
   const declared = pr ? (pr.body.match(/Made with \[?([\w .-]+?)\]?(\(|$|\s)/m)?.[1] ?? (pr.author.is_bot ? pr.author.login : null)) : null;
   const lastCommit = git.run(["log", "-1", "--format=%h", diff.head]).trim();
-  return { codeFiles, coverage, repoAuthors, fileAuthors, changeAuthors, agent: { measured, declared, commit: lastCommit }, reviewData: false };
+  return { codeFiles, coverage, repoAuthors, fileAuthors, changeAuthors, agent: { measured, declared, commit: lastCommit }, reviews: pr?.reviews ?? null };
 }
+
+const reviewText = (f: ConfidenceFacts, prFound: boolean) =>
+  !prFound ? "no PR export was found for this range" : f.reviews === null ? "the PR export has no reviews field" : `the PR export lists ${f.reviews} reviews`;
 
 const lower = (l: Level): Level => (l === "high" ? "medium" : "low");
 
@@ -75,7 +79,8 @@ export interface ConfidenceResult {
   agentWritten: boolean;
 }
 
-export function confidenceSignals(f: ConfidenceFacts, prDeclared: boolean): ConfidenceResult {
+/** prFound: whether a PR export was found for the range. */
+export function confidenceSignals(f: ConfidenceFacts, prFound: boolean): ConfidenceResult {
   const signals: Signal[] = [];
   const why: string[] = [];
   const disagreements: string[] = [];
@@ -90,10 +95,10 @@ export function confidenceSignals(f: ConfidenceFacts, prDeclared: boolean): Conf
     source: !f.agent.measured.length && f.agent.declared ? "declared" : "measured",
     evidence: f.agent.measured.length ? [`commit ${f.agent.commit}`] : [],
     note:
-      `commit trailers: ${f.agent.measured.join(", ") || "none"}; PR description: ${prDeclared ? (f.agent.declared ? `"Made with ${f.agent.declared}"` : "no agent named") : "not read"}; ` +
+      `commit trailers: ${f.agent.measured.join(", ") || "none"}; PR description: ${prFound ? (f.agent.declared ? `"Made with ${f.agent.declared}"` : "no agent named") : "no PR export found"}; ` +
       `author(s) in git: ${f.changeAuthors.join(", ")}. Whether a human was in the loop is not verifiable from the input`,
   });
-  if (prDeclared && f.agent.measured.length && !f.agent.declared)
+  if (prFound && f.agent.measured.length && !f.agent.declared)
     disagreements.push("provenance: commit trailers name an agent but the PR description does not");
   if (f.agent.declared && !f.agent.measured.length)
     disagreements.push(`provenance: PR description says "Made with ${f.agent.declared}" but no commit trailer names an agent`);
@@ -120,15 +125,15 @@ export function confidenceSignals(f: ConfidenceFacts, prDeclared: boolean): Conf
     value: singleAuthor ? "single-author repo, people part dropped" : agentWritten ? "agent-written, author familiarity ignored" : newToFiles.length ? `author new to ${newToFiles.length} touched files` : "author has touched every file before",
     source: "measured",
     evidence: [],
-    note: `repo authors before base: ${f.repoAuthors.join(", ") || "none"}; per file: ${f.fileAuthors.map((fa) => `${fa.file} (${fa.authors.length})`).join(", ")}. Reviewer familiarity needs review data, which the input lacks`,
+    note: `repo authors before base: ${f.repoAuthors.join(", ") || "none"}; per file: ${f.fileAuthors.map((fa) => `${fa.file} (${fa.authors.length})`).join(", ")}. Reviewer familiarity needs review data: ${reviewText(f, prFound)}`,
   });
 
   signals.push({
     name: "Confidence: review depth",
-    value: "unavailable",
-    source: "assumed",
+    value: f.reviews === null ? "unavailable" : `${f.reviews} reviews`,
+    source: f.reviews === null ? "assumed" : "declared",
     evidence: [],
-    note: "the PR export has no reviews or comments",
+    note: reviewText(f, prFound),
   });
 
   // Measured level. For agent-written changes only tests that existed before the change count:

@@ -70,7 +70,7 @@ function tableStakes(diff: Diff, pr: PrMeta | null): GateResult {
       status: "unverifiable",
       source: "assumed",
       evidence: [],
-      note: "no CI status was declared for this range",
+      note: pr ? "the PR export has no CI check results" : "no PR export was found for this range, so CI status is unknown",
     });
   }
   const status = worst(checks.map((c) => c.status));

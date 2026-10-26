@@ -34,11 +34,11 @@ test("PR 13: no tests anywhere, single-author repo, no review data: measured con
   expect(r.signals[0].note).toContain("Whether a human was in the loop is not verifiable from the input");
 });
 
-test("PR 13 with --ignore-declared: provenance still measured from git", () => {
+test("PR 13 without a PR export: provenance still measured from git", () => {
   const r = confidenceSignals(confidenceFacts(diff, null), false);
   const prov = r.signals.find((s) => s.name === "Provenance")!;
   expect([prov.value, prov.source]).toEqual(["agent-assisted (Cursor)", "measured"]);
-  expect(prov.note).toContain("PR description: not read");
+  expect(prov.note).toContain("PR description: no PR export found");
 });
 
 test("coherence: unavailable without a key; an LLM mismatch reports coherent=false", async () => {
@@ -61,4 +61,14 @@ test("agent-written: tests added in the same change do not count; pre-existing t
   // A human-written change counts its own new tests.
   const human = { ...withTests(false), agent: { measured: [], declared: null, commit: "c5da112" } };
   expect(confidenceSignals(human, true).measuredLevel).toBe("high");
+});
+
+test("review depth says what the PR export holds: no reviews field for PR 13", async () => {
+  const pr = await loadPr(PR_JSON);
+  expect(pr!.reviews).toBeNull();
+  const r = confidenceSignals(confidenceFacts(diff, pr), true);
+  const depth = r.signals.find((s) => s.name === "Confidence: review depth")!;
+  expect([depth.value, depth.source, depth.note]).toEqual(["unavailable", "assumed", "the PR export has no reviews field"]);
+  const withReviews = confidenceSignals({ ...confidenceFacts(diff, pr), reviews: 2 }, true).signals.find((s) => s.name === "Confidence: review depth")!;
+  expect([withReviews.value, withReviews.source]).toEqual(["2 reviews", "declared"]);
 });

@@ -41,12 +41,6 @@ test("PR 13: catalog has 21 entries and no tiers, so reach is assumed high", () 
   );
 });
 
-test("PR 13 with --ignore-declared: catalog not read, still assumed high", () => {
-  const s = reachSignal(reachFacts(diff, true));
-  expect([s.value, s.source]).toEqual(["high", "assumed"]);
-  expect(s.note).toEndWith("Worth unknown because the metrics catalog was not read, so reach is assumed wide");
-});
-
 test("a catalog tier on a reached system makes reach declared", () => {
   const s = reachSignal({
     ...facts,

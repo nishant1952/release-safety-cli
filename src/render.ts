@@ -38,7 +38,7 @@ export function renderBrief(b: Brief, quote: (r: string) => string | null): stri
   const L: string[] = [];
   L.push(`# Release brief: ${b.title ?? "untitled change"}`);
   L.push("");
-  L.push(`Range \`${b.base.slice(0, 7)}..${b.head.slice(0, 7)}\`, ${b.files.length} files changed.`);
+  L.push(`Range \`${b.base.slice(0, 7)}..${b.head.slice(0, 7)}\`, ${b.files.length} files changed. Title: ${b.titleSource}.`);
   L.push("");
   L.push(`**Mode: ${b.mode ?? "not computed"}.**${b.modeLine ? ` ${b.modeLine}` : ""}`);
   L.push("");
@@ -56,7 +56,9 @@ export function renderBrief(b: Brief, quote: (r: string) => string | null): stri
   if (b.reasons.length)
     b.reasons.forEach((r, i) => {
       L.push(`${i + 1}. ${r.text}`);
-      L.push(...evidenceList(r.evidence, quote, "   "));
+      if (r.prose) L.push(`   *${r.prose}* (LLM wording)`);
+      if (r.evidence.length) L.push(...evidenceList(r.evidence, quote, "   "));
+      else L.push("   - no line to cite: this reason rests on something missing from the input or the repo");
     });
   else L.push("None recorded.");
   L.push("");

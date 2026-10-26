@@ -154,7 +154,7 @@ export function featureFlag(diff: Diff, facts: FlagFacts): Signal<"none" | "part
     evidence: [...control, ...runStarts(outside)],
     note:
       `flag ${flagText}: ${inside.length} added lines inside the flag, ${control.length} control lines, ` +
-      `${outside.length} outside it` +
+      `${outside.length} outside it (blank, comment and bracket-only lines are not classed)` +
       (outside.length ? ` (in ${outsideFiles.join(", ")})` : "") +
       ". Whether the flag exists in production and both states are tested is not checked",
   };

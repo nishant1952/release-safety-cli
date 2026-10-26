@@ -5,7 +5,7 @@ import type { Signal } from "../src/types";
 import { RANGE, REPO } from "./fixture";
 
 test("PR 13: gate 1 routes to Human; the grid alone is also Human (high damage, long window)", async () => {
-  const b = await buildBrief({ repo: REPO, range: RANGE, ignoreDeclared: false, prFile: null });
+  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: null });
   expect(b.mode).toBe("Human");
   expect(b.modeLine).toBe("Grid: high damage x long window = Human. Gates route to Human.");
   expect(b.reasons.map((r) => r.text.split(":")[0])).toEqual(["Gate 1 (Table stakes) is unverifiable, so it routes to a human", "High damage", "Long window", "Probability"]);

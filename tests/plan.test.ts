@@ -13,11 +13,11 @@ test("plans.json cells are the section 3 table verbatim", async () => {
 });
 
 test("PR 13: Human plan proposes the staged preset, guardrails per failure mode, undo per reversibility signals", async () => {
-  const b = await buildBrief({ repo: REPO, range: RANGE, ignoreDeclared: false, prFile: null });
+  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: null });
   const row = (r: string) => b.plan!.find((p) => p.row === r)!.value;
   expect(b.plan!.map((p) => p.row)).toEqual(["Exposure", "Soak per step", "Guardrails", "Abort", "Undo", "Paged", "Sign-off"]);
   expect(row("Exposure")).toBe(
-    "Proposed by the system: Small slice, soak, widen; slice by flag percentage on `profile-avatar-menu` for the code inside it; edits outside the flag reach everyone at deploy (rollout mechanism not found, so all-at-once is assumed). Approved or edited by the owner",
+    "Proposed by the system: Small slice, soak, widen; slice by flag percentage on `profile-avatar-menu` for the code inside it; edits outside the flag reach everyone at deploy (rollout mechanism is not extracted, so all-at-once is assumed). Approved or edited by the owner",
   );
   expect(row("Guardrails")).toBe(
     "Same as staged, plus whatever the owner adds. domain: business checks, none found on the changed path; " +

@@ -39,14 +39,13 @@ export function dispatchRefInput(lines: string[]): number | null {
 }
 
 export interface RevertFacts {
-  /** workflow files read; null when declared config was ignored */
-  workflows: { path: string; rollback: number | null; timeouts: { value: number; line: number }[] }[] | null;
+  /** CI workflow files (declared config) */
+  workflows: { path: string; rollback: number | null; timeouts: { value: number; line: number }[] }[];
   /** measured pipeline duration in minutes; CI run history is not an input, so always null here */
   measuredMinutes: number | null;
 }
 
-export function revertFacts(diff: Diff, ignoreDeclared = false): RevertFacts {
-  if (ignoreDeclared) return { workflows: null, measuredMinutes: null };
+export function revertFacts(diff: Diff): RevertFacts {
   const git = new Git(diff.repo);
   const workflows = git
     .listFiles(diff.head)
@@ -69,7 +68,7 @@ export function revertFacts(diff: Diff, ignoreDeclared = false): RevertFacts {
 
 export function revertSignal(f: RevertFacts): Signal<"one-click rollback" | "measured pipeline under 15 minutes" | "full build and deploy"> {
   const name = "Time to revert";
-  const rollback = f.workflows?.find((w) => w.rollback !== null);
+  const rollback = f.workflows.find((w) => w.rollback !== null);
   if (rollback)
     return {
       name,
@@ -80,17 +79,15 @@ export function revertSignal(f: RevertFacts): Signal<"one-click rollback" | "mea
     };
   if (f.measuredMinutes !== null && f.measuredMinutes < FAST_PIPELINE_MINUTES)
     return { name, value: "measured pipeline under 15 minutes", source: "measured", evidence: [], note: `${f.measuredMinutes} minutes` };
-  const bounds = (f.workflows ?? []).flatMap((w) => w.timeouts.map((t) => ({ path: w.path, ...t })));
+  const bounds = f.workflows.flatMap((w) => w.timeouts.map((t) => ({ path: w.path, ...t })));
   return {
     name,
     value: "full build and deploy",
     source: "assumed",
     evidence: bounds.map((b) => `${b.path}:${b.line}`),
     note:
-      (f.workflows === null
-        ? "deploy config not read"
-        : `no one-click rollback in ${f.workflows.length} workflow file(s); no CI run history in the input, so pipeline duration is not measured` +
-          (bounds.length ? `. Declared job timeout: ${bounds.map((b) => `${b.value} min`).join(", ")} (a bound, not a measurement)` : "")) +
+      `no one-click rollback in ${f.workflows.length} workflow file(s); CI run history is not an input, so pipeline duration is not measured` +
+      (bounds.length ? `. Declared job timeout: ${bounds.map((b) => `${b.value} min`).join(", ")} (a bound, not a measurement)` : "") +
       ". Unknown rounds to slow: a full build and deploy to revert (W 2)",
   };
 }

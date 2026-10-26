@@ -16,12 +16,6 @@ test("PR 13: one deploy workflow, no rollback, a declared 5-minute timeout; unkn
   expect(s.note).toContain("Declared job timeout: 5 min (a bound, not a measurement)");
 });
 
-test("PR 13 with --ignore-declared: deploy config not read", () => {
-  const s = revertSignal(revertFacts(diff, true));
-  expect([s.value, s.source]).toEqual(["full build and deploy", "assumed"]);
-  expect(s.note).toStartWith("deploy config not read");
-});
-
 test("fast only for a one-click rollback (declared) or a measured pipeline under 15 minutes", () => {
   expect(revertSignal({ workflows: [{ path: "w.yml", rollback: 3, timeouts: [] }], measuredMinutes: null }).value).toBe("one-click rollback");
   expect(revertSignal({ workflows: [], measuredMinutes: 9 }).value).toBe("measured pipeline under 15 minutes");
