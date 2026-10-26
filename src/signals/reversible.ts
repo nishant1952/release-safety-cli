@@ -1,13 +1,12 @@
 // W 1c item 1, appendix Reversibility rank 1: "can the change be undone by a revert, or does it
 // leave external side effects that a redeploy cannot undo?" Extracted from the diff: "persisted
 // writes (the gate 3 detector), outbound side effects (payment, email, SMS, webhook, push),
-// queue publishes, external API clients".
+// queue publishes, external API clients". Persisted writes are gate 3's destructive hits.
 import { ref, type Diff } from "../diff";
-import { PERSISTED_WRITE_PATTERNS } from "../gates";
+import { CODE_FILE, dataWrites } from "../gates";
 import type { Signal } from "../types";
 
 const RULES: { kind: string; patterns: RegExp[] }[] = [
-  { kind: "persisted write", patterns: PERSISTED_WRITE_PATTERNS },
   {
     kind: "outbound side effect",
     patterns: [
@@ -34,11 +33,18 @@ const RULES: { kind: string; patterns: RegExp[] }[] = [
 ];
 
 export function reversibility(diff: Diff): Signal<"reversible" | "irreversible"> {
+  const persisted = new Set(dataWrites(diff).destructive);
   const hits: { kind: string; at: string }[] = [];
   for (const l of diff.added) {
-    const rule = RULES.find((r) => r.patterns.some((p) => p.test(l.text)));
+    if (persisted.has(ref(l))) {
+      hits.push({ kind: "persisted write", at: ref(l) });
+      continue;
+    }
+    // Docs and config files do not run, so they cannot send anything.
+    const rule = CODE_FILE.test(l.file) ? RULES.find((r) => r.patterns.some((p) => p.test(l.text))) : undefined;
     if (rule) hits.push({ kind: rule.kind, at: ref(l) });
   }
+  for (const at of persisted) if (at.includes("@")) hits.push({ kind: "persisted write", at });
   const kinds = [...new Set(hits.map((h) => h.kind))];
   return {
     name: "Reversible or irreversible",
