@@ -44,7 +44,7 @@ test("PR 13: files bucketed by directory", () => {
   });
 });
 
-test("PR 13: git range yields the same changed lines as data/pr13/pr13.diff", async () => {
+test("PR 13: git range yields the same changed lines as the PR 13 diff fixture", async () => {
   const fromFile = parseUnifiedDiff(await Bun.file(PR_DIFF).text());
   const key = (l: { file: string; line: number; text: string }) => `${l.file}:${l.line}:${l.text}`;
   expect(fromFile.flatMap((f) => f.added).map(key)).toEqual(diff.added.map(key));

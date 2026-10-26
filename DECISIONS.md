@@ -4,9 +4,10 @@ One line each. "Spec" means PROMPT.md; "W" means writeup.md.
 
 ## Inputs and tooling
 - All repo reads go through `git show <sha>:<path>` at the resolved head (or base), never the working tree, so the brief depends only on the range.
-- The diff is `git diff --unified=0 --find-renames` over the range; it is checked against data/pr13/pr13.diff in the test.
+- The diff is `git diff --unified=0 --find-renames` over the range; it is checked against a copy of the PR 13 diff in tests/fixtures/ in the test.
 - Files are bucketed by their immediate directory (`dirname`).
 - PR metadata is located by matching the resolved range against `data/*/REFS.txt` (natural order, pr2 before pr10); `--pr <file>` overrides. It is a declared input. When several exports match one range (pr17 and pr18 share 32683da8..ef24a354), the first is used and the brief lists the conflict as a disagreement.
+- data/ is empty: no PR exports ship with the repo. The REFS.txt lookup and `--pr` remain, so a range with no export gets "no PR export found" (CI unverifiable, title from the head commit). out/pr13-brief.md is produced that way; the tests that need exports use copies in tests/fixtures/ (pr13 diff and export, pr4, pr9, pr11, pr14).
 - `--ignore-declared` was removed: the flag proved nothing on PR 13 because no declared input changes the decision; entry points, deploy health checks and the PR title are declared and used. Measured / declared / assumed tagging stays on every signal.
 - Dev dependency `@types/bun` is for editor types only; no runtime dependency beyond ts-morph and the Anthropic SDK.
 

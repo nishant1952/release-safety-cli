@@ -131,7 +131,7 @@ test("the WHERE lookahead stops at the next statement", () => {
 
 test("CI status comes from each PR export's rollup; every listed check counts as required", async () => {
   const ci = async (dir: string, range: string) =>
-    runGates(loadDiff(REPO, range), await loadPr(new URL(`../data/${dir}/pr.json`, import.meta.url).pathname))[0].checks.find((c) => c.name === "required CI checks")!;
+    runGates(loadDiff(REPO, range), await loadPr(new URL(`./fixtures/${dir}.json`, import.meta.url).pathname))[0].checks.find((c) => c.name === "required CI checks")!;
   expect((await ci("pr14", "9dfc79d0..71e8103d")).status).toBe("pass"); // two SUCCESS
   expect((await ci("pr4", "f26e6b00..fab0ae6a")).status).toBe("pass"); // NEUTRAL counts as green
   const red = await ci("pr11", "206fa144..974d34ce"); // flag contract FAILURE

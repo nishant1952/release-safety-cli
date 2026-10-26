@@ -1,6 +1,6 @@
 # Release brief: Add a profile avatar menu beside logout
 
-Range `30ac194..c5da112`, 5 files changed. Title: PR title, declared.
+Range `30ac194..c5da112`, 5 files changed. Title: head commit subject, measured from git (no PR export found).
 
 **Mode: Human.** Grid: high damage x long window = Human. Gates route to Human.
 
@@ -18,7 +18,7 @@ Range `30ac194..c5da112`, 5 files changed. Title: PR title, declared.
 
 ## Top reasons
 
-1. Gate 1 (Table stakes) is unverifiable, so it routes to a human: required CI checks: the PR export has no statusCheckRollup, so CI status is unknown.
+1. Gate 1 (Table stakes) is unverifiable, so it routes to a human: required CI checks: no PR export was found for this range, so CI status is unknown.
    - no line to cite: this reason rests on something missing from the input or the repo
 2. High damage: the path is live (declared) and the reach is high (assumed). measured: calls reach POST /api/client-telemetry (emitAction); GET /api/scoreboard (services.auth.me, services.scoreboard.forUser, services.scoreboard.leaderboard, sessionTokenFromRequest). Worth unknown because the metrics catalog declares no tier for any of its 21 entries, so reach is assumed wide.
    - `apps/web/src/App.tsx:554` `<ProfileMenu enabled={profileMenu} />`
@@ -79,10 +79,10 @@ Gate 2, additive API surface:
 | Detection apparatus | slow | measured | `apps/web/src/App.tsx:456`, `apps/web/src/App.tsx:466`, `apps/web/src/App.tsx:471`, `docker/compose.prod.yml:49` +1. domain: no business-level check (no value metric, no test of the changed domain files); infra: latency metric arcade_web_profile_menu_load_ms, error rate metric arcade_web_profile_menu_load_errors_total, deploy health check. Every failure mode needs its detector, so detection is slow. 5 metric/log calls on changed lines (arcade_web_profile_menu_opens_total: count, arcade_web_profile_menu_load_success_total: count, arcade_web_profile_menu_load_ms: latency, arcade_web_profile_menu_load_errors_total: error rate). Checked in the repo only; alert config outside the repo (OpenObserve) is not an input |
 | Time to revert | full build and deploy | assumed | `.github/workflows/deploy.yml:15`. no one-click rollback in 1 workflow file(s); CI run history is not an input, so pipeline duration is not measured. Declared job timeout: 5 min (a bound, not a measurement). Unknown rounds to slow: a full build and deploy to revert (W 2) |
 | History | history unavailable | assumed | none. measured: 8 earlier commits touch the changed files, 0 reverts, 0 fix commits; repo history before base spans 4h (2026-10-06 to 2026-10-06). Too thin to read as a record (thin: < 5 commits or < 7 days) |
-| Provenance | agent-assisted (Cursor) | measured | `commit c5da112`. commit trailers: Cursor <cursoragent@cursor.com>; PR description: "Made with Cursor"; author(s) in git: Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>. Whether a human was in the loop is not verifiable from the input |
+| Provenance | agent-assisted (Cursor) | measured | `commit c5da112`. commit trailers: Cursor <cursoragent@cursor.com>; PR description: no PR export found; author(s) in git: Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>. Whether a human was in the loop is not verifiable from the input |
 | Confidence: test coverage | 0 of 4 changed code files have a test | measured | none. tests that import a changed file; 0 covered by tests that existed before the change. Uncovered: apps/api/src/infrastructure/observability/metrics-catalog.ts, apps/web/src/App.tsx, apps/web/src/fireweave/fw-providers.ts, apps/web/src/fireweave/fw-tracker.ts |
-| Confidence: familiarity | single-author repo, people part dropped | measured | none. repo authors before base: Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>; per file: apps/api/src/infrastructure/observability/metrics-catalog.ts (1), apps/web/src/App.tsx (1), apps/web/src/fireweave/fw-providers.ts (1), apps/web/src/fireweave/fw-tracker.ts (1), apps/web/src/styles.css (1). Reviewer familiarity needs review data: the PR export has no reviews field |
-| Confidence: review depth | unavailable | assumed | none. the PR export has no reviews field |
+| Confidence: familiarity | single-author repo, people part dropped | measured | none. repo authors before base: Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>; per file: apps/api/src/infrastructure/observability/metrics-catalog.ts (1), apps/web/src/App.tsx (1), apps/web/src/fireweave/fw-providers.ts (1), apps/web/src/fireweave/fw-tracker.ts (1), apps/web/src/styles.css (1). Reviewer familiarity needs review data: no PR export was found for this range |
+| Confidence: review depth | unavailable | assumed | none. no PR export was found for this range |
 | Confidence: diff vs task (LLM) | unavailable | assumed | none. no ANTHROPIC_API_KEY |
 
 ## Changed files

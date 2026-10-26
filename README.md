@@ -8,7 +8,7 @@ A prototype of the release-safety model in [writeup.md](writeup.md). Given a rep
 bun install && bun run brief <repo-path> <base>..<head> [--out file] [--pr pr.json]
 ```
 
-- `--pr` points at a `gh pr view --json` export; by default it is found by matching the range against `data/*/REFS.txt`.
+- `--pr` points at a `gh pr view --json` export; by default it is found by matching the range against `data/*/REFS.txt`. `data/` ships empty, so without `--pr` the brief says no PR export was found and gate 1's CI check is unverifiable.
 - With `ANTHROPIC_API_KEY` set, three optional LLM uses run: a failure-mode second opinion, a diff-vs-task coherence check, and two-sentence wording for reasons that already have evidence lines. They can only lower confidence or tighten the mode, never loosen it. Without a key the two reads show as unavailable and no wording is added. The diff is sent to the Anthropic API only in that case, and never when gate 1 finds a secret.
 
 The PR 13 brief:
