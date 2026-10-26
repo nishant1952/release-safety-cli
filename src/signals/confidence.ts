@@ -183,6 +183,7 @@ export async function coherenceCheck(
       "List each concrete mismatch between the description and the diff.",
     `Commit message:\n${commitMessage}\n\nPR title: ${pr?.title ?? "(none)"}\n\nPR description:\n${pr?.body ?? "(none)"}\n\nDiff:\n${diffText}`,
     COHERENCE_SCHEMA,
+    "diff-vs-task coherence",
   );
   if (!answer) return unavailable("LLM call failed or was refused");
   return {

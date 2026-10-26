@@ -30,6 +30,7 @@ export async function addProse(
         "Use only the reason and the cited lines; add no new claims, numbers or advice.",
       `Reason: ${r.text}\n\nCited lines:\n${lines}`,
       SCHEMA,
+      "reason wording",
     );
     out.push(answer?.prose ? { ...r, prose: answer.prose.trim() } : r);
   }

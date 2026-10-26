@@ -76,6 +76,7 @@ export async function failureModeSecondOpinion(
       "Return every mode that applies.",
     `PR title: ${pr?.title ?? "(none)"}\n\nPR description:\n${pr?.body ?? "(none)"}\n\nDiff:\n${diffText}`,
     SCHEMA,
+    "failure-mode second opinion",
   );
   if (!answer) return unavailable("LLM call failed or was refused");
   const modes = [...new Set(answer.modes)].sort();

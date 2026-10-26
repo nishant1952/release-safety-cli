@@ -61,6 +61,9 @@ One line each. "Spec" means PROMPT.md; "W" means writeup.md.
 - Assumed probability inputs are listed but cannot move the mode: they only lower confidence (W 2), and the shift uses measured confidence.
 - When no single flip changes the mode, the brief says so and reruns once with every assumed input favourable. If the mode still holds, it names each known input that, made favourable on top of that, would change the mode (and to what).
 
+## LLM call log
+- Each LLM call appends one JSON line to logs/llm-calls.jsonl (gitignored; `--llm-log` or `LLM_LOG` overrides) with the full request and response, request id, tokens (input, output, thinking, cache read and write), latency, outcome and an estimated cost. Cost uses Anthropic list prices per million tokens (Opus 5.5 $4/$20, Sonnet 5.5 $2/$10, cache reads $0.20, cache writes 1.25x input); for Bedrock it is labelled an estimate because Bedrock bills separately. The log carries timestamps and latency, so it is written beside the brief, never into it.
+
 ## Brief
 - The LLM may word a reason in two sentences only when the reason already has evidence lines; the wording is shown beside the reason, marked "(LLM wording)", and is skipped without a key or when gate 1 found a secret.
 - Without the PR export (declared), the brief's title is the head commit's subject (git).
