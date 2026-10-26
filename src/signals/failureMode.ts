@@ -2,7 +2,7 @@
 // infra, security or domain", extracted from "The diff, an LLM read as a second opinion only".
 // Ignore case: "Docs- or test-only changes".
 import { ref, type Diff } from "../diff";
-import { askJson, llmAvailable } from "../llm";
+import { askJson, llmAvailable, NO_CREDENTIAL } from "../llm";
 import type { PrMeta } from "../pr";
 import type { Signal } from "../types";
 
@@ -57,7 +57,7 @@ const SCHEMA = {
   additionalProperties: false,
 };
 
-/** LLM second opinion. Unavailable without ANTHROPIC_API_KEY; tagged assumed (a model opinion). */
+/** LLM second opinion. Unavailable without a credential; tagged assumed (a model opinion). */
 export async function failureModeSecondOpinion(
   diffText: string,
   pr: PrMeta | null,
@@ -68,7 +68,7 @@ export async function failureModeSecondOpinion(
 ): Promise<Signal & { agrees: boolean | null }> {
   const name = "Failure mode (LLM second opinion)";
   const unavailable = (note: string) => ({ name, value: "unavailable", source: "assumed" as const, evidence: [], note, agrees: null });
-  if (!available) return unavailable("no ANTHROPIC_API_KEY; rules only");
+  if (!available) return unavailable(`${NO_CREDENTIAL}; rules only`);
   if (withheld) return unavailable(`diff not sent to the LLM: ${withheld}`);
   const answer = await ask<{ modes: string[]; reason: string }>(
     "You classify how a code change can fail in production. Modes: infra (resources, latency, availability, config, build), " +

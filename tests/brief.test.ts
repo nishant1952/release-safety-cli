@@ -2,10 +2,10 @@ import { expect, test } from "bun:test";
 import { addProse } from "../src/prose";
 import { makeQuoter, renderBrief } from "../src/render";
 import { buildBrief } from "../src/run";
-import { RANGE, REPO } from "./fixture";
+import { RANGE, REPO, PR_JSON } from "./fixture";
 
 const render = async () => {
-  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: null });
+  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: PR_JSON });
   return renderBrief(b, makeQuoter(REPO, b.base, b.head));
 };
 

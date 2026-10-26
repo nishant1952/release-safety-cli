@@ -3,13 +3,13 @@ import type { DecisionInput } from "../src/decide";
 import { buildBrief } from "../src/run";
 import type { Signal } from "../src/types";
 import { oneUnknown, unknownText } from "../src/unknown";
-import { RANGE, REPO } from "./fixture";
+import { RANGE, REPO, PR_JSON } from "./fixture";
 
 test("PR 13: no single assumed input changes Human; with all favourable it stays Human on measured facts", async () => {
-  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: null });
+  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: PR_JSON });
   expect(b.unknown).toBe(
-    "No single assumed input changes the mode. Considered: gate 1 required CI checks (unverifiable); Reach (high); Time to revert (full build and deploy); " +
-      "Failure mode (LLM second opinion) (cannot move the mode); History (cannot move the mode); Confidence: review depth (cannot move the mode); " +
+    "No single assumed input changes the mode. Considered: Reach (high); Time to revert (full build and deploy); " +
+      "Failure mode (LLM second opinion) (cannot move the mode); History (cannot move the mode); " +
       "Confidence: diff vs task (LLM) (cannot move the mode). With all of them at their favourable value the mode is Human, so the call rests on what is known: " +
       "Detection apparatus slow (measured), without which it would be Staged; confidence low (measured), without which it would be Staged.",
   );

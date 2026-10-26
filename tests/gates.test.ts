@@ -6,12 +6,15 @@ import { PR_JSON, RANGE, REPO } from "./fixture";
 
 const diff = loadDiff(REPO, RANGE);
 
-test("PR 13: gate 1 unverifiable (no CI status declared) routes to human; gates 2 and 3 pass", async () => {
+test("PR 13: CI is green in the export's rollup, so all three gates pass", async () => {
   const pr = await loadPr(PR_JSON);
-  expect(pr!.checks).toBeNull();
+  expect(pr!.checks).toEqual([
+    { name: "FireWeave — flag contract", conclusion: "SUCCESS" },
+    { name: "FireWeave — rollout readiness", conclusion: "SUCCESS" },
+  ]);
   const gates = runGates(diff, pr);
   expect(gates.map((g) => [g.gate, g.status, g.route])).toEqual([
-    [1, "unverifiable", "human"],
+    [1, "pass", "none"],
     [2, "pass", "none"],
     [3, "pass", "none"],
   ]);
@@ -19,7 +22,7 @@ test("PR 13: gate 1 unverifiable (no CI status declared) routes to human; gates 
     ["secrets", "pass", "measured"],
     ["PII", "pass", "measured"],
     ["hardcoded environment values", "pass", "measured"],
-    ["required CI checks", "unverifiable", "assumed"],
+    ["required CI checks", "pass", "declared"],
   ]);
   const additive = gates[1].checks.find((c) => c.name === "additive API surface")!;
   expect(additive.evidence).toEqual([

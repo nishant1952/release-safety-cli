@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
 import { makeQuoter, renderBrief } from "../src/render";
 import { buildBrief } from "../src/run";
-import { RANGE, REPO } from "./fixture";
+import { RANGE, REPO, PR_JSON } from "./fixture";
 
-const opts = { repo: REPO, range: RANGE, prFile: null };
+const opts = { repo: REPO, range: RANGE, prFile: PR_JSON };
 
 test("PR 13: quoter reads head lines and base-side lines from git", async () => {
   const b = await buildBrief(opts);
@@ -31,9 +31,8 @@ test("PR 13: brief sections in order, with title, reasons, quoted gate evidence 
     "## Provenance",
     "## Changed files",
   ]);
-  expect(md).toContain(
-    "1. Gate 1 (Table stakes) is unverifiable, so it routes to a human: required CI checks: no PR export was found for this range, so CI status is unknown.",
-  );
+  expect(md).toContain("| 1. Table stakes | pass | none |");
+  expect(md).toContain("1. High damage: the path is live (declared) and the reach is high (assumed).");
   expect(md).toContain(
     '- `apps/api/src/infrastructure/observability/metrics-catalog.ts:128` `name: "arcade_web_profile_menu_opens_total",`',
   );

@@ -8,8 +8,11 @@ A prototype of the release-safety model in [writeup.md](writeup.md). Given a rep
 bun install && bun run brief <repo-path> <base>..<head> [--out file] [--pr pr.json]
 ```
 
-- `--pr` points at a `gh pr view --json` export; by default it is found by matching the range against `data/*/REFS.txt`. `data/` ships empty, so without `--pr` the brief says no PR export was found and gate 1's CI check is unverifiable.
-- With `ANTHROPIC_API_KEY` set, three optional LLM uses run: a failure-mode second opinion, a diff-vs-task coherence check, and two-sentence wording for reasons that already have evidence lines. They can only lower confidence or tighten the mode, never loosen it. Without a key the two reads show as unavailable and no wording is added. The diff is sent to the Anthropic API only in that case, and never when gate 1 finds a secret.
+- `--pr` points at a `gh pr view --json` export; by default it is found by matching the range against `data/*/REFS.txt`. `data/` is gitignored and not shipped; without an export the brief says no PR export was found and gate 1's CI check is unverifiable.
+- With a credential in the environment or `.env` (Bun loads it), three optional LLM uses run: a failure-mode second opinion, a diff-vs-task coherence check, and two-sentence wording for reasons that already have evidence lines. They can only lower confidence or tighten the mode, never loosen it. Without a key the two reads show as unavailable and no wording is added. The diff is sent only in that case, and never when gate 1 finds a secret.
+  - Claude in Amazon Bedrock: `AWS_BEARER_TOKEN_BEDROCK=<Bedrock API key>` and `AWS_REGION=<region>` (default `us-east-1`); model `anthropic.claude-sonnet-5-5`. Short-term keys expire within 12 hours; an expired key shows the LLM rows as unavailable.
+  - Anthropic API: `ANTHROPIC_API_KEY=<key>`; model `claude-opus-5-5`, with server-side refusal fallback.
+  - If both are set, Bedrock is used.
 
 The PR 13 brief:
 

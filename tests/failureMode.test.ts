@@ -20,7 +20,7 @@ test("PR 13: rules on touched paths give domain and infra", () => {
 
 test("PR 13 without a key: LLM second opinion marked unavailable", async () => {
   const { agrees, ...s } = await failureModeSecondOpinion("", null, facts, undefined, false);
-  expect([s.value, s.source, s.note, agrees]).toEqual(["unavailable", "assumed", "no ANTHROPIC_API_KEY; rules only", null]);
+  expect([s.value, s.source, s.note, agrees]).toEqual(["unavailable", "assumed", "no ANTHROPIC_API_KEY or AWS_BEARER_TOKEN_BEDROCK; rules only", null]);
 });
 
 test("LLM answer is compared with the rules, never replaces them", async () => {

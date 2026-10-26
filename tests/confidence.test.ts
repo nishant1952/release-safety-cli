@@ -24,7 +24,7 @@ test("PR 13: no tests anywhere, single-author repo, no review data: measured con
     ["Provenance", "agent-assisted (Cursor)", "measured"],
     ["Confidence: test coverage", "0 of 4 changed code files have a test", "measured"],
     ["Confidence: familiarity", "single-author repo, people part dropped", "measured"],
-    ["Confidence: review depth", "unavailable", "assumed"],
+    ["Confidence: review depth", "0 reviews", "declared"],
   ]);
   expect(r.measuredLevel).toBe("low");
   expect(r.why).toEqual([
@@ -63,12 +63,14 @@ test("agent-written: tests added in the same change do not count; pre-existing t
   expect(confidenceSignals(human, true).measuredLevel).toBe("high");
 });
 
-test("review depth says what the PR export holds: no reviews field for PR 13", async () => {
+test("review depth says what the PR export holds: PR 13 lists 0 reviews", async () => {
   const pr = await loadPr(PR_JSON);
-  expect(pr!.reviews).toBeNull();
+  expect(pr!.reviews).toBe(0);
   const r = confidenceSignals(confidenceFacts(diff, pr), true);
   const depth = r.signals.find((s) => s.name === "Confidence: review depth")!;
-  expect([depth.value, depth.source, depth.note]).toEqual(["unavailable", "assumed", "the PR export has no reviews field"]);
+  expect([depth.value, depth.source, depth.note]).toEqual(["0 reviews", "declared", "the PR export lists 0 reviews"]);
+  const noField = confidenceSignals({ ...confidenceFacts(diff, pr), reviews: null }, true).signals.find((s) => s.name === "Confidence: review depth")!;
+  expect([noField.value, noField.source, noField.note]).toEqual(["unavailable", "assumed", "the PR export has no reviews field"]);
   const withReviews = confidenceSignals({ ...confidenceFacts(diff, pr), reviews: 2 }, true).signals.find((s) => s.name === "Confidence: review depth")!;
   expect([withReviews.value, withReviews.source]).toEqual(["2 reviews", "declared"]);
 });

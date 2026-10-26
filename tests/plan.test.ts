@@ -4,7 +4,7 @@ import { buildPlan } from "../src/plan";
 import PLANS from "../src/plans.json";
 import { buildBrief } from "../src/run";
 import type { Signal } from "../src/types";
-import { RANGE, REPO } from "./fixture";
+import { RANGE, REPO, PR_JSON } from "./fixture";
 
 test("plans.json cells are the section 3 table verbatim", async () => {
   const w = await Bun.file(new URL("../writeup.md", import.meta.url)).text();
@@ -13,7 +13,7 @@ test("plans.json cells are the section 3 table verbatim", async () => {
 });
 
 test("PR 13: Human plan proposes the staged preset, guardrails per failure mode, undo per reversibility signals", async () => {
-  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: null });
+  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: PR_JSON });
   const row = (r: string) => b.plan!.find((p) => p.row === r)!.value;
   expect(b.plan!.map((p) => p.row)).toEqual(["Exposure", "Soak per step", "Guardrails", "Abort", "Undo", "Paged", "Sign-off"]);
   expect(row("Exposure")).toBe(

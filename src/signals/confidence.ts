@@ -7,7 +7,7 @@
 import { posix } from "node:path";
 import type { Diff } from "../diff";
 import { Git } from "../git";
-import { askJson, llmAvailable } from "../llm";
+import { askJson, llmAvailable, NO_CREDENTIAL } from "../llm";
 import type { PrMeta } from "../pr";
 import type { Signal } from "../types";
 
@@ -176,7 +176,7 @@ export async function coherenceCheck(
 ): Promise<Signal & { coherent: boolean | null }> {
   const name = "Confidence: diff vs task (LLM)";
   const unavailable = (note: string) => ({ name, value: "unavailable", source: "assumed" as const, evidence: [], note, coherent: null });
-  if (!available) return unavailable("no ANTHROPIC_API_KEY");
+  if (!available) return unavailable(NO_CREDENTIAL);
   if (withheld) return unavailable(`diff not sent to the LLM: ${withheld}`);
   const answer = await ask<{ coherent: boolean; mismatches: string[] }>(
     "You check whether a code change does what its task and description say: nothing missing, nothing extra. " +

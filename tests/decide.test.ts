@@ -2,14 +2,14 @@ import { expect, test } from "bun:test";
 import { decide, type DecisionInput } from "../src/decide";
 import { buildBrief } from "../src/run";
 import type { Signal } from "../src/types";
-import { RANGE, REPO } from "./fixture";
+import { RANGE, REPO, PR_JSON } from "./fixture";
 
-test("PR 13: gate 1 routes to Human; the grid alone is also Human (high damage, long window)", async () => {
-  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: null });
+test("PR 13: gates pass; the grid gives Human (high damage, long window)", async () => {
+  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: PR_JSON });
   expect(b.mode).toBe("Human");
-  expect(b.modeLine).toBe("Grid: high damage x long window = Human. Gates route to Human.");
-  expect(b.reasons.map((r) => r.text.split(":")[0])).toEqual(["Gate 1 (Table stakes) is unverifiable, so it routes to a human", "High damage", "Long window", "Probability"]);
-  expect(b.reasons[1].evidence).toEqual([
+  expect(b.modeLine).toBe("Grid: high damage x long window = Human.");
+  expect(b.reasons.map((r) => r.text.split(":")[0])).toEqual(["High damage", "Long window", "Probability"]);
+  expect(b.reasons[0].evidence).toEqual([
     "apps/web/src/App.tsx:554",
     "apps/web/src/App.tsx:596",
     "apps/web/src/App.tsx:593",

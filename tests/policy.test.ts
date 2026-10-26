@@ -4,7 +4,7 @@ import { failureModeFacts, llmDisagreements } from "../src/signals/failureMode";
 import { loadDiff } from "../src/diff";
 import { buildBrief } from "../src/run";
 import type { Signal } from "../src/types";
-import { RANGE, REPO } from "./fixture";
+import { RANGE, REPO, PR_JSON } from "./fixture";
 
 test("policy.json quotes section 2 verbatim", async () => {
   const w = await Bun.file(new URL("../writeup.md", import.meta.url)).text();
@@ -13,13 +13,12 @@ test("policy.json quotes section 2 verbatim", async () => {
   expect(w).toContain(POLICY.disagreement.rule);
 });
 
-test("PR 13: four assumed probability inputs lower an already-low confidence; the measured level stays separate", async () => {
-  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: null });
+test("PR 13: three assumed probability inputs lower an already-low confidence; the measured level stays separate", async () => {
+  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: PR_JSON });
   expect(b.confidence!.level).toBe("low");
   expect(b.confidence!.why.filter((w) => w.endsWith("(W 2)"))).toEqual([
     "Failure mode (LLM second opinion): unavailable (assumed), lowers confidence, does not raise risk (W 2)",
     "History: history unavailable (assumed), lowers confidence, does not raise risk (W 2)",
-    "Confidence: review depth: unavailable (assumed), lowers confidence, does not raise risk (W 2)",
     "Confidence: diff vs task (LLM): unavailable (assumed), lowers confidence, does not raise risk (W 2)",
   ]);
   // Reach and detection were already at their rounded values.
