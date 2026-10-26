@@ -31,7 +31,7 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
   const paths = pathFacts(diff, opts.ignoreDeclared);
   const reach = reachFacts(diff, opts.ignoreDeclared);
   const failure = failureModeFacts(diff);
-  const detection = detectionFacts(diff, opts.ignoreDeclared);
+  const detection = detectionFacts(diff, failure, opts.ignoreDeclared);
   // Never send a diff with a detected secret to the API.
   const secretHit = gates[0].checks.some((c) => c.name === "secrets" && c.status === "trip");
   const { agrees: llmAgrees, ...failureLlm } = await failureModeSecondOpinion(

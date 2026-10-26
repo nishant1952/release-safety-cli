@@ -77,9 +77,9 @@ switch (unit) {
     break;
   }
   case "detection": {
-    const facts = detectionFacts(diff, process.argv.includes("--ignore-declared"));
-    console.log(JSON.stringify({ ...facts, emits: facts.emits.length }, null, 1));
-    for (const e of facts.emits) console.log(`  ${e.at} ${e.via} ${e.name}`);
+    const facts = detectionFacts(diff, failureModeFacts(diff), process.argv.includes("--ignore-declared"));
+    console.log(JSON.stringify({ ...facts, emits: facts.emits.length }));
+    for (const e of facts.emits) console.log(`  ${e.at} ${e.via} ${e.name} [${e.kind}]`);
     printSignal(detectionSignal(facts));
     console.log("disagreements:", detectionDisagreements(facts));
     break;

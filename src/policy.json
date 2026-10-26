@@ -18,7 +18,7 @@
     "rule": "Reversibility (1c): missing data rounds to slow. Assume no flag, no alert on the changed path, an all-at-once rollout and a full build and deploy to revert, never 'instant'.",
     "assume": {
       "Feature flag": "none",
-      "Detection apparatus": "not alerted",
+      "Detection apparatus": "slow",
       "Rollout mechanism": "all-at-once",
       "Time to revert": "full build and deploy"
     }

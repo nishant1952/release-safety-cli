@@ -24,7 +24,7 @@ test("PR 13: four assumed probability inputs lower an already-low confidence; th
   ]);
   // Reach and detection were already at their rounded values.
   expect(b.signals.find((s) => s.name === "Reach")!.value).toBe("high");
-  expect(b.signals.find((s) => s.name === "Detection apparatus")!.value).toBe("not alerted");
+  expect(b.signals.find((s) => s.name === "Detection apparatus")!.value).toBe("slow");
 });
 
 const sig = (name: string, value: string, source: Signal["source"]): Signal => ({ name, value, source, evidence: [], note: "n" });

@@ -12,7 +12,7 @@ import type { PrMeta } from "../pr";
 import type { Signal } from "../types";
 
 const CODE = /\.(ts|tsx|js|jsx|mjs)$/;
-const TEST_FILE = /\.(test|spec)\.[jt]sx?$|(^|\/)(tests?|__tests__)\/.+\.[jt]sx?$/;
+export const TEST_FILE = /\.(test|spec)\.[jt]sx?$|(^|\/)(tests?|__tests__)\/.+\.[jt]sx?$/;
 const AGENT_TRAILER = /^Co-authored-by:\s*(.+?)\s*<([^>]+)>/gim;
 const AGENT_NAME = /cursor|copilot|claude|codex|devin|aider|agent|bot\b|\[bot\]/i;
 
@@ -31,7 +31,7 @@ export interface ConfidenceFacts {
   reviewData: boolean;
 }
 
-function importsFile(testPath: string, text: string, file: string): boolean {
+export function importsFile(testPath: string, text: string, file: string): boolean {
   const target = file.replace(/\.[^.]+$/, "");
   for (const m of text.matchAll(/(?:from\s*|import\s*\(\s*|require\s*\(\s*)["']([^"']+)["']/g)) {
     if (!m[1].startsWith(".")) continue;
