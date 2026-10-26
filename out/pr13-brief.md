@@ -18,7 +18,7 @@ Range `30ac194..c5da112`, 5 files changed. Title: PR title, declared.
 
 ## Top reasons
 
-1. Gate 1 (Table stakes) is unverifiable, so it routes to a human: required CI checks: the PR export has no CI check results.
+1. Gate 1 (Table stakes) is unverifiable, so it routes to a human: required CI checks: the PR export has no statusCheckRollup, so CI status is unknown.
    - no line to cite: this reason rests on something missing from the input or the repo
 2. High damage: the path is live (declared) and the reach is high (assumed). measured: calls reach POST /api/client-telemetry (emitAction); GET /api/scoreboard (services.auth.me, services.scoreboard.forUser, services.scoreboard.leaderboard, sessionTokenFromRequest). Worth unknown because the metrics catalog declares no tier for any of its 21 entries, so reach is assumed wide.
    - `apps/web/src/App.tsx:554` `<ProfileMenu enabled={profileMenu} />`

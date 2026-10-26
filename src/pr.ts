@@ -16,13 +16,17 @@ export interface PrMeta {
 
 const DATA_DIR = new URL("../data", import.meta.url).pathname;
 
-export function findPrFile(base: string, head: string): string | null {
+const natural = (a: string, b: string) => a.localeCompare(b, "en", { numeric: true });
+
+/** Every PR export whose REFS.txt matches the range, in natural order (pr2 before pr10). */
+export function findPrFiles(base: string, head: string): string[] {
   let dirs: string[];
   try {
-    dirs = readdirSync(DATA_DIR).sort();
+    dirs = readdirSync(DATA_DIR).sort(natural);
   } catch {
-    return null;
+    return [];
   }
+  const found: string[] = [];
   for (const d of dirs) {
     let refs: string;
     try {
@@ -32,10 +36,12 @@ export function findPrFile(base: string, head: string): string | null {
     }
     const b = refs.match(/base:\s*([0-9a-f]+)/)?.[1];
     const h = refs.match(/head:\s*([0-9a-f]+)/)?.[1];
-    if (b && h && base.startsWith(b) && head.startsWith(h)) return join(DATA_DIR, d, "pr.json");
+    if (b && h && base.startsWith(b) && head.startsWith(h)) found.push(join(DATA_DIR, d, "pr.json"));
   }
-  return null;
+  return found;
 }
+
+export const findPrFile = (base: string, head: string): string | null => findPrFiles(base, head)[0] ?? null;
 
 export async function loadPr(file: string | null): Promise<PrMeta | null> {
   if (!file) return null;

@@ -9,7 +9,7 @@ import { diffText, loadDiff } from "./diff";
 import { runGates } from "./gates";
 import { Git } from "./git";
 import { applyPolicy } from "./policy";
-import { findPrFile, loadPr } from "./pr";
+import { findPrFiles, loadPr } from "./pr";
 import { coherenceCheck, confidenceFacts, confidenceSignals } from "./signals/confidence";
 import { detectionDisagreements, detectionFacts, detectionSignal, perMode } from "./signals/detection";
 import { historyFacts, historySignal } from "./signals/history";
@@ -29,7 +29,8 @@ export interface RunOptions {
 export async function buildBrief(opts: RunOptions): Promise<Brief> {
   const diff = loadDiff(opts.repo, opts.range);
   // The PR export is a declared input; it may be absent for a range.
-  const pr = await loadPr(opts.prFile ?? findPrFile(diff.base, diff.head));
+  const prFiles = opts.prFile ? [opts.prFile] : findPrFiles(diff.base, diff.head);
+  const pr = await loadPr(prFiles[0] ?? null);
   const gates = runGates(diff, pr);
   const flags = flagFacts(diff);
   const paths = pathFacts(diff);
@@ -65,6 +66,8 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
     ...detectionDisagreements(detection),
     ...conf.disagreements,
     ...llmDisagreements(llmAgrees, failure, failureLlm),
+    // Declared inputs that conflict: two PR exports for one range.
+    ...(prFiles.length > 1 ? [`${prFiles.length} PR exports match this range (${prFiles.map((f) => f.split("/").slice(-2, -1)[0]).join(", ")}); the first is used`] : []),
   ];
   const measuredWhy = [...conf.why];
   // The LLM may only lower confidence; a mismatch counts like a measured negative but never moves the mode.

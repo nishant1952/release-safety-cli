@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { loadDiff, parseUnifiedDiff } from "../src/diff";
-import { reversibility } from "../src/signals/reversible";
+import { Project } from "ts-morph";
+import { httpTargetsOnLine, reversibility } from "../src/signals/reversible";
 import { RANGE, REPO } from "./fixture";
 
 test("PR 13: reversible, measured, no writes or outbound effects in the diff", () => {
@@ -13,9 +14,11 @@ test("PR 13: reversible, measured, no writes or outbound effects in the diff", (
   });
 });
 
-test("same repo, commit 528c308 (OpenObserve exporter): external API client makes it irreversible", () => {
+test("same repo, commit 528c308 (OpenObserve exporter): env-based fetch targets are not resolved, so irreversible", () => {
   const s = reversibility(loadDiff(REPO, "528c308^..528c308"));
   expect(s.value).toBe("irreversible");
+  expect(s.note).toBe("HTTP call, target not resolved one hop in the diff: treated as irreversible because it may leave effects a redeploy cannot undo");
+  expect(s.note).not.toContain("external API client");
   expect(s.evidence).toEqual([
     "server/src/observability.ts:46",
     "server/src/observability.ts:68",
@@ -51,4 +54,26 @@ test("row-scoped CRUD in app code is not a persisted write (commit 04c6f86, lobb
 test("a fetch inside a config file is not an external client (d4a40df compose healthcheck)", () => {
   const s = reversibility(loadDiff(REPO, "d4a40df^1..d4a40df"));
   expect(s.evidence.filter((e) => e.includes(".yml"))).toEqual([]);
+});
+
+test("fetch targets resolve one hop: /api is internal, http(s) external, anything else not resolved", () => {
+  const sf = new Project({ useInMemoryFileSystem: true }).createSourceFile(
+    "/a.ts",
+    [
+      'const local = "/api/scoreboard";',
+      "const tpl = `/api/games/${id}`;",
+      'const remote = "https://example.com/x";',
+      "const base = process.env.BASE ?? '';",
+      "fetch(local);",
+      "fetch(tpl);",
+      "fetch(remote);",
+      "fetch(`${remote}/y`);",
+      "fetch(base);",
+      "function request(path: string) { return fetch(path); }",
+      'fetch("https://example.com/z");',
+    ].join("\n"),
+  );
+  expect([5, 6, 7, 8, 9, 10, 11].map((n) => httpTargetsOnLine(sf, n))).toEqual([
+    ["internal"], ["internal"], ["external"], ["external"], ["unresolved"], ["unresolved"], ["external"],
+  ]);
 });

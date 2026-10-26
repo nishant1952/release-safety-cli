@@ -69,14 +69,19 @@ function tableStakes(diff: Diff, pr: PrMeta | null): GateResult {
     check("PII", lines, (t) => PII_PATTERNS.some((p) => p.test(t)), "added lines"),
     check(HARDCODED, codeLines, (t) => HARDCODED_ENV_PATTERNS.some((p) => p.test(t)), "added code lines (docs, config and comments skipped)"),
   ];
-  if (pr?.checks && pr.checks.length) {
+  if (pr?.checks) {
+    // Every check in the rollup counts as required: the export does not say which branch protection requires.
     const red = pr.checks.filter((c) => !/^(SUCCESS|NEUTRAL|SKIPPED)$/i.test(c.conclusion));
     checks.push({
       name: "required CI checks",
       status: red.length ? "trip" : "pass",
       source: "declared",
       evidence: [],
-      note: red.length ? `not green: ${red.map((c) => c.name).join(", ")}` : `${pr.checks.length} checks green`,
+      note: red.length
+        ? `not green in the PR export's rollup: ${red.map((c) => `${c.name} (${c.conclusion})`).join(", ")}`
+        : pr.checks.length
+          ? `${pr.checks.length} checks in the PR export's rollup, all green or neutral`
+          : "the PR export's rollup lists no checks",
     });
   } else {
     checks.push({
@@ -84,7 +89,7 @@ function tableStakes(diff: Diff, pr: PrMeta | null): GateResult {
       status: "unverifiable",
       source: "assumed",
       evidence: [],
-      note: pr ? "the PR export has no CI check results" : "no PR export was found for this range, so CI status is unknown",
+      note: pr ? "the PR export has no statusCheckRollup, so CI status is unknown" : "no PR export was found for this range, so CI status is unknown",
     });
   }
   const status = worst(checks.map((c) => c.status));

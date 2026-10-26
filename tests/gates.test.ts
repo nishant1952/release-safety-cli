@@ -128,3 +128,14 @@ test("the WHERE lookahead stops at the next statement", () => {
   const multi = ["      UPDATE users SET role = 'admin', password_hash = ${passwordHash}", "        WHERE username = ${username}", "      `;"];
   expect(/WHERE/.test(statementAt(multi, 0, 6))).toBe(true);
 });
+
+test("CI status comes from each PR export's rollup; every listed check counts as required", async () => {
+  const ci = async (dir: string, range: string) =>
+    runGates(loadDiff(REPO, range), await loadPr(new URL(`../data/${dir}/pr.json`, import.meta.url).pathname))[0].checks.find((c) => c.name === "required CI checks")!;
+  expect((await ci("pr14", "9dfc79d0..71e8103d")).status).toBe("pass"); // two SUCCESS
+  expect((await ci("pr4", "f26e6b00..fab0ae6a")).status).toBe("pass"); // NEUTRAL counts as green
+  const red = await ci("pr11", "206fa144..974d34ce"); // flag contract FAILURE
+  expect([red.status, red.note]).toEqual(["trip", "not green in the PR export's rollup: FireWeave — flag contract (FAILURE)"]);
+  const empty = await ci("pr9", "504f75e5..48a2a83b");
+  expect([empty.status, empty.note]).toEqual(["pass", "the PR export's rollup lists no checks"]);
+});
