@@ -2,7 +2,7 @@
 
 Range `30ac194..c5da112`, 5 files changed.
 
-**Mode: not computed**
+**Mode: Human** Grid: high damage x long window = Human. Gates route to Human.
 
 ## Plan
 
@@ -10,7 +10,19 @@ Not computed.
 
 ## Top reasons
 
-1. Gate 1 (Table stakes) is unverifiable, routes to human: required CI checks: no CI status was declared for this range.
+1. Gate 1 (Table stakes) is unverifiable, so it routes to a human: required CI checks: no CI status was declared for this range.
+2. High damage: the path is live (declared) and the reach is high (assumed). measured: calls reach POST /api/client-telemetry (emitAction); GET /api/scoreboard (services.auth.me, services.scoreboard.forUser, services.scoreboard.leaderboard, sessionTokenFromRequest). Worth unknown because the metrics catalog declares no tier for any of its 21 entries, so reach is assumed wide.
+   - `apps/web/src/App.tsx:554` `<ProfileMenu enabled={profileMenu} />`
+   - `apps/web/src/App.tsx:596` `<Shell />`
+   - `apps/web/src/App.tsx:593` `<Route`
+   - `apps/api/src/interfaces/http/router.ts:80` `if (path === "/api/client-telemetry" && req.method === "POST") {`
+   - and 1 more
+3. Long window: undo is slow: the flag is partial (edits outside it use the revert path) and time to revert is full build and deploy (assumed); detection is slow (measured): domain: no business-level check (no value metric, no test of the changed domain files); infra: latency metric arcade_web_profile_menu_load_ms, error rate metric arcade_web_profile_menu_load_errors_total, deploy health check.
+   - `.github/workflows/deploy.yml:15` `timeout-minutes: 5`
+   - `apps/web/src/App.tsx:456` `void record(`
+   - `apps/web/src/App.tsx:466` `void record("arcade_web_profile_menu_load_errors_total", 1, {`
+   - `apps/web/src/App.tsx:471` `void record(`
+4. Probability: measured confidence is low, so the mode moves one step toward caution (already Human, no further step).
 
 ## Confidence
 

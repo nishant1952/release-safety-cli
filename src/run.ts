@@ -1,5 +1,6 @@
 // Runs the whole chain for a range and returns the brief data.
-import type { Brief, Reason } from "./brief";
+import type { Brief } from "./brief";
+import { decide, modeLine } from "./decide";
 import { diffText, loadDiff } from "./diff";
 import { runGates } from "./gates";
 import { Git } from "./git";
@@ -68,15 +69,7 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
   const signals = policy.signals;
   const finalLevel = coherent === false && policy.level !== "low" ? "low" : policy.level;
 
-  const reasons: Reason[] = gates
-    .filter((g) => g.route !== "none")
-    .map((g) => {
-      const failing = g.checks.filter((c) => c.status !== "pass");
-      return {
-        text: `Gate ${g.gate} (${g.name}) is ${g.status}, routes to ${g.route}: ${failing.map((c) => `${c.name}: ${c.note}`).join("; ")}.`,
-        evidence: failing.flatMap((c) => c.evidence),
-      };
-    });
+  const decision = decide({ gates, signals, measuredConfidence: conf.measuredLevel, coherent });
 
   return {
     base: diff.base,
@@ -85,10 +78,10 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
     files: diff.files.map((f) => ({ path: f.path, status: f.status, added: f.added.length, removed: f.removed.length })),
     gates,
     signals,
-    mode: null,
-    modeLine: null,
+    mode: decision.mode,
+    modeLine: modeLine(decision),
     plan: null,
-    reasons,
+    reasons: decision.reasons,
     confidence: { level: finalLevel, why: [...measuredWhy, ...policy.why] },
     unknown: null,
     disagreements,

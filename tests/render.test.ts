@@ -32,7 +32,7 @@ test("PR 13: brief sections in order, with title, reasons, quoted gate evidence 
     "## Changed files",
   ]);
   expect(md).toContain(
-    "1. Gate 1 (Table stakes) is unverifiable, routes to human: required CI checks: no CI status was declared for this range.",
+    "1. Gate 1 (Table stakes) is unverifiable, so it routes to a human: required CI checks: no CI status was declared for this range.",
   );
   expect(md).toContain(
     '- `apps/api/src/infrastructure/observability/metrics-catalog.ts:128` `name: "arcade_web_profile_menu_opens_total",`',
