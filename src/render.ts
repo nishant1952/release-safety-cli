@@ -40,7 +40,7 @@ export function renderBrief(b: Brief, quote: (r: string) => string | null): stri
   L.push("");
   L.push(`Range \`${b.base.slice(0, 7)}..${b.head.slice(0, 7)}\`, ${b.files.length} files changed.`);
   L.push("");
-  L.push(`**Mode: ${b.mode ?? "not computed"}**${b.modeLine ? ` ${b.modeLine}` : ""}`);
+  L.push(`**Mode: ${b.mode ?? "not computed"}.**${b.modeLine ? ` ${b.modeLine}` : ""}`);
   L.push("");
 
   L.push("## Plan");

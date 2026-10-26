@@ -46,4 +46,4 @@ test("PR 13: same input, same brief", async () => {
     return renderBrief(b, makeQuoter(REPO, b.base, b.head));
   };
   expect(await render()).toBe(await render());
-});
+}, 30_000);

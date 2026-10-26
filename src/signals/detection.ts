@@ -137,14 +137,14 @@ export function detectionFacts(diff: Diff, failure: FailureModeFacts, ignoreDecl
   return { modes: failure.modes, emits, healthChecks, alertFiles, watched, authAlerts, domainTests, catalog };
 }
 
-interface ModeResult {
+export interface ModeResult {
   mode: Mode;
   detectors: { what: string; at: string; source: "measured" | "declared" }[];
   /** true when the absence was checked against measured inputs only */
   absenceMeasured: boolean;
 }
 
-function perMode(f: DetectionFacts): ModeResult[] {
+export function perMode(f: DetectionFacts): ModeResult[] {
   return f.modes.map((mode) => {
     const d: ModeResult["detectors"] = [];
     if (mode === "infra") {

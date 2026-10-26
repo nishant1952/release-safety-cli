@@ -2,11 +2,19 @@
 
 Range `30ac194..c5da112`, 5 files changed.
 
-**Mode: Human** Grid: high damage x long window = Human. Gates route to Human.
+**Mode: Human.** Grid: high damage x long window = Human. Gates route to Human.
 
 ## Plan
 
-Not computed.
+| Step | Proposed |
+|---|---|
+| Exposure | Proposed by the system: Small slice, soak, widen; slice by flag percentage on `profile-avatar-menu` for the code inside it; edits outside the flag reach everyone at deploy (rollout mechanism not found, so all-at-once is assumed). Approved or edited by the owner |
+| Soak per step | Proposed by the system: Hours, scaled to traffic (no traffic data in the input, so the hours are not scaled). Approved or edited by the owner |
+| Guardrails | Same as staged, plus whatever the owner adds. domain: business checks, none found on the changed path; infra: resources and latency, watch latency metric arcade_web_profile_menu_load_ms, measured (apps/web/src/App.tsx:456, apps/web/src/App.tsx:471); error rate metric arcade_web_profile_menu_load_errors_total, measured (apps/web/src/App.tsx:466); deploy health check, declared (docker/compose.prod.yml:13, docker/compose.prod.yml:49, scripts/deploy-prod.sh:74) |
+| Abort | Owner decides |
+| Undo | flip `profile-avatar-menu` off (flag partial, measured) for the code inside the flag; revert and redeploy (time to revert: full build and deploy, assumed) for the edits outside it. |
+| Paged | Named owner before step one: Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local> (earlier author of the most touched files, measured from git; the repo has no CODEOWNERS file) |
+| Sign-off | Required before step one |
 
 ## Top reasons
 

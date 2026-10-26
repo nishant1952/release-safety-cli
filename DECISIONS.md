@@ -50,3 +50,6 @@ One line each. "Spec" means PROMPT.md; "W" means writeup.md.
 - Probability shift: one step toward caution when the measured confidence is low; assumed inputs never trigger it (W 2). It is capped at Human: Block comes only from a gate.
 - LLM: a coherence mismatch adds at most one step toward caution; it never lowers the mode and never touches gates, grid placement or the plan.
 - Flag advice (W 3 line 106): when the grid with a full flag would be lower, the brief says adding the flag (or moving outside edits behind it) is the cheapest way left.
+
+## Plan presets (W 3)
+- src/plans.json holds the section 3 table cells verbatim. Human proposes the staged preset ("Proposed by the system, approved or edited by the owner"). Guardrails list the detectors the detection unit found per failure mode, or say none is on the path yet. Undo and slice follow the flag and time-to-revert signals (W 3 line 106); with a partial flag, the code inside it is sliced by flag percentage and the edits outside ship at deploy. Rollout mechanism is not extracted, so all-at-once is assumed (W 2). Soak is not scaled: no traffic data. The named owner is the earlier git author of the most touched files (no CODEOWNERS in the repo); Block has no plan.

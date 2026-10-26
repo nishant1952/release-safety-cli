@@ -1,0 +1,38 @@
+{
+  "source": "writeup.md, section 3: the three modes are presets of the release plan",
+  "presets": {
+    "Auto": {
+      "Exposure": "100% in one step",
+      "Soak per step": "Minutes",
+      "Guardrails": "Deploy health check and error rate",
+      "Abort": "Any error spike, undo",
+      "Paged": "Nobody",
+      "Sign-off": "None"
+    },
+    "Staged": {
+      "Exposure": "Small slice, soak, widen",
+      "Soak per step": "Hours, scaled to traffic",
+      "Guardrails": "Follow the failure mode: resources and latency for infra, business checks for domain, auth errors for security",
+      "Abort": "Guardrail breach: back one step or to 0%. Thin data: hold",
+      "Paged": "Service on-call on abort",
+      "Sign-off": "None"
+    },
+    "Human": {
+      "Exposure": "Proposed by the system, approved or edited by the owner",
+      "Soak per step": "Proposed by the system, approved or edited by the owner",
+      "Guardrails": "Same as staged, plus whatever the owner adds",
+      "Abort": "Owner decides",
+      "Paged": "Named owner before step one",
+      "Sign-off": "Required before step one"
+    }
+  },
+  "guardrailsByFailureMode": {
+    "infra": "resources and latency",
+    "domain": "business checks",
+    "security": "auth errors"
+  },
+  "undo": {
+    "flag": "Behind a flag, undo is a flip and a slice is a flag percentage.",
+    "noFlag": "Without one, undo is a rollback or redeploy and a slice is a canary or percentage deploy"
+  }
+}
