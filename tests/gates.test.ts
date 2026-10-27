@@ -74,7 +74,9 @@ test("trip paths: changed export signature, removed route, raw UPDATE, secret, r
     ["trip", "human"],
     ["trip", "human"],
   ]);
-  expect(gates[1].checks[0].evidence).toEqual(["src/a.ts@bbbbbbb:1", "src/a.ts@bbbbbbb:2"]);
+  // The route is public; with no repo to read manifests from, the export's reach is unverifiable (Round 3, Unit 4).
+  expect(gates[1].checks[0].evidence).toEqual(["src/a.ts@bbbbbbb:2"]);
+  expect(gates[1].checks.find((c) => c.name === "export reachability")!.status).toBe("unverifiable");
   expect(gates[2].checks[0].evidence).toEqual(["src/a.ts:2"]);
   expect(gates[0].checks.find((c) => c.name === "secrets")!.evidence).toEqual(["src/a.ts:3"]);
 });

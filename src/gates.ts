@@ -1,6 +1,7 @@
 // Section 1a and the appendix "Gates (1a)" table. Gates are not scored: each returns
 // pass / trip / unverifiable with evidence. Section 2: "if a condition cannot be verified,
 // route to a human, do not block."
+import { posix } from "node:path";
 import { ref, type Diff, type Line } from "./diff";
 import { Git } from "./git";
 import { POLICY } from "./policy";
@@ -183,7 +184,91 @@ export function moveText(moves: Move[]): string {
     .join("; ");
 }
 
+// ── Public modules ───────────────────────────────────────────────────────────
+// A module is reachable from outside the repo when it is a schema file, or it is in a published
+// package (package.json without "private": true) and is that package's entry ("exports", "main",
+// "module", "types"), a file an entry re-exports, or any file when the package has no "exports" map
+// (then every path can be deep-imported). Everything else is internal to the repo.
+
+const BUILD_DIR = /^(dist|build|lib|out|esm|cjs)\//;
+const stem = (p: string) => posix.normalize(p).replace(/^\.\//, "").replace(/(\.d)?\.[cm]?[jt]sx?$/, "");
+const RE_EXPORT = /export\s+(?:type\s+)?(?:\*(?:\s+as\s+\w+)?|\{[^}]*\})\s+from\s+["'](\.[^"']+)["']/g;
+
+/** Strings anywhere in an "exports" value (conditions and subpaths flattened). */
+function targets(v: unknown): string[] {
+  if (typeof v === "string") return [v];
+  if (Array.isArray(v)) return v.flatMap(targets);
+  if (v && typeof v === "object") return Object.values(v).flatMap(targets);
+  return [];
+}
+
+/** public: true / false, or null when it cannot be read (no repo, an unparsable manifest, no manifest at all). */
+export type Reachability = { public: boolean | null; why: string };
+
+export function publicModules(diff: Diff, rev: string): (path: string) => Reachability {
+  const git = diff.repo ? new Git(diff.repo) : null;
+  const files = git ? git.listFiles(rev) : [];
+  const fileSet = new Set(files);
+  const manifests = new Map<string, any>();
+  for (const m of files.filter((f) => /(^|\/)package\.json$/.test(f) && !f.includes("node_modules/"))) {
+    try {
+      manifests.set(posix.dirname(m), JSON.parse(git!.show(rev, m) ?? "{}"));
+    } catch {
+      manifests.set(posix.dirname(m), null);
+    }
+  }
+  const ownerOf = (path: string) => {
+    for (let d = posix.dirname(path); ; d = posix.dirname(d)) {
+      if (manifests.has(d)) return { dir: d, pkg: manifests.get(d) };
+      if (d === "." || d === "/") return null;
+    }
+  };
+  const entries = new Map<string, { stems: Set<string>; patterns: RegExp[] }>();
+  /** Entry stems of a published package with an "exports" map, plus what they re-export (stems relative to the repo).
+   * Wildcard subpaths ("./*": "./src/*.ts") become patterns. */
+  const entriesOf = (dir: string, pkg: any) => {
+    if (entries.has(dir)) return entries.get(dir)!;
+    const rel = [...targets(pkg.exports), pkg.main, pkg.module, pkg.types, pkg.typings].filter((t): t is string => typeof t === "string");
+    // A build output path stands for its source: dist/x.js <- src/x.ts.
+    const all = rel.flatMap((t) => [stem(t), stem(t).replace(BUILD_DIR, "src/")]).map((s) => posix.join(dir, s));
+    const stems = new Set(all.filter((s) => !s.includes("*")));
+    const patterns = all
+      .filter((s) => s.includes("*"))
+      .map((s) => new RegExp(`^${s.split("*").map((x) => x.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join(".+")}$`));
+    const queue = [...stems];
+    while (queue.length) {
+      const s = queue.shift()!;
+      const file = [".ts", ".tsx", ".js", ".mjs", "/index.ts", "/index.js"].map((e) => s + e).find((f) => fileSet.has(f));
+      for (const m of (file ? git!.show(rev, file) ?? "" : "").matchAll(RE_EXPORT)) {
+        const next = stem(posix.join(posix.dirname(file!), m[1]));
+        if (!stems.has(next)) stems.add(next), queue.push(next);
+      }
+    }
+    entries.set(dir, { stems, patterns });
+    return entries.get(dir)!;
+  };
+  return (path) => {
+    if (SCHEMA_FILE.test(path)) return { public: true, why: "schema file" };
+    if (!git) return { public: null, why: "no repo to read package manifests from" };
+    if (!manifests.size) return { public: null, why: "the repo has no package.json, so whether it is published is unknown" };
+    const owner = ownerOf(path);
+    // Other packages exist, so a module outside all of them is not part of any published package.
+    if (!owner) return { public: false, why: "no package.json owns it" };
+    if (owner.pkg === null) return { public: null, why: `${owner.dir}/package.json does not parse` };
+    const name = owner.pkg.name ?? `${owner.dir}/package.json`;
+    if (owner.pkg.private === true) return { public: false, why: `${name} is private` };
+    if (owner.pkg.exports === undefined) return { public: true, why: `${name} is published with no "exports" map, so every file can be imported` };
+    const s = stem(path);
+    const e = entriesOf(owner.dir, owner.pkg);
+    return [s, s.replace(/\/index$/, "")].some((x) => e.stems.has(x) || e.patterns.some((p) => p.test(x)))
+      ? { public: true, why: `entry of published package ${name}` }
+      : { public: false, why: `not an entry of published package ${name}` };
+  };
+}
+
 // ── Gate 2: API contract ─────────────────────────────────────────────────────
+
+export const INTERNAL_SIGNATURES = "internal signature changes";
 
 const SCHEMA_FILE = /(schema|catalog|openapi|swagger)[^/]*$|\.(proto|graphql|avsc)$/i;
 const EXPORT_DECL = /^\s*export\s+(?:default\s+)?(?:declare\s+)?(?:async\s+)?(function\*?|const|let|var|class|interface|type|enum)\s+([A-Za-z_$][\w$]*)/;
@@ -218,12 +303,19 @@ function apiContract(diff: Diff): GateResult {
   const breaking: string[] = [];
   const additive: string[] = [];
   const moved: Move[] = [];
+  const internal: { at: string; why: string }[] = [];
+  const unknown: { at: string; why: string }[] = [];
   const moves = moveIndex(diff);
-  /** A removed route or export is breaking unless it moved. */
+  const reachable = publicModules(diff, diff.base);
+  /** A removed route is breaking unless it moved; a removed export also only when its module is public. */
   const broken = (l: Line, kind: Move["kind"]) => {
     const m = moves.find(l, kind);
-    if (m) moved.push(m);
-    else breaking.push(ref(l, diff.base));
+    if (m) return void moved.push(m);
+    const pub: Reachability = kind === "export" ? reachable(l.file) : { public: true, why: "" };
+    const entry = { at: ref(l, diff.base), why: `${l.file}: ${pub.why}` };
+    if (pub.public === true) breaking.push(entry.at);
+    else if (pub.public === false) internal.push(entry);
+    else unknown.push(entry);
   };
   for (const f of diff.files) {
     const addedSigs = new Map<string, Line[]>();
@@ -273,7 +365,24 @@ function apiContract(diff: Diff): GateResult {
       note: breaking.length ? "removed or changed API surface" : "no route, schema or exported signature removed or changed",
     },
   ];
+  if (unknown.length)
+    checks.push({
+      name: "export reachability",
+      status: "unverifiable",
+      source: "assumed",
+      evidence: unknown.map((i) => i.at),
+      note: `removed or changed exports whose reach outside the repo cannot be read (${[...new Set(unknown.map((i) => i.why))].join("; ")})`,
+    });
   if (moved.length) checks.push(movedCheck(moved, "routes and exports"));
+  if (internal.length)
+    checks.push({
+      name: INTERNAL_SIGNATURES,
+      status: "pass",
+      // Whether a module is published is read from package.json: declared config.
+      source: "declared",
+      evidence: internal.map((i) => i.at),
+      note: `removed or changed exports in modules not reachable from outside the repo (${[...new Set(internal.map((i) => i.why))].join("; ")}): an internal refactor, not a contract break; lowers confidence one notch`,
+    });
   if (surface.length)
     checks.push({
       name: "additive API surface",

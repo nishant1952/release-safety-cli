@@ -17,7 +17,8 @@ export interface PolicyResult {
   why: string[];
 }
 
-export function applyPolicy(signals: Signal[], measuredLevel: Level, disagreements: string[]): PolicyResult {
+/** notches: measured facts that each lower the reported confidence one step but never move the mode. */
+export function applyPolicy(signals: Signal[], measuredLevel: Level, disagreements: string[], notches: string[] = []): PolicyResult {
   const damage: Record<string, string> = POLICY.damage.assume;
   const reversibility: Record<string, string> = POLICY.reversibility.assume;
   const why: string[] = [];
@@ -34,6 +35,10 @@ export function applyPolicy(signals: Signal[], measuredLevel: Level, disagreemen
   for (const s of out.filter((s) => missing(s) && POLICY.probability.signals.includes(s.name))) {
     level = lowerBy(level, POLICY.probability.lowerConfidenceSteps);
     why.push(`${s.name}: ${s.value} (assumed), lowers confidence, does not raise risk (W 2)`);
+  }
+  for (const n of notches) {
+    level = lowerBy(level, 1);
+    why.push(`${n}, lowers confidence one notch`);
   }
   for (const d of disagreements) {
     level = lowerBy(level, POLICY.disagreement.lowerConfidenceSteps);
