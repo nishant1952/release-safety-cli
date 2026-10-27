@@ -1,7 +1,8 @@
 // Three columns: the 21 PRs, the selected brief, the owner panel. Everything a viewer enters lives in this
 // component's state and is gone on reload; the model key is sent with a run and kept nowhere else.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { getPr, listPrs, runPr, type Overrides, type PrDetail, type PrSummary, type Progress, type RunResult } from "./api";
+import { DiffView, History, type Compare } from "./DiffView";
 import { Markdown } from "./Markdown";
 
 interface Panel {
@@ -74,6 +75,7 @@ export function App() {
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [compare, setCompare] = useState<Compare>("previous");
 
   useEffect(() => {
     listPrs()
@@ -91,6 +93,10 @@ export function App() {
   const shown = shownRun?.result ?? detail?.baseline ?? null;
   const update = (s: Partial<Session>) => setSessions((all) => ({ ...all, [selected]: { ...session, ...s } }));
   const setPanel = (p: Partial<Panel>) => update({ panel: { ...session.panel, ...p } });
+  // "Before" is the run before the one shown (the baseline for the first run), or the baseline when asked.
+  const at = shownRun ? session.runs.indexOf(shownRun) : -1;
+  const previous = at > 0 ? session.runs[at - 1] : null;
+  const before = compare === "baseline" || !previous ? null : previous;
 
   async function run() {
     if (!detail || running) return;
@@ -123,6 +129,15 @@ export function App() {
         {shown ? (
           <>
             <HeaderCard result={shown} label={shownRun ? `run ${shownRun.id}, ${shownRun.at}` : "baked baseline"} />
+            {shownRun && detail && (
+              <DiffView
+                before={before?.result ?? detail.baseline}
+                after={shownRun.result}
+                beforeLabel={before ? `run ${before.id}` : compare === "previous" ? "the baked baseline (no earlier run)" : "the baked baseline"}
+                compare={compare}
+                setCompare={setCompare}
+              />
+            )}
             <Markdown text={shown.markdown} />
           </>
         ) : (
@@ -141,6 +156,14 @@ export function App() {
           progress={progress}
           onRun={run}
           onReset={() => update({ panel: EMPTY })}
+          history={
+            <History
+              runs={session.runs}
+              shown={session.shown}
+              onShow={(id) => update({ shown: id })}
+              onRestore={(r) => update({ shown: r.id, panel: panelOf(r.result.overrides) })}
+            />
+          }
         />
       )}
     </div>
@@ -215,9 +238,10 @@ interface PanelProps {
   progress: string[];
   onRun: () => void;
   onReset: () => void;
+  history: ReactNode;
 }
 
-function OwnerPanel({ detail, shown, panel, setPanel, modelKey, setModelKey, running, progress, onRun, onReset }: PanelProps) {
+function OwnerPanel({ detail, shown, panel, setPanel, modelKey, setModelKey, running, progress, onRun, onReset, history }: PanelProps) {
   const baseline = detail.baseline.brief.signals;
   const current = useMemo(() => new Map(shown.brief.signals.map((s) => [s.name, s])), [shown]);
   const hasKey = modelKey.trim() !== "";
@@ -310,6 +334,7 @@ function OwnerPanel({ detail, shown, panel, setPanel, modelKey, setModelKey, run
           {progress.map((p, i) => <li key={i}>{p}</li>)}
         </ol>
       )}
+      {history}
     </aside>
   );
 }
