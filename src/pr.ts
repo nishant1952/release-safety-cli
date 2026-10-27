@@ -20,11 +20,11 @@ const DATA_DIR = new URL("../data", import.meta.url).pathname;
 
 const natural = (a: string, b: string) => a.localeCompare(b, "en", { numeric: true });
 
-/** Every PR export whose REFS.txt matches the range, in natural order (pr2 before pr10). */
-export function findPrFiles(base: string, head: string): string[] {
+/** Every PR export under dir whose REFS.txt matches the range, in natural order (pr2 before pr10). */
+export function findPrFiles(base: string, head: string, dir = DATA_DIR): string[] {
   let dirs: string[];
   try {
-    dirs = readdirSync(DATA_DIR).sort(natural);
+    dirs = readdirSync(dir).sort(natural);
   } catch {
     return [];
   }
@@ -32,13 +32,13 @@ export function findPrFiles(base: string, head: string): string[] {
   for (const d of dirs) {
     let refs: string;
     try {
-      refs = readFileSync(join(DATA_DIR, d, "REFS.txt"), "utf8");
+      refs = readFileSync(join(dir, d, "REFS.txt"), "utf8");
     } catch {
       continue;
     }
     const b = refs.match(/base:\s*([0-9a-f]+)/)?.[1];
     const h = refs.match(/head:\s*([0-9a-f]+)/)?.[1];
-    if (b && h && base.startsWith(b) && head.startsWith(h)) found.push(join(DATA_DIR, d, "pr.json"));
+    if (b && h && base.startsWith(b) && head.startsWith(h)) found.push(join(dir, d, "pr.json"));
   }
   return found;
 }

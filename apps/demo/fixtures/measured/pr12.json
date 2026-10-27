@@ -1,0 +1,280 @@
+{
+ "repo": "apps/demo/fixtures/arcade.git",
+ "base": "38f719240dded1ed2b5b88f442866cb36dff1929",
+ "head": "a029d2f2aadfb56f66aeffcabfaedb21847f605d",
+ "title": "Fix EC2 shallow fetch non-fast-forward on deploy",
+ "titleSource": "PR title, declared",
+ "files": [
+  {
+   "path": ".github/workflows/deploy.yml",
+   "status": "modified",
+   "added": 1,
+   "removed": 1
+  }
+ ],
+ "pr": {
+  "file": "apps/demo/fixtures/prs/pr12/pr.json",
+  "title": "Fix EC2 shallow fetch non-fast-forward on deploy",
+  "body": "## Summary\n- Deploy failed on merge of #11 because EC2 `git fetch --depth=1` rejected updating `origin/main` as non-fast-forward.\n- Prefix the refspec with `+` so the shallow remote-tracking ref can move to the new tip.\n\n## Test plan\n- [ ] Re-run Deploy to EC2 on main (or merge this and confirm the workflow succeeds past fetch/checkout)\n- [ ] Confirm prod health check still passes after deploy-prod.sh\n\n\nMade with [Cursor](https://cursor.com)",
+  "author": {
+   "login": "kalyan-fireweave",
+   "is_bot": false
+  },
+  "checks": [
+   {
+    "name": "FireWeave — rollout readiness",
+    "conclusion": "SUCCESS"
+   }
+  ],
+  "required": {
+   "checks": [],
+   "source": "GET repos/fireweave-HQ-Demo/arcade/branches/main/protection: gh: Not Found (HTTP 404); GET repos/fireweave-HQ-Demo/arcade/branches/main: protected=false, 0 required status check(s); GET repos/fireweave-HQ-Demo/arcade/rules/branches/main: 0 required status check(s) in rules"
+  },
+  "reviews": 0
+ },
+ "prFiles": [
+  "apps/demo/fixtures/prs/pr12/pr.json"
+ ],
+ "gates": [
+  {
+   "gate": 1,
+   "name": "Table stakes",
+   "status": "pass",
+   "route": "none",
+   "checks": [
+    {
+     "name": "secrets",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no match in 1 added lines"
+    },
+    {
+     "name": "PII",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no match in 1 added lines"
+    },
+    {
+     "name": "hardcoded environment values",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no match in 0 added code lines (docs, config and comments skipped)"
+    },
+    {
+     "name": "required CI checks",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no required checks configured on the base branch when the PR was exported (GET repos/fireweave-HQ-Demo/arcade/branches/main/protection: gh: Not Found (HTTP 404); GET repos/fireweave-HQ-Demo/arcade/branches/main: protected=false, 0 required status check(s); GET repos/fireweave-HQ-Demo/arcade/rules/branches/main: 0 required status check(s) in rules), so the gate cannot block on CI"
+    }
+   ]
+  },
+  {
+   "gate": 2,
+   "name": "API contract",
+   "status": "pass",
+   "route": "none",
+   "checks": [
+    {
+     "name": "breaking change to route, schema or public signature",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no route, schema or exported signature removed or changed"
+    }
+   ]
+  },
+  {
+   "gate": 3,
+   "name": "Destructive schema or data change",
+   "status": "pass",
+   "route": "none",
+   "checks": [
+    {
+     "name": "destructive schema change or mutation of existing data",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no schema drop/alter and no unscoped or migration UPDATE/DELETE/ORM bulk write in 1 added lines"
+    }
+   ]
+  }
+ ],
+ "early": [
+  {
+   "name": "Reversible or irreversible",
+   "value": "reversible",
+   "source": "measured",
+   "evidence": [],
+   "note": "no persisted write, outbound side effect, queue publish or external API client in 1 added lines"
+  },
+  {
+   "name": "Feature flag",
+   "value": "none",
+   "source": "measured",
+   "evidence": [],
+   "note": "no flag call (getBooleanValue) or control point anchor in the changed files"
+  },
+  {
+   "name": "Path",
+   "value": "not a code path",
+   "source": "measured",
+   "evidence": [],
+   "note": "every changed file is a non-code file: .github/workflows/deploy.yml (workflow)"
+  },
+  {
+   "name": "Reach",
+   "value": "none",
+   "source": "measured",
+   "evidence": [],
+   "note": "every changed file is a non-code file, so no system is reached: .github/workflows/deploy.yml (workflow)"
+  },
+  {
+   "name": "Failure mode",
+   "value": "infra",
+   "source": "measured",
+   "evidence": [
+    ".github/workflows/deploy.yml:63"
+   ],
+   "note": "rules on touched paths: .github/workflows/deploy.yml -> infra. Matched on file path; each evidence line is the file's first change"
+  }
+ ],
+ "late": [
+  {
+   "name": "Detection apparatus",
+   "value": "fast",
+   "source": "declared",
+   "evidence": [
+    "docker/compose.prod.yml:49",
+    "scripts/deploy-prod.sh:74"
+   ],
+   "note": "infra: deploy health check. no metric or log call on changed lines"
+  },
+  {
+   "name": "Time to revert",
+   "value": "full build and deploy",
+   "source": "assumed",
+   "evidence": [
+    ".github/workflows/deploy.yml:15"
+   ],
+   "note": "no one-click rollback in 1 workflow file(s); CI run history is not an input, so pipeline duration is not measured. Declared job timeout: 5 min (a bound, not a measurement). Unknown rounds to slow: a full build and deploy to revert (W 2)"
+  },
+  {
+   "name": "History",
+   "value": "history unavailable",
+   "source": "assumed",
+   "evidence": [
+    "commit 206fa14",
+    "commit bd5cf7c",
+    "commit 0fb48b9"
+   ],
+   "note": "measured: 11 earlier commits touch the changed files, 0 reverts, 3 fix commits; repo history before base spans 4h (2026-10-06 to 2026-10-06). Too thin to read as a record (thin: < 5 commits or < 7 days)"
+  },
+  {
+   "name": "Provenance",
+   "value": "agent-assisted (Cursor)",
+   "source": "measured",
+   "evidence": [
+    "commit a029d2f"
+   ],
+   "note": "commit trailers: Cursor <cursoragent@cursor.com>; PR description: \"Made with Cursor\"; author(s) in git: Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>. Whether a human was in the loop is not verifiable from the input"
+  },
+  {
+   "name": "Confidence: test coverage",
+   "value": "no code files changed",
+   "source": "measured",
+   "evidence": [],
+   "note": "tests that import a changed file; 0 covered by tests that existed before the change. Uncovered: none"
+  },
+  {
+   "name": "Confidence: familiarity",
+   "value": "single-author repo, people part dropped",
+   "source": "measured",
+   "evidence": [],
+   "note": "repo authors before base: Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>; per file: .github/workflows/deploy.yml (1). Reviewer familiarity needs review data: the PR export lists 0 reviews"
+  },
+  {
+   "name": "Confidence: review depth",
+   "value": "0 reviews",
+   "source": "declared",
+   "evidence": [],
+   "note": "the PR export lists 0 reviews"
+  }
+ ],
+ "flag": {
+  "flags": [],
+  "lines": [
+   [
+    ".github/workflows/deploy.yml:63",
+    "outside"
+   ]
+  ],
+  "byCallSite": []
+ },
+ "confidence": {
+  "measuredLevel": "high",
+  "why": [
+   "single-author repo: familiarity dropped (W appendix)"
+  ],
+  "disagreements": []
+ },
+ "detectionDisagreements": [],
+ "detectors": [
+  {
+   "mode": "infra",
+   "detectors": [
+    {
+     "what": "deploy health check",
+     "at": "docker/compose.prod.yml:49",
+     "source": "declared"
+    },
+    {
+     "what": "deploy health check",
+     "at": "scripts/deploy-prod.sh:74",
+     "source": "declared"
+    }
+   ],
+   "absenceMeasured": false
+  }
+ ],
+ "failure": {
+  "perFile": [
+   {
+    "path": ".github/workflows/deploy.yml",
+    "mode": "infra",
+    "at": ".github/workflows/deploy.yml:63"
+   }
+  ],
+  "modes": [
+   "infra"
+  ]
+ },
+ "commitMessage": "Force shallow fetch refspec on EC2 deploy.\n\nDepth-1 origin/main updates can reject as non-fast-forward after merges; allow the forced ref update so checkout can proceed.\n\nCo-authored-by: Cursor <cursoragent@cursor.com>\n\n",
+ "diffText": "diff --git a/.github/workflows/deploy.yml b/.github/workflows/deploy.yml\nindex 493496b..432b5b6 100644\n--- a/.github/workflows/deploy.yml\n+++ b/.github/workflows/deploy.yml\n@@ -60,7 +60,7 @@ jobs:\n             cd \"$APP_DIR\"\n             git remote set-url origin https://github.com/fireweave-HQ-Demo/arcade.git\n             # Explicit refspec so shallow clones create origin/<branch> (needed when switching main ↔ fw-base).\n-            git fetch --depth=1 origin \"refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}\"\n+            git fetch --depth=1 origin \"+refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}\"\n             git checkout -B \"$BRANCH\" \"origin/${BRANCH}\"\n             git reset --hard \"origin/${BRANCH}\"\n             echo \"deploying branch=$BRANCH sha=$(git rev-parse --short HEAD)\"\n",
+ "atBase": null,
+ "citation": {
+  "pathFiles": [],
+  "entries": [
+   "apps/api/src/main.ts",
+   "apps/web/src/main.tsx"
+  ],
+  "handlers": [],
+  "changed": [
+   ".github/workflows/deploy.yml:63",
+   ".github/workflows/deploy.yml@38f7192:63"
+  ],
+  "added": [
+   "            git fetch --depth=1 origin \"+refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}\""
+  ],
+  "removed": [
+   "            git fetch --depth=1 origin \"refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}\""
+  ],
+  "secretAdded": false
+ },
+ "secretHit": false,
+ "owner": "Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>",
+ "codeowners": false
+}

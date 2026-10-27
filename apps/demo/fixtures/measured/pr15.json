@@ -1,0 +1,4317 @@
+{
+ "repo": "apps/demo/fixtures/arcade.git",
+ "base": "09422bc19b248f67c42ca28757dbca2292e7ba0b",
+ "head": "33a285e359945872a7fd451194669849dcce6ace",
+ "title": "Add match history and step-through replay",
+ "titleSource": "PR title, declared",
+ "files": [
+  {
+   "path": "apps/api/src/application/games.ts",
+   "status": "modified",
+   "added": 12,
+   "removed": 0
+  },
+  {
+   "path": "apps/api/src/application/history.ts",
+   "status": "added",
+   "added": 170,
+   "removed": 0
+  },
+  {
+   "path": "apps/api/src/bootstrap.ts",
+   "status": "modified",
+   "added": 2,
+   "removed": 0
+  },
+  {
+   "path": "apps/api/src/domain/ports.ts",
+   "status": "modified",
+   "added": 19,
+   "removed": 0
+  },
+  {
+   "path": "apps/api/src/fireweave/fw-providers.ts",
+   "status": "modified",
+   "added": 1,
+   "removed": 1
+  },
+  {
+   "path": "apps/api/src/fireweave/fw-tracker.ts",
+   "status": "modified",
+   "added": 3,
+   "removed": 1
+  },
+  {
+   "path": "apps/api/src/infrastructure/db/client.ts",
+   "status": "modified",
+   "added": 3,
+   "removed": 0
+  },
+  {
+   "path": "apps/api/src/infrastructure/db/match-repo.ts",
+   "status": "modified",
+   "added": 60,
+   "removed": 3
+  },
+  {
+   "path": "apps/api/src/infrastructure/observability/actions-catalog.ts",
+   "status": "modified",
+   "added": 29,
+   "removed": 0
+  },
+  {
+   "path": "apps/api/src/infrastructure/observability/metrics-catalog.ts",
+   "status": "modified",
+   "added": 70,
+   "removed": 0
+  },
+  {
+   "path": "apps/api/src/interfaces/http/router.ts",
+   "status": "modified",
+   "added": 17,
+   "removed": 0
+  },
+  {
+   "path": "apps/web/src/App.tsx",
+   "status": "modified",
+   "added": 27,
+   "removed": 0
+  },
+  {
+   "path": "apps/web/src/History.tsx",
+   "status": "added",
+   "added": 203,
+   "removed": 0
+  },
+  {
+   "path": "apps/web/src/api.ts",
+   "status": "modified",
+   "added": 18,
+   "removed": 0
+  },
+  {
+   "path": "apps/web/src/fireweave/fw-providers.ts",
+   "status": "modified",
+   "added": 1,
+   "removed": 1
+  },
+  {
+   "path": "apps/web/src/fireweave/fw-tracker.ts",
+   "status": "modified",
+   "added": 1,
+   "removed": 0
+  },
+  {
+   "path": "apps/web/src/styles.css",
+   "status": "modified",
+   "added": 26,
+   "removed": 0
+  },
+  {
+   "path": "docker/compose.dev.yml",
+   "status": "modified",
+   "added": 3,
+   "removed": 0
+  },
+  {
+   "path": "scripts/dev.sh",
+   "status": "modified",
+   "added": 1,
+   "removed": 0
+  }
+ ],
+ "pr": {
+  "file": "apps/demo/fixtures/prs/pr15/pr.json",
+  "title": "Add match history and step-through replay",
+  "body": "## Summary\n- Adds a flag-gated history page so a player can list finished matches and step through each one on the existing board.\n- Stores a board snapshot on each ply while `match-replay` is on, and returns 404/409 when a replay is missing, still in progress, or has an incomplete log.\n- Emits API and web success, error, and duration metrics for history loads and replays.\n\n## Test plan\n- [ ] With `NODE_ENV=development`, sign in, finish a game, and open History.\n- [ ] Step previous and next through the replay and confirm the last frame shows the result.\n- [ ] Open a match played before the flag was on and confirm the incomplete-replay error.\n- [ ] Confirm the history link is hidden when `match-replay` is off.\n\n\nMade with [Cursor](https://cursor.com)",
+  "author": {
+   "login": "kalyan-fireweave",
+   "is_bot": false
+  },
+  "checks": [
+   {
+    "name": "FireWeave — flag contract",
+    "conclusion": "FAILURE"
+   },
+   {
+    "name": "FireWeave — rollout readiness",
+    "conclusion": "NEUTRAL"
+   }
+  ],
+  "required": {
+   "checks": [],
+   "source": "GET repos/fireweave-HQ-Demo/arcade/branches/main/protection: gh: Not Found (HTTP 404); GET repos/fireweave-HQ-Demo/arcade/branches/main: protected=false, 0 required status check(s); GET repos/fireweave-HQ-Demo/arcade/rules/branches/main: 0 required status check(s) in rules"
+  },
+  "reviews": 0
+ },
+ "prFiles": [
+  "apps/demo/fixtures/prs/pr15/pr.json"
+ ],
+ "gates": [
+  {
+   "gate": 1,
+   "name": "Table stakes",
+   "status": "pass",
+   "route": "none",
+   "checks": [
+    {
+     "name": "secrets",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no match in 666 added lines"
+    },
+    {
+     "name": "PII",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no match in 666 added lines"
+    },
+    {
+     "name": "hardcoded environment values",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no match in 629 added code lines (docs, config and comments skipped)"
+    },
+    {
+     "name": "required CI checks",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no required checks configured on the base branch when the PR was exported (GET repos/fireweave-HQ-Demo/arcade/branches/main/protection: gh: Not Found (HTTP 404); GET repos/fireweave-HQ-Demo/arcade/branches/main: protected=false, 0 required status check(s); GET repos/fireweave-HQ-Demo/arcade/rules/branches/main: 0 required status check(s) in rules), so the gate cannot block on CI"
+    },
+    {
+     "name": "advisory CI checks",
+     "status": "pass",
+     "source": "declared",
+     "evidence": [],
+     "note": "red advisory check, no required checks on the repo: FireWeave — flag contract (FAILURE). Not required, so it cannot block; each lowers confidence one notch"
+    }
+   ]
+  },
+  {
+   "gate": 2,
+   "name": "API contract",
+   "status": "pass",
+   "route": "none",
+   "checks": [
+    {
+     "name": "breaking change to route, schema or public signature",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no route, schema or exported signature removed or changed"
+    },
+    {
+     "name": "additive API surface",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [
+      "apps/api/src/application/history.ts:14",
+      "apps/api/src/application/history.ts:22",
+      "apps/api/src/application/history.ts:28",
+      "apps/api/src/application/history.ts:37",
+      "apps/api/src/application/history.ts:170",
+      "apps/api/src/domain/ports.ts:44",
+      "apps/api/src/domain/ports.ts:52",
+      "apps/api/src/infrastructure/observability/actions-catalog.ts:209",
+      "apps/api/src/infrastructure/observability/actions-catalog.ts:221",
+      "apps/api/src/infrastructure/observability/actions-catalog.ts:226",
+      "apps/api/src/infrastructure/observability/metrics-catalog.ts:170",
+      "apps/api/src/infrastructure/observability/metrics-catalog.ts:177",
+      "apps/api/src/infrastructure/observability/metrics-catalog.ts:184",
+      "apps/api/src/infrastructure/observability/metrics-catalog.ts:191",
+      "apps/api/src/infrastructure/observability/metrics-catalog.ts:198",
+      "apps/api/src/infrastructure/observability/metrics-catalog.ts:205",
+      "apps/api/src/infrastructure/observability/metrics-catalog.ts:212",
+      "apps/api/src/infrastructure/observability/metrics-catalog.ts:219",
+      "apps/api/src/infrastructure/observability/metrics-catalog.ts:226",
+      "apps/api/src/infrastructure/observability/metrics-catalog.ts:233",
+      "apps/api/src/interfaces/http/router.ts:199",
+      "apps/web/src/App.tsx:628",
+      "apps/web/src/App.tsx:629",
+      "apps/web/src/History.tsx:23",
+      "apps/web/src/History.tsx:82",
+      "apps/web/src/api.ts:109",
+      "apps/web/src/api.ts:116"
+     ],
+     "note": "added routes, schema entries or exports only"
+    }
+   ]
+  },
+  {
+   "gate": 3,
+   "name": "Destructive schema or data change",
+   "status": "pass",
+   "route": "none",
+   "checks": [
+    {
+     "name": "destructive schema change or mutation of existing data",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no schema drop/alter and no unscoped or migration UPDATE/DELETE/ORM bulk write in 666 added lines"
+    },
+    {
+     "name": "additive schema change",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [
+      "apps/api/src/infrastructure/db/client.ts:69",
+      "apps/api/src/infrastructure/db/client.ts:73"
+     ],
+     "note": "additive DDL only"
+    }
+   ]
+  }
+ ],
+ "early": [
+  {
+   "name": "Reversible or irreversible",
+   "value": "reversible",
+   "source": "measured",
+   "evidence": [],
+   "note": "no persisted write, outbound side effect, queue publish or external API client in 666 added lines"
+  },
+  {
+   "name": "Feature flag",
+   "value": "partial",
+   "source": "measured",
+   "evidence": [
+    "apps/api/src/application/games.ts:8",
+    "apps/api/src/application/games.ts:63",
+    "apps/api/src/application/games.ts:64",
+    "apps/api/src/application/games.ts:126",
+    "apps/api/src/application/games.ts:127",
+    "apps/api/src/application/history.ts:8",
+    "apps/api/src/application/history.ts:46",
+    "apps/api/src/application/history.ts:47",
+    "apps/api/src/application/history.ts:88",
+    "apps/api/src/application/history.ts:89",
+    "apps/api/src/fireweave/fw-providers.ts:204",
+    "apps/web/src/App.tsx:747",
+    "apps/web/src/App.tsx:748",
+    "apps/web/src/App.tsx:752",
+    "apps/web/src/History.tsx:4",
+    "apps/web/src/History.tsx:24",
+    "apps/web/src/History.tsx:25",
+    "apps/web/src/History.tsx:30",
+    "apps/web/src/History.tsx:48",
+    "apps/web/src/History.tsx:50",
+    "apps/web/src/History.tsx:83",
+    "apps/web/src/History.tsx:84",
+    "apps/web/src/History.tsx:92",
+    "apps/web/src/History.tsx:131",
+    "apps/web/src/History.tsx:133",
+    "apps/web/src/fireweave/fw-providers.ts:275",
+    "apps/api/src/application/games.ts:65",
+    "apps/api/src/application/games.ts:83",
+    "apps/api/src/application/games.ts:128",
+    "apps/api/src/application/games.ts:165",
+    "apps/api/src/application/games.ts:190",
+    "apps/api/src/application/history.ts:1",
+    "apps/api/src/application/history.ts:10",
+    "apps/api/src/application/history.ts:14",
+    "apps/api/src/application/history.ts:22",
+    "apps/api/src/application/history.ts:28",
+    "apps/api/src/application/history.ts:37",
+    "apps/api/src/application/history.ts:48",
+    "apps/api/src/application/history.ts:69",
+    "apps/api/src/application/history.ts:87",
+    "apps/api/src/application/history.ts:90",
+    "apps/api/src/application/history.ts:170",
+    "apps/api/src/bootstrap.ts:5",
+    "apps/api/src/bootstrap.ts:33",
+    "apps/api/src/domain/ports.ts:41",
+    "apps/api/src/domain/ports.ts:44",
+    "apps/api/src/domain/ports.ts:52",
+    "apps/api/src/domain/ports.ts:82",
+    "apps/api/src/fireweave/fw-tracker.ts:19",
+    "apps/api/src/infrastructure/db/client.ts:69",
+    "apps/api/src/infrastructure/db/client.ts:73",
+    "apps/api/src/infrastructure/db/match-repo.ts:2",
+    "apps/api/src/infrastructure/db/match-repo.ts:10",
+    "apps/api/src/infrastructure/db/match-repo.ts:68",
+    "apps/api/src/infrastructure/db/match-repo.ts:78",
+    "apps/api/src/infrastructure/db/match-repo.ts:84",
+    "apps/api/src/infrastructure/db/match-repo.ts:101",
+    "apps/api/src/infrastructure/db/match-repo.ts:111",
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:205",
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:214",
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:217",
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:226",
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:231",
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:170",
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:177",
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:184",
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:191",
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:198",
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:205",
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:212",
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:219",
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:226",
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:233",
+    "apps/api/src/interfaces/http/router.ts:7",
+    "apps/api/src/interfaces/http/router.ts:42",
+    "apps/api/src/interfaces/http/router.ts:199",
+    "apps/api/src/interfaces/http/router.ts:206",
+    "apps/web/src/App.tsx:18",
+    "apps/web/src/App.tsx:28",
+    "apps/web/src/App.tsx:548",
+    "apps/web/src/App.tsx:599",
+    "apps/web/src/App.tsx:628",
+    "apps/web/src/App.tsx:648",
+    "apps/web/src/App.tsx:703",
+    "apps/web/src/App.tsx:792",
+    "apps/web/src/History.tsx:1",
+    "apps/web/src/History.tsx:23",
+    "apps/web/src/History.tsx:26",
+    "apps/web/src/History.tsx:82",
+    "apps/web/src/History.tsx:85",
+    "apps/web/src/api.ts:109",
+    "apps/web/src/api.ts:148",
+    "apps/web/src/fireweave/fw-tracker.ts:22",
+    "apps/web/src/styles.css:824",
+    "apps/web/src/styles.css:872",
+    "docker/compose.dev.yml:39",
+    "scripts/dev.sh:25"
+   ],
+   "note": "flag `match-replay` (default false), `match-replay` (default false), `match-replay` (default false), `match-replay` (default false), `profile-avatar-menu` (default false), `header-arrangement` (default false), `match-replay` (default false), `match-replay` (default false), `match-replay` (default false): 144 added lines inside the flag, 26 control lines, 362 outside it (blank, comment, bracket-only, docs and editor config lines are not classed) (in apps/api/src/application/games.ts, apps/api/src/application/history.ts, apps/api/src/bootstrap.ts, apps/api/src/domain/ports.ts, apps/api/src/fireweave/fw-tracker.ts, apps/api/src/infrastructure/db/client.ts, apps/api/src/infrastructure/db/match-repo.ts, apps/api/src/infrastructure/observability/actions-catalog.ts, apps/api/src/infrastructure/observability/metrics-catalog.ts, apps/api/src/interfaces/http/router.ts, apps/web/src/App.tsx, apps/web/src/History.tsx, apps/web/src/api.ts, apps/web/src/fireweave/fw-tracker.ts, apps/web/src/styles.css, docker/compose.dev.yml, scripts/dev.sh). Classed by call site: fw at apps/api/src/application/games.ts:8 (2 reference(s), all on flag reads, so control); fw at apps/api/src/application/history.ts:8 (2 reference(s), all on flag reads, so control); fw at apps/web/src/History.tsx:4 (2 reference(s), all on flag reads, so control); GameBoard at apps/web/src/History.tsx:5 (1 reference(s), all inside the flag, so inside); GameMark at apps/web/src/History.tsx:6 (2 reference(s), all inside the flag, so inside); OutcomeFX at apps/web/src/History.tsx:7 (1 reference(s), all inside the flag, so inside); record at apps/web/src/History.tsx:8 (6 reference(s), all inside the flag, so inside); resultLabel at apps/web/src/History.tsx:10 (2 reference(s), all inside the flag, so inside); actorLabel at apps/web/src/History.tsx:17 (1 reference(s), all inside the flag, so inside). Whether the flag exists in production and both states are tested is not checked"
+  },
+  {
+   "name": "Path",
+   "value": "live",
+   "source": "declared",
+   "evidence": [
+    "apps/api/src/bootstrap.ts:2",
+    "apps/api/src/main.ts:2",
+    "apps/api/src/bootstrap.ts:5",
+    "apps/api/src/interfaces/http/router.ts:8",
+    "apps/api/src/main.ts:3",
+    "apps/api/src/fireweave/fw-harness.ts:46",
+    "apps/api/src/main.ts:1",
+    "apps/api/src/bootstrap.ts:6",
+    "apps/api/src/bootstrap.ts:9",
+    "apps/api/src/infrastructure/observability/openobserve.ts:9",
+    "apps/api/src/bootstrap.ts:13",
+    "apps/web/src/main.tsx:5",
+    "apps/web/src/App.tsx:18",
+    "apps/web/src/App.tsx:13",
+    "apps/web/src/fireweave/fw-harness.ts:46",
+    "apps/web/src/main.tsx:4",
+    "apps/web/src/App.tsx:621",
+    "apps/web/src/App.tsx:618"
+   ],
+   "note": "apps/api/src/application/games.ts reaches apps/api/src/main.ts in 2 import(s); apps/api/src/application/history.ts reaches apps/api/src/main.ts in 2 import(s); apps/api/src/bootstrap.ts reaches apps/api/src/main.ts in 1 import(s); apps/api/src/domain/ports.ts reaches apps/api/src/main.ts in 2 import(s); apps/api/src/fireweave/fw-providers.ts reaches apps/api/src/main.ts in 2 import(s); apps/api/src/infrastructure/db/client.ts reaches apps/api/src/main.ts in 2 import(s); apps/api/src/infrastructure/db/match-repo.ts reaches apps/api/src/main.ts in 2 import(s); apps/api/src/infrastructure/observability/metrics-catalog.ts reaches apps/api/src/main.ts in 3 import(s); apps/api/src/interfaces/http/router.ts reaches apps/api/src/main.ts in 1 import(s); apps/web/src/App.tsx reaches apps/web/src/main.tsx in 1 import(s); apps/web/src/History.tsx reaches apps/web/src/main.tsx in 2 import(s); apps/web/src/api.ts reaches apps/web/src/main.tsx in 2 import(s); apps/web/src/fireweave/fw-providers.ts reaches apps/web/src/main.tsx in 2 import(s); Shell is mounted by route (layout) with child routes (index), play/:gameId, scoreboard, history, history/:matchId, admin behind RequireAuth; not imported from any entry point: apps/api/src/fireweave/fw-tracker.ts, apps/api/src/infrastructure/observability/actions-catalog.ts, apps/web/src/fireweave/fw-tracker.ts. Import graph and routes measured; entry points declared by package.json scripts and index.html: apps/api/src/main.ts, apps/web/src/main.tsx. Not code paths, listed only: apps/web/src/styles.css (stylesheet), docker/compose.dev.yml (compose), scripts/dev.sh (script)"
+  },
+  {
+   "name": "Reach",
+   "value": "high",
+   "source": "assumed",
+   "evidence": [
+    "apps/web/src/api.ts:148",
+    "apps/web/src/api.ts:98",
+    "apps/web/src/api.ts:149",
+    "apps/web/src/App.tsx:707",
+    "apps/web/src/App.tsx:30",
+    "apps/web/src/observability/openobserve.ts:34",
+    "apps/web/src/observability/openobserve.ts:23",
+    "apps/web/src/History.tsx:104",
+    "apps/web/src/History.tsx:119",
+    "apps/web/src/History.tsx:124",
+    "apps/web/src/History.tsx:35",
+    "apps/web/src/History.tsx:42",
+    "apps/web/src/History.tsx:99",
+    "apps/web/src/History.tsx:31",
+    "apps/web/src/History.tsx:94",
+    "apps/api/src/interfaces/http/router.ts:82",
+    "apps/api/src/interfaces/http/router.ts:122",
+    "apps/api/src/interfaces/http/router.ts:138",
+    "apps/api/src/interfaces/http/router.ts:199"
+   ],
+   "note": "measured: calls reach POST /api/client-telemetry (emitAction); POST /api/auth/register (services.auth.register, sessionCookie); POST /api/auth/login (services.auth.login, sessionCookie); GET /api/matches (services.auth.me, services.history.listHistory, sessionTokenFromRequest). Worth unknown because the metrics catalog declares no tier for any of its 33 entries, so reach is assumed wide. Not code paths, listed only: apps/web/src/styles.css (stylesheet), docker/compose.dev.yml (compose), scripts/dev.sh (script)"
+  },
+  {
+   "name": "Failure mode",
+   "value": "domain, infra",
+   "source": "measured",
+   "evidence": [
+    "apps/api/src/application/games.ts:8",
+    "apps/api/src/application/history.ts:1",
+    "apps/api/src/bootstrap.ts:5",
+    "apps/api/src/domain/ports.ts:40",
+    "apps/api/src/fireweave/fw-providers.ts:204",
+    "apps/api/src/fireweave/fw-tracker.ts:19",
+    "apps/api/src/infrastructure/db/client.ts:69",
+    "apps/api/src/infrastructure/db/match-repo.ts:2",
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:204",
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:169",
+    "apps/api/src/interfaces/http/router.ts:7",
+    "apps/web/src/App.tsx:18",
+    "apps/web/src/History.tsx:1",
+    "apps/web/src/api.ts:109",
+    "apps/web/src/fireweave/fw-providers.ts:275",
+    "apps/web/src/fireweave/fw-tracker.ts:22",
+    "apps/web/src/styles.css:823",
+    "docker/compose.dev.yml:39",
+    "scripts/dev.sh:25"
+   ],
+   "note": "rules on touched paths: apps/api/src/application/games.ts -> domain; apps/api/src/application/history.ts -> domain; apps/api/src/bootstrap.ts -> domain; apps/api/src/domain/ports.ts -> domain; apps/api/src/fireweave/fw-providers.ts -> domain; apps/api/src/fireweave/fw-tracker.ts -> domain; apps/api/src/infrastructure/db/client.ts -> infra; apps/api/src/infrastructure/db/match-repo.ts -> infra; apps/api/src/infrastructure/observability/actions-catalog.ts -> infra; apps/api/src/infrastructure/observability/metrics-catalog.ts -> infra; apps/api/src/interfaces/http/router.ts -> domain; apps/web/src/App.tsx -> domain; apps/web/src/History.tsx -> domain; apps/web/src/api.ts -> domain; apps/web/src/fireweave/fw-providers.ts -> domain; apps/web/src/fireweave/fw-tracker.ts -> domain; apps/web/src/styles.css -> cosmetic; docker/compose.dev.yml -> infra; scripts/dev.sh -> infra. Matched on file path; each evidence line is the file's first change"
+  }
+ ],
+ "late": [
+  {
+   "name": "Detection apparatus",
+   "value": "slow",
+   "source": "measured",
+   "evidence": [
+    "apps/web/src/History.tsx:42",
+    "apps/web/src/History.tsx:104",
+    "apps/web/src/History.tsx:119",
+    "apps/web/src/History.tsx:124",
+    "docker/compose.prod.yml:49",
+    "scripts/deploy-prod.sh:74"
+   ],
+   "note": "domain: no business-level check (no value metric, no test of the changed domain files); infra: error rate metric arcade_web_history_load_errors_total, latency metric arcade_web_replay_load_ms, error rate metric arcade_web_replay_load_errors_total, deploy health check. Every failure mode needs its detector, so detection is slow. 6 metric/log calls on changed lines (arcade_web_history_views_total: count, arcade_web_history_load_errors_total: error rate, arcade_web_replay_loads_total: count, arcade_web_replay_load_ms: latency, arcade_web_replay_load_errors_total: error rate). Checked in the repo only; alert config outside the repo (OpenObserve) is not an input"
+  },
+  {
+   "name": "Time to revert",
+   "value": "full build and deploy",
+   "source": "assumed",
+   "evidence": [
+    ".github/workflows/deploy.yml:15"
+   ],
+   "note": "no one-click rollback in 1 workflow file(s); CI run history is not an input, so pipeline duration is not measured. Declared job timeout: 5 min (a bound, not a measurement). Unknown rounds to slow: a full build and deploy to revert (W 2)"
+  },
+  {
+   "name": "History",
+   "value": "history unavailable",
+   "source": "assumed",
+   "evidence": [],
+   "note": "measured: 12 earlier commits touch the changed files, 0 reverts, 0 fix commits; repo history before base spans 6h (2026-10-06 to 2026-10-06). Too thin to read as a record (thin: < 5 commits or < 7 days)"
+  },
+  {
+   "name": "Provenance",
+   "value": "agent-assisted (Cursor)",
+   "source": "measured",
+   "evidence": [
+    "commit 33a285e"
+   ],
+   "note": "commit trailers: Cursor <cursoragent@cursor.com>; PR description: \"Made with Cursor\"; author(s) in git: Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>. Whether a human was in the loop is not verifiable from the input"
+  },
+  {
+   "name": "Confidence: test coverage",
+   "value": "0 of 16 changed code files have a test",
+   "source": "measured",
+   "evidence": [],
+   "note": "tests that import a changed file; 0 covered by tests that existed before the change. Uncovered: apps/api/src/application/games.ts, apps/api/src/application/history.ts, apps/api/src/bootstrap.ts, apps/api/src/domain/ports.ts, apps/api/src/fireweave/fw-providers.ts, apps/api/src/fireweave/fw-tracker.ts, apps/api/src/infrastructure/db/client.ts, apps/api/src/infrastructure/db/match-repo.ts, apps/api/src/infrastructure/observability/actions-catalog.ts, apps/api/src/infrastructure/observability/metrics-catalog.ts, apps/api/src/interfaces/http/router.ts, apps/web/src/App.tsx, apps/web/src/History.tsx, apps/web/src/api.ts, apps/web/src/fireweave/fw-providers.ts, apps/web/src/fireweave/fw-tracker.ts"
+  },
+  {
+   "name": "Confidence: familiarity",
+   "value": "single-author repo, people part dropped",
+   "source": "measured",
+   "evidence": [],
+   "note": "repo authors before base: Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>; per file: apps/api/src/application/games.ts (1), apps/api/src/application/history.ts (0), apps/api/src/bootstrap.ts (1), apps/api/src/domain/ports.ts (1), apps/api/src/fireweave/fw-providers.ts (1), apps/api/src/fireweave/fw-tracker.ts (1), apps/api/src/infrastructure/db/client.ts (1), apps/api/src/infrastructure/db/match-repo.ts (1), apps/api/src/infrastructure/observability/actions-catalog.ts (1), apps/api/src/infrastructure/observability/metrics-catalog.ts (1), apps/api/src/interfaces/http/router.ts (1), apps/web/src/App.tsx (1), apps/web/src/History.tsx (0), apps/web/src/api.ts (1), apps/web/src/fireweave/fw-providers.ts (1), apps/web/src/fireweave/fw-tracker.ts (1), apps/web/src/styles.css (1), docker/compose.dev.yml (1), scripts/dev.sh (1). Reviewer familiarity needs review data: the PR export lists 0 reviews"
+  },
+  {
+   "name": "Confidence: review depth",
+   "value": "0 reviews",
+   "source": "declared",
+   "evidence": [],
+   "note": "the PR export lists 0 reviews"
+  }
+ ],
+ "flag": {
+  "flags": [
+   {
+    "key": "match-replay",
+    "defaultValue": "false",
+    "at": "apps/api/src/application/games.ts:127"
+   },
+   {
+    "key": "match-replay",
+    "defaultValue": "false",
+    "at": "apps/api/src/application/games.ts:64"
+   },
+   {
+    "key": "match-replay",
+    "defaultValue": "false",
+    "at": "apps/api/src/application/history.ts:47"
+   },
+   {
+    "key": "match-replay",
+    "defaultValue": "false",
+    "at": "apps/api/src/application/history.ts:89"
+   },
+   {
+    "key": "profile-avatar-menu",
+    "defaultValue": "false",
+    "at": "apps/web/src/App.tsx:744"
+   },
+   {
+    "key": "header-arrangement",
+    "defaultValue": "false",
+    "at": "apps/web/src/App.tsx:746"
+   },
+   {
+    "key": "match-replay",
+    "defaultValue": "false",
+    "at": "apps/web/src/App.tsx:748"
+   },
+   {
+    "key": "match-replay",
+    "defaultValue": "false",
+    "at": "apps/web/src/History.tsx:25"
+   },
+   {
+    "key": "match-replay",
+    "defaultValue": "false",
+    "at": "apps/web/src/History.tsx:84"
+   }
+  ],
+  "lines": [
+   [
+    "apps/api/src/application/games.ts:8",
+    "control"
+   ],
+   [
+    "apps/api/src/application/games.ts:63",
+    "control"
+   ],
+   [
+    "apps/api/src/application/games.ts:64",
+    "control"
+   ],
+   [
+    "apps/api/src/application/games.ts:65",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:83",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:126",
+    "control"
+   ],
+   [
+    "apps/api/src/application/games.ts:127",
+    "control"
+   ],
+   [
+    "apps/api/src/application/games.ts:128",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:165",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:190",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:1",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:2",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:3",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:4",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:5",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:6",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:7",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:8",
+    "control"
+   ],
+   [
+    "apps/api/src/application/history.ts:10",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:11",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:14",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:15",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:16",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:17",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:18",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:19",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:22",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:23",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:24",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:25",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:28",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:29",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:30",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:31",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:32",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:33",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:34",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:37",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:38",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:39",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:40",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:42",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:44",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:45",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:46",
+    "control"
+   ],
+   [
+    "apps/api/src/application/history.ts:47",
+    "control"
+   ],
+   [
+    "apps/api/src/application/history.ts:48",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:50",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:52",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:53",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:54",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:55",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:56",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:57",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:58",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:59",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:60",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:61",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:62",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:63",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:64",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:66",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:69",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:70",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:71",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:72",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:73",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:74",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:75",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:76",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:78",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:79",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:80",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:81",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:82",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:83",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:87",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:88",
+    "control"
+   ],
+   [
+    "apps/api/src/application/history.ts:89",
+    "control"
+   ],
+   [
+    "apps/api/src/application/history.ts:90",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:92",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:94",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:95",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:96",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:97",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:98",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:99",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:100",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:101",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:103",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:104",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:106",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:107",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:108",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:110",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:111",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:112",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:113",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:114",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:116",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:117",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:118",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:119",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:120",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:121",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:123",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:124",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:125",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:126",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:127",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:129",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:130",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:131",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:132",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:133",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:134",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:135",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:136",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:138",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:139",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:140",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:141",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:142",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:143",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:144",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:146",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:147",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:148",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:149",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:150",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:151",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:152",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:153",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:154",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:155",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:156",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:157",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:158",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:159",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:160",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:161",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:162",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:164",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/history.ts:170",
+    "outside"
+   ],
+   [
+    "apps/api/src/bootstrap.ts:5",
+    "outside"
+   ],
+   [
+    "apps/api/src/bootstrap.ts:33",
+    "outside"
+   ],
+   [
+    "apps/api/src/domain/ports.ts:41",
+    "outside"
+   ],
+   [
+    "apps/api/src/domain/ports.ts:44",
+    "outside"
+   ],
+   [
+    "apps/api/src/domain/ports.ts:45",
+    "outside"
+   ],
+   [
+    "apps/api/src/domain/ports.ts:46",
+    "outside"
+   ],
+   [
+    "apps/api/src/domain/ports.ts:47",
+    "outside"
+   ],
+   [
+    "apps/api/src/domain/ports.ts:48",
+    "outside"
+   ],
+   [
+    "apps/api/src/domain/ports.ts:49",
+    "outside"
+   ],
+   [
+    "apps/api/src/domain/ports.ts:52",
+    "outside"
+   ],
+   [
+    "apps/api/src/domain/ports.ts:53",
+    "outside"
+   ],
+   [
+    "apps/api/src/domain/ports.ts:54",
+    "outside"
+   ],
+   [
+    "apps/api/src/domain/ports.ts:55",
+    "outside"
+   ],
+   [
+    "apps/api/src/domain/ports.ts:82",
+    "outside"
+   ],
+   [
+    "apps/api/src/domain/ports.ts:83",
+    "outside"
+   ],
+   [
+    "apps/api/src/domain/ports.ts:84",
+    "outside"
+   ],
+   [
+    "apps/api/src/fireweave/fw-providers.ts:204",
+    "control"
+   ],
+   [
+    "apps/api/src/fireweave/fw-tracker.ts:19",
+    "outside"
+   ],
+   [
+    "apps/api/src/fireweave/fw-tracker.ts:20",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/client.ts:69",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/client.ts:73",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:2",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:3",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:4",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:5",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:6",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:7",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:10",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:11",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:12",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:13",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:68",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:69",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:70",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:71",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:73",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:78",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:79",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:84",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:85",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:86",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:87",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:88",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:89",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:90",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:91",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:92",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:93",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:94",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:95",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:96",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:97",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:101",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:102",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:103",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:104",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:105",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:106",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:107",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:108",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:111",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:112",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:113",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:114",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:115",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:116",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:117",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:118",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:119",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:120",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/match-repo.ts:121",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:205",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:206",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:207",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:209",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:210",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:211",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:214",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:217",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:218",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:219",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:221",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:222",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:223",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:226",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:227",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:228",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/actions-catalog.ts:231",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:170",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:171",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:172",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:173",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:174",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:177",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:178",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:179",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:180",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:181",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:184",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:185",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:186",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:187",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:188",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:191",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:192",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:193",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:194",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:195",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:198",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:199",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:200",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:201",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:202",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:205",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:206",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:207",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:208",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:209",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:212",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:213",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:214",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:215",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:216",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:219",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:220",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:221",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:222",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:223",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:226",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:227",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:228",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:229",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:230",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:233",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:234",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:235",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:236",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:237",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:7",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:42",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:199",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:200",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:201",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:202",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:203",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:206",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:207",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:208",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:209",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:210",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:211",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:18",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:28",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:548",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:599",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:600",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:601",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:602",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:604",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:605",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:606",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:628",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:629",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:648",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:703",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:704",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:705",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:706",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:707",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:709",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:710",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:711",
+    "outside"
+   ],
+   [
+    "apps/web/src/App.tsx:747",
+    "control"
+   ],
+   [
+    "apps/web/src/App.tsx:748",
+    "control"
+   ],
+   [
+    "apps/web/src/App.tsx:752",
+    "control"
+   ],
+   [
+    "apps/web/src/App.tsx:792",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:1",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:2",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:3",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:4",
+    "control"
+   ],
+   [
+    "apps/web/src/History.tsx:5",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:6",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:7",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:8",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:10",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:11",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:12",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:13",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:14",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:17",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:18",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:19",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:20",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:23",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:24",
+    "control"
+   ],
+   [
+    "apps/web/src/History.tsx:25",
+    "control"
+   ],
+   [
+    "apps/web/src/History.tsx:26",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:27",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:29",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:30",
+    "control"
+   ],
+   [
+    "apps/web/src/History.tsx:31",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:32",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:33",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:34",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:35",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:36",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:37",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:40",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:41",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:42",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:43",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:44",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:45",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:48",
+    "control"
+   ],
+   [
+    "apps/web/src/History.tsx:50",
+    "control"
+   ],
+   [
+    "apps/web/src/History.tsx:52",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:53",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:54",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:55",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:56",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:57",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:58",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:59",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:60",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:61",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:62",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:63",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:64",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:65",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:66",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:67",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:68",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:69",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:70",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:71",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:72",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:73",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:74",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:76",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:77",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:78",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:82",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:83",
+    "control"
+   ],
+   [
+    "apps/web/src/History.tsx:84",
+    "control"
+   ],
+   [
+    "apps/web/src/History.tsx:85",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:86",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:87",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:88",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:89",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:91",
+    "outside"
+   ],
+   [
+    "apps/web/src/History.tsx:92",
+    "control"
+   ],
+   [
+    "apps/web/src/History.tsx:93",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:94",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:95",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:96",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:97",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:98",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:99",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:100",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:101",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:102",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:104",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:105",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:106",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:107",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:108",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:111",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:112",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:113",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:114",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:115",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:116",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:117",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:118",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:119",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:120",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:121",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:122",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:124",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:125",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:126",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:127",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:128",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:131",
+    "control"
+   ],
+   [
+    "apps/web/src/History.tsx:133",
+    "control"
+   ],
+   [
+    "apps/web/src/History.tsx:134",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:136",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:137",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:138",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:139",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:140",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:141",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:142",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:143",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:144",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:145",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:147",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:148",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:149",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:151",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:152",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:153",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:154",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:155",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:156",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:157",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:158",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:159",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:160",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:161",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:162",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:163",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:164",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:165",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:166",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:167",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:168",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:169",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:170",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:172",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:173",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:174",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:175",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:176",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:177",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:178",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:179",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:180",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:181",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:182",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:183",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:187",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:188",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:189",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:190",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:191",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:192",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:193",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:194",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:195",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:196",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:198",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:199",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:200",
+    "inside"
+   ],
+   [
+    "apps/web/src/History.tsx:201",
+    "inside"
+   ],
+   [
+    "apps/web/src/api.ts:109",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:110",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:111",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:112",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:113",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:114",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:116",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:117",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:118",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:119",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:120",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:121",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:122",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:148",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:149",
+    "outside"
+   ],
+   [
+    "apps/web/src/fireweave/fw-providers.ts:275",
+    "control"
+   ],
+   [
+    "apps/web/src/fireweave/fw-tracker.ts:22",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:824",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:825",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:826",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:827",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:828",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:829",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:831",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:832",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:833",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:834",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:835",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:836",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:837",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:838",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:839",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:840",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:842",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:843",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:844",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:845",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:847",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:872",
+    "outside"
+   ],
+   [
+    "docker/compose.dev.yml:39",
+    "outside"
+   ],
+   [
+    "docker/compose.dev.yml:40",
+    "outside"
+   ],
+   [
+    "docker/compose.dev.yml:41",
+    "outside"
+   ],
+   [
+    "scripts/dev.sh:25",
+    "outside"
+   ]
+  ],
+  "byCallSite": [
+   {
+    "name": "fw",
+    "at": "apps/api/src/application/games.ts:8",
+    "references": 2,
+    "cls": "control"
+   },
+   {
+    "name": "fw",
+    "at": "apps/api/src/application/history.ts:8",
+    "references": 2,
+    "cls": "control"
+   },
+   {
+    "name": "fw",
+    "at": "apps/web/src/History.tsx:4",
+    "references": 2,
+    "cls": "control"
+   },
+   {
+    "name": "GameBoard",
+    "at": "apps/web/src/History.tsx:5",
+    "references": 1,
+    "cls": "inside"
+   },
+   {
+    "name": "GameMark",
+    "at": "apps/web/src/History.tsx:6",
+    "references": 2,
+    "cls": "inside"
+   },
+   {
+    "name": "OutcomeFX",
+    "at": "apps/web/src/History.tsx:7",
+    "references": 1,
+    "cls": "inside"
+   },
+   {
+    "name": "record",
+    "at": "apps/web/src/History.tsx:8",
+    "references": 6,
+    "cls": "inside"
+   },
+   {
+    "name": "resultLabel",
+    "at": "apps/web/src/History.tsx:10",
+    "references": 2,
+    "cls": "inside"
+   },
+   {
+    "name": "actorLabel",
+    "at": "apps/web/src/History.tsx:17",
+    "references": 1,
+    "cls": "inside"
+   }
+  ]
+ },
+ "confidence": {
+  "measuredLevel": "low",
+  "why": [
+   "no test that existed before the change covers any of the 16 changed code files (measured)",
+   "single-author repo: familiarity dropped (W appendix)"
+  ],
+  "disagreements": []
+ },
+ "detectionDisagreements": [
+  "metrics added to the catalog but not emitted by the changed code: arcade_match_history_errors_total, arcade_match_history_views_total, arcade_replay_errors_total, arcade_replay_load_ms, arcade_replay_loads_total"
+ ],
+ "detectors": [
+  {
+   "mode": "domain",
+   "detectors": [],
+   "absenceMeasured": true
+  },
+  {
+   "mode": "infra",
+   "detectors": [
+    {
+     "what": "error rate metric arcade_web_history_load_errors_total",
+     "at": "apps/web/src/History.tsx:42",
+     "source": "measured"
+    },
+    {
+     "what": "latency metric arcade_web_replay_load_ms",
+     "at": "apps/web/src/History.tsx:104",
+     "source": "measured"
+    },
+    {
+     "what": "error rate metric arcade_web_replay_load_errors_total",
+     "at": "apps/web/src/History.tsx:119",
+     "source": "measured"
+    },
+    {
+     "what": "latency metric arcade_web_replay_load_ms",
+     "at": "apps/web/src/History.tsx:124",
+     "source": "measured"
+    },
+    {
+     "what": "deploy health check",
+     "at": "docker/compose.prod.yml:49",
+     "source": "declared"
+    },
+    {
+     "what": "deploy health check",
+     "at": "scripts/deploy-prod.sh:74",
+     "source": "declared"
+    }
+   ],
+   "absenceMeasured": false
+  }
+ ],
+ "failure": {
+  "perFile": [
+   {
+    "path": "apps/api/src/application/games.ts",
+    "mode": "domain",
+    "at": "apps/api/src/application/games.ts:8"
+   },
+   {
+    "path": "apps/api/src/application/history.ts",
+    "mode": "domain",
+    "at": "apps/api/src/application/history.ts:1"
+   },
+   {
+    "path": "apps/api/src/bootstrap.ts",
+    "mode": "domain",
+    "at": "apps/api/src/bootstrap.ts:5"
+   },
+   {
+    "path": "apps/api/src/domain/ports.ts",
+    "mode": "domain",
+    "at": "apps/api/src/domain/ports.ts:40"
+   },
+   {
+    "path": "apps/api/src/fireweave/fw-providers.ts",
+    "mode": "domain",
+    "at": "apps/api/src/fireweave/fw-providers.ts:204"
+   },
+   {
+    "path": "apps/api/src/fireweave/fw-tracker.ts",
+    "mode": "domain",
+    "at": "apps/api/src/fireweave/fw-tracker.ts:19"
+   },
+   {
+    "path": "apps/api/src/infrastructure/db/client.ts",
+    "mode": "infra",
+    "at": "apps/api/src/infrastructure/db/client.ts:69"
+   },
+   {
+    "path": "apps/api/src/infrastructure/db/match-repo.ts",
+    "mode": "infra",
+    "at": "apps/api/src/infrastructure/db/match-repo.ts:2"
+   },
+   {
+    "path": "apps/api/src/infrastructure/observability/actions-catalog.ts",
+    "mode": "infra",
+    "at": "apps/api/src/infrastructure/observability/actions-catalog.ts:204"
+   },
+   {
+    "path": "apps/api/src/infrastructure/observability/metrics-catalog.ts",
+    "mode": "infra",
+    "at": "apps/api/src/infrastructure/observability/metrics-catalog.ts:169"
+   },
+   {
+    "path": "apps/api/src/interfaces/http/router.ts",
+    "mode": "domain",
+    "at": "apps/api/src/interfaces/http/router.ts:7"
+   },
+   {
+    "path": "apps/web/src/App.tsx",
+    "mode": "domain",
+    "at": "apps/web/src/App.tsx:18"
+   },
+   {
+    "path": "apps/web/src/History.tsx",
+    "mode": "domain",
+    "at": "apps/web/src/History.tsx:1"
+   },
+   {
+    "path": "apps/web/src/api.ts",
+    "mode": "domain",
+    "at": "apps/web/src/api.ts:109"
+   },
+   {
+    "path": "apps/web/src/fireweave/fw-providers.ts",
+    "mode": "domain",
+    "at": "apps/web/src/fireweave/fw-providers.ts:275"
+   },
+   {
+    "path": "apps/web/src/fireweave/fw-tracker.ts",
+    "mode": "domain",
+    "at": "apps/web/src/fireweave/fw-tracker.ts:22"
+   },
+   {
+    "path": "apps/web/src/styles.css",
+    "mode": "cosmetic",
+    "at": "apps/web/src/styles.css:823"
+   },
+   {
+    "path": "docker/compose.dev.yml",
+    "mode": "infra",
+    "at": "docker/compose.dev.yml:39"
+   },
+   {
+    "path": "scripts/dev.sh",
+    "mode": "infra",
+    "at": "scripts/dev.sh:25"
+   }
+  ],
+  "modes": [
+   "domain",
+   "infra"
+  ]
+ },
+ "commitMessage": "Run local dev as development so replay flags apply.\n\nUnset NODE_ENV made the API harness treat Docker and host dev as production, so history returned Not found.\n\nCo-authored-by: Cursor <cursoragent@cursor.com>\n\nAdd match history and step-through replay.\n\nPlayers can review finished games, and error metrics cover missing, in-progress, and incomplete replays.\n\nCo-authored-by: Cursor <cursoragent@cursor.com>\n\n",
+ "diffText": "diff --git a/apps/api/src/application/games.ts b/apps/api/src/application/games.ts\nindex 48b9500..2891a73 100644\n--- a/apps/api/src/application/games.ts\n+++ b/apps/api/src/application/games.ts\n@@ -5,6 +5,7 @@ import type {\n   ObservabilityPort,\n   TraceCtx,\n } from \"../domain/ports\";\n+import { fw } from \"../fireweave/fw-harness\";\n \n /** In-process active match gauges + start clocks for duration histograms. */\n const activeByGame = new Map<string, number>();\n@@ -59,6 +60,10 @@ export function createGameUseCases(deps: {\n     },\n \n     async getOrCreateMatch(user: PublicUser, gameId: string, trace?: TraceCtx) {\n+      // @fireweave-controlpoint match-replay\n+      const snap = await fw.controlPoints.getBooleanValue(\"match-replay\", false, {\n+        targetingKey: String(user.id),\n+      });\n       const engine = (() => {\n         try {\n           return deps.engines.require(gameId);\n@@ -75,6 +80,7 @@ export function createGameUseCases(deps: {\n           actor: \"system\",\n           move: { event: \"start\" },\n           traceId: trace?.traceId,\n+          state: snap ? match.state : undefined,\n         });\n         matchStartedAt.set(match.id, Date.now());\n         const active = bumpActive(gameId, 1);\n@@ -117,6 +123,10 @@ export function createGameUseCases(deps: {\n       move: unknown,\n       trace?: TraceCtx,\n     ): Promise<MatchDto> {\n+      // @fireweave-controlpoint match-replay\n+      const snap = await fw.controlPoints.getBooleanValue(\"match-replay\", false, {\n+        targetingKey: String(user.id),\n+      });\n       const engine = (() => {\n         try {\n           return deps.engines.require(gameId);\n@@ -152,6 +162,7 @@ export function createGameUseCases(deps: {\n         actor: \"human\",\n         move,\n         traceId: trace?.traceId,\n+        state: snap ? state : undefined,\n       });\n       await deps.obs.emitAction({\n         event: \"match.move\",\n@@ -176,6 +187,7 @@ export function createGameUseCases(deps: {\n           actor: \"bot\",\n           move: { auto: true },\n           traceId: trace?.traceId,\n+          state: snap ? state : undefined,\n         });\n         await deps.obs.emitAction({\n           event: \"match.move\",\ndiff --git a/apps/api/src/application/history.ts b/apps/api/src/application/history.ts\nnew file mode 100644\nindex 0000000..a0b838f\n--- /dev/null\n+++ b/apps/api/src/application/history.ts\n@@ -0,0 +1,170 @@\n+import { AppError, type MatchResult, type PublicUser } from \"@arcade/shared\";\n+import type {\n+  EngineCatalog,\n+  MatchRepository,\n+  ObservabilityPort,\n+  TraceCtx,\n+} from \"../domain/ports\";\n+import { fw } from \"../fireweave/fw-harness\";\n+\n+function traceFields(trace?: TraceCtx) {\n+  return { traceId: trace?.traceId, parentSpanId: trace?.parentSpanId };\n+}\n+\n+export type HistoryMatch = {\n+  id: number;\n+  gameId: string;\n+  name: string;\n+  winner: MatchResult;\n+  createdAt: string;\n+};\n+\n+export type ReplayFrame = {\n+  index: number;\n+  actor: \"human\" | \"bot\" | \"system\";\n+  state: unknown;\n+};\n+\n+export type Replay = {\n+  id: number;\n+  gameId: string;\n+  name: string;\n+  winner: MatchResult;\n+  createdAt: string;\n+  frames: ReplayFrame[];\n+};\n+\n+export function createHistoryUseCases(deps: {\n+  matches: MatchRepository;\n+  engines: EngineCatalog;\n+  obs: ObservabilityPort;\n+}) {\n+  const record = deps.obs.metric.bind(deps.obs);\n+\n+  return {\n+    async listHistory(user: PublicUser, trace?: TraceCtx): Promise<HistoryMatch[]> {\n+      // @fireweave-controlpoint match-replay\n+      const enabled = await fw.controlPoints.getBooleanValue(\"match-replay\", false, {\n+        targetingKey: String(user.id),\n+      });\n+      if (!enabled) throw new AppError(\"Not found\", 404, \"not_found\");\n+\n+      let rows;\n+      try {\n+        rows = await deps.matches.listFinished(user.id, 40);\n+      } catch (err) {\n+        await record(\"arcade_match_history_errors_total\", 1, { reason: \"query_failed\" }, \"counter\");\n+        await deps.obs.emitAction({\n+          event: \"match.history\",\n+          ...traceFields(trace),\n+          user: user.username,\n+          logLevel: \"error\",\n+          logFields: { reason: \"query_failed\" },\n+          statusCode: 2,\n+          statusMessage: err instanceof Error ? err.message : \"query failed\",\n+        });\n+        throw err;\n+      }\n+\n+      const names = new Map(deps.engines.list().map((engine) => [engine.id, engine.name]));\n+      await record(\"arcade_match_history_views_total\", 1, { result: \"ok\" }, \"counter\");\n+      await deps.obs.emitAction({\n+        event: \"match.history\",\n+        ...traceFields(trace),\n+        user: user.username,\n+        logFields: { matches: rows.length },\n+        spanAttributes: { matches: rows.length },\n+      });\n+      return rows.map((row) => ({\n+        id: row.id,\n+        gameId: row.gameId,\n+        name: names.get(row.gameId) ?? row.gameId,\n+        winner: row.winner,\n+        createdAt: row.createdAt,\n+      }));\n+    },\n+\n+    async replay(user: PublicUser, matchId: number, trace?: TraceCtx): Promise<Replay> {\n+      // @fireweave-controlpoint match-replay\n+      const enabled = await fw.controlPoints.getBooleanValue(\"match-replay\", false, {\n+        targetingKey: String(user.id),\n+      });\n+      if (!enabled) throw new AppError(\"Not found\", 404, \"not_found\");\n+\n+      const started = Date.now();\n+      let gameId = \"\";\n+      try {\n+        const match = await deps.matches.findForUser(user.id, matchId);\n+        if (!match) throw new AppError(\"Match not found\", 404, \"not_found\");\n+        gameId = match.gameId;\n+        if (match.status === \"playing\") {\n+          throw new AppError(\"Match is still in progress\", 409, \"still_playing\");\n+        }\n+        if (match.status !== \"finished\") {\n+          throw new AppError(\"Match cannot be replayed\", 409, \"incomplete\");\n+        }\n+        const events = await deps.matches.listEvents(match.id);\n+        if (events.length === 0 || events.some((event) => event.state == null)) {\n+          throw new AppError(\"Replay log is incomplete\", 409, \"incomplete\");\n+        }\n+        const names = new Map(deps.engines.list().map((engine) => [engine.id, engine.name]));\n+        const frames: ReplayFrame[] = events.map((event, index) => ({\n+          index,\n+          actor: event.actor,\n+          state: event.state,\n+        }));\n+        const elapsed = Date.now() - started;\n+        await record(\n+          \"arcade_replay_loads_total\",\n+          1,\n+          { result: \"ok\", game: gameId },\n+          \"counter\",\n+        );\n+        await record(\n+          \"arcade_replay_load_ms\",\n+          elapsed,\n+          { result: \"ok\", game: gameId },\n+          \"histogram\",\n+        );\n+        await deps.obs.emitAction({\n+          event: \"match.replay\",\n+          ...traceFields(trace),\n+          user: user.username,\n+          gameId,\n+          matchId: match.id,\n+          logFields: { frames: frames.length, duration_ms: elapsed },\n+          spanAttributes: { frames: frames.length, \"replay.duration_ms\": elapsed },\n+        });\n+        return {\n+          id: match.id,\n+          gameId,\n+          name: names.get(gameId) ?? gameId,\n+          winner: match.winner,\n+          createdAt: match.createdAt,\n+          frames,\n+        };\n+      } catch (err) {\n+        const reason = err instanceof AppError ? err.code : \"query_failed\";\n+        const elapsed = Date.now() - started;\n+        const labels = { result: \"error\", game: gameId || \"unknown\" };\n+        await record(\"arcade_replay_errors_total\", 1, { reason, game: labels.game }, \"counter\");\n+        await record(\"arcade_replay_loads_total\", 1, labels, \"counter\");\n+        await record(\"arcade_replay_load_ms\", elapsed, labels, \"histogram\");\n+        await deps.obs.emitAction({\n+          event: \"match.replay\",\n+          ...traceFields(trace),\n+          user: user.username,\n+          gameId: gameId || undefined,\n+          matchId,\n+          logLevel: \"error\",\n+          logFields: { reason, duration_ms: elapsed },\n+          statusCode: 2,\n+          statusMessage: err instanceof Error ? err.message : \"replay failed\",\n+        });\n+        throw err;\n+      }\n+    },\n+  };\n+}\n+\n+export type HistoryUseCases = ReturnType<typeof createHistoryUseCases>;\ndiff --git a/apps/api/src/bootstrap.ts b/apps/api/src/bootstrap.ts\nindex ddcb4ee..8fe56c9 100644\n--- a/apps/api/src/bootstrap.ts\n+++ b/apps/api/src/bootstrap.ts\n@@ -2,6 +2,7 @@ import { createAuthUseCases } from \"./application/auth\";\n import { createGameUseCases } from \"./application/games\";\n import { createScoreboardUseCases } from \"./application/scoreboard\";\n import { createAdminUseCases } from \"./application/admin\";\n+import { createHistoryUseCases } from \"./application/history\";\n import { migrate, waitForDb } from \"./infrastructure/db/client\";\n import { userRepo } from \"./infrastructure/db/user-repo\";\n import { sessionRepo } from \"./infrastructure/db/session-repo\";\n@@ -29,5 +30,6 @@ export async function getServices(): Promise<AppServices> {\n     games: createGameUseCases({ matches: matchRepo, engines, obs: observability }),\n     scoreboard: createScoreboardUseCases({ matches: matchRepo, obs: observability }),\n     admin: createAdminUseCases({ matches: matchRepo, engines, obs: observability }),\n+    history: createHistoryUseCases({ matches: matchRepo, engines, obs: observability }),\n   };\n }\ndiff --git a/apps/api/src/domain/ports.ts b/apps/api/src/domain/ports.ts\nindex d0b5ecb..3f28d43 100644\n--- a/apps/api/src/domain/ports.ts\n+++ b/apps/api/src/domain/ports.ts\n@@ -37,6 +37,22 @@ export type MatchEvent = {\n   actor: \"human\" | \"bot\" | \"system\";\n   move: unknown;\n   traceId?: string;\n+  /** Board after this ply. Present only when match replay snapshots are on. */\n+  state?: unknown;\n+};\n+\n+export type FinishedMatchRow = {\n+  id: number;\n+  gameId: string;\n+  status: string;\n+  winner: MatchResult;\n+  createdAt: string;\n+};\n+\n+export type StoredMatchEvent = {\n+  actor: \"human\" | \"bot\" | \"system\";\n+  move: unknown;\n+  state: unknown | null;\n };\n \n export type TraceCtx = {\n@@ -63,6 +79,9 @@ export interface MatchRepository {\n   update(match: MatchRecord): Promise<MatchRecord>;\n   abandonActive(userId: number, gameId: string): Promise<void>;\n   addEvent(event: MatchEvent): Promise<void>;\n+  listFinished(userId: number, limit?: number): Promise<FinishedMatchRow[]>;\n+  findForUser(userId: number, matchId: number): Promise<(MatchRecord & { createdAt: string }) | null>;\n+  listEvents(matchId: number): Promise<StoredMatchEvent[]>;\n   scoreboardForUser(userId: number): Promise<ScoreRow[]>;\n   globalScoreboard(limit?: number): Promise<\n     Array<{ username: string; played: number; wins: number; losses: number; draws: number }>\ndiff --git a/apps/api/src/fireweave/fw-providers.ts b/apps/api/src/fireweave/fw-providers.ts\nindex 8cce0c1..27a4557 100644\n--- a/apps/api/src/fireweave/fw-providers.ts\n+++ b/apps/api/src/fireweave/fw-providers.ts\n@@ -201,7 +201,7 @@ export async function makeDevProvider(): Promise<FireweaveClient> {\n   await loadInstanceId();\n   fwClient = await initFireweave({\n     mode: 'local',\n-    local: { controlPoints: {} },\n+    local: { controlPoints: { \"match-replay\": true } },\n   });\n   return fwClient;\n }\ndiff --git a/apps/api/src/fireweave/fw-tracker.ts b/apps/api/src/fireweave/fw-tracker.ts\nindex 0227b5e..4738d6f 100644\n--- a/apps/api/src/fireweave/fw-tracker.ts\n+++ b/apps/api/src/fireweave/fw-tracker.ts\n@@ -16,4 +16,6 @@\n  */\n \n /** The committed stamp record. Append one entry per feature change. */\n-export const FW_STAMPS: Array<{ stampId: string }> = [];\n+export const FW_STAMPS: Array<{ stampId: string }> = [\n+  { stampId: \"stmp_01M48Q5RVH3DK9FVCWZ773DT12\" },\n+];\ndiff --git a/apps/api/src/infrastructure/db/client.ts b/apps/api/src/infrastructure/db/client.ts\nindex d798fa0..54f4bf1 100644\n--- a/apps/api/src/infrastructure/db/client.ts\n+++ b/apps/api/src/infrastructure/db/client.ts\n@@ -66,6 +66,9 @@ export async function migrate() {\n     )\n   `;\n \n+  await sql`ALTER TABLE match_events ADD COLUMN IF NOT EXISTS state JSONB`;\n+\n   await sql`CREATE INDEX IF NOT EXISTS idx_matches_user_game ON matches(user_id, game_id, status)`;\n   await sql`CREATE INDEX IF NOT EXISTS idx_matches_game ON matches(game_id)`;\n+  await sql`CREATE INDEX IF NOT EXISTS idx_matches_user_finished ON matches(user_id, status, id DESC)`;\n }\ndiff --git a/apps/api/src/infrastructure/db/match-repo.ts b/apps/api/src/infrastructure/db/match-repo.ts\nindex 1c40233..5ebd503 100644\n--- a/apps/api/src/infrastructure/db/match-repo.ts\n+++ b/apps/api/src/infrastructure/db/match-repo.ts\n@@ -1,7 +1,18 @@\n import type { MatchResult, MatchStatus, ScoreRow } from \"@arcade/shared\";\n-import type { MatchRecord, MatchRepository } from \"../../domain/ports\";\n+import type {\n+  FinishedMatchRow,\n+  MatchRecord,\n+  MatchRepository,\n+  StoredMatchEvent,\n+} from \"../../domain/ports\";\n import { sql } from \"./client\";\n \n+function iso(value: unknown): string {\n+  if (value instanceof Date) return value.toISOString();\n+  const parsed = new Date(String(value));\n+  return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toISOString();\n+}\n+\n function mapMatch(row: Record<string, unknown>): MatchRecord {\n   return {\n     id: row.id as number,\n@@ -54,17 +65,63 @@ export const matchRepo: MatchRepository = {\n   },\n \n   async addEvent(event) {\n+    const state =\n+      event.state === undefined || event.state === null\n+        ? null\n+        : sql.json(event.state as never);\n     await sql`\n-      INSERT INTO match_events (match_id, actor, move, trace_id)\n+      INSERT INTO match_events (match_id, actor, move, trace_id, state)\n       VALUES (\n         ${event.matchId},\n         ${event.actor},\n         ${sql.json((event.move ?? null) as never)},\n-        ${event.traceId ?? null}\n+        ${event.traceId ?? null},\n+        ${state}\n       )\n     `;\n   },\n \n+  async listFinished(userId, limit = 40): Promise<FinishedMatchRow[]> {\n+    const rows = await sql`\n+      SELECT id, game_id AS \"gameId\", status, winner, created_at AS \"createdAt\"\n+      FROM matches\n+      WHERE user_id = ${userId} AND status = 'finished'\n+      ORDER BY id DESC\n+      LIMIT ${limit}\n+    `;\n+    return rows.map((row) => ({\n+      id: row.id as number,\n+      gameId: row.gameId as string,\n+      status: row.status as string,\n+      winner: (row.winner as MatchResult) ?? null,\n+      createdAt: iso(row.createdAt),\n+    }));\n+  },\n+\n+  async findForUser(userId, matchId) {\n+    const [row] = await sql`\n+      SELECT id, user_id, game_id, state, status, winner, created_at AS \"createdAt\"\n+      FROM matches\n+      WHERE id = ${matchId} AND user_id = ${userId}\n+    `;\n+    if (!row) return null;\n+    return { ...mapMatch(row), createdAt: iso(row.createdAt) };\n+  },\n+\n+  async listEvents(matchId): Promise<StoredMatchEvent[]> {\n+    const rows = await sql`\n+      SELECT actor, move, state\n+      FROM match_events\n+      WHERE match_id = ${matchId}\n+      ORDER BY id ASC\n+    `;\n+    return rows.map((row) => ({\n+      actor: row.actor as StoredMatchEvent[\"actor\"],\n+      move: row.move,\n+      state: row.state ?? null,\n+    }));\n+  },\n+\n   async scoreboardForUser(userId) {\n     const rows = await sql`\n       SELECT\ndiff --git a/apps/api/src/infrastructure/observability/actions-catalog.ts b/apps/api/src/infrastructure/observability/actions-catalog.ts\nindex 3d9fdc3..5fb8667 100644\n--- a/apps/api/src/infrastructure/observability/actions-catalog.ts\n+++ b/apps/api/src/infrastructure/observability/actions-catalog.ts\n@@ -201,6 +201,35 @@ export const ACTIONS_CATALOG: ActionDef[] = [\n     ],\n     source: \"games.applyMove\",\n   },\n+  {\n+    event: \"match.history\",\n+    description: \"Finished-match history listed\",\n+    metrics: [\n+      {\n+        name: \"arcade_match_history_views_total\",\n+        type: \"counter\",\n+        defaultLabels: { result: \"ok\" },\n+      },\n+    ],\n+    source: \"history.listHistory\",\n+  },\n+  {\n+    event: \"match.replay\",\n+    description: \"Stored match replay loaded or rejected\",\n+    metrics: [\n+      {\n+        name: \"arcade_replay_loads_total\",\n+        type: \"counter\",\n+        defaultLabels: { result: \"ok\", game: \"tictactoe\" },\n+      },\n+      {\n+        name: \"arcade_replay_load_ms\",\n+        type: \"histogram\",\n+        defaultLabels: { result: \"ok\", game: \"tictactoe\" },\n+      },\n+    ],\n+    source: \"history.replay\",\n+  },\n   {\n     event: \"admin.insights\",\n     description: \"Admin insights dashboard loaded\",\ndiff --git a/apps/api/src/infrastructure/observability/metrics-catalog.ts b/apps/api/src/infrastructure/observability/metrics-catalog.ts\nindex c8c0e54..85dac9f 100644\n--- a/apps/api/src/infrastructure/observability/metrics-catalog.ts\n+++ b/apps/api/src/infrastructure/observability/metrics-catalog.ts\n@@ -166,6 +166,76 @@ export const METRICS_CATALOG: MetricDef[] = [\n     defaultLabels: { surface: \"web\", event: \"nav\", result: \"ok\", target: \"games\" },\n     source: \"UnifiedHeader nav\",\n   },\n+  {\n+    name: \"arcade_match_history_views_total\",\n+    type: \"counter\",\n+    description: \"Finished-match history loads\",\n+    defaultLabels: { result: \"ok\" },\n+    source: \"history.listHistory\",\n+  },\n+  {\n+    name: \"arcade_match_history_errors_total\",\n+    type: \"counter\",\n+    description: \"Finished-match history query failures\",\n+    defaultLabels: { reason: \"query_failed\" },\n+    source: \"history.listHistory\",\n+  },\n+  {\n+    name: \"arcade_replay_loads_total\",\n+    type: \"counter\",\n+    description: \"Replay loads, successful or rejected\",\n+    defaultLabels: { result: \"ok\", game: \"tictactoe\" },\n+    source: \"history.replay\",\n+  },\n+  {\n+    name: \"arcade_replay_errors_total\",\n+    type: \"counter\",\n+    description: \"Replay failures by reason\",\n+    defaultLabels: { reason: \"incomplete\", game: \"tictactoe\" },\n+    source: \"history.replay\",\n+  },\n+  {\n+    name: \"arcade_replay_load_ms\",\n+    type: \"histogram\",\n+    description: \"Time to build a replay\",\n+    defaultLabels: { result: \"ok\", game: \"tictactoe\" },\n+    source: \"history.replay\",\n+  },\n+  {\n+    name: \"arcade_web_history_views_total\",\n+    type: \"counter\",\n+    description: \"History page loads from the web client\",\n+    defaultLabels: { surface: \"web\", result: \"ok\" },\n+    source: \"HistoryPage\",\n+  },\n+  {\n+    name: \"arcade_web_history_load_errors_total\",\n+    type: \"counter\",\n+    description: \"History page failed to load\",\n+    defaultLabels: { surface: \"web\", result: \"error\" },\n+    source: \"HistoryPage\",\n+  },\n+  {\n+    name: \"arcade_web_replay_loads_total\",\n+    type: \"counter\",\n+    description: \"Replay page loads from the web client\",\n+    defaultLabels: { surface: \"web\", result: \"ok\" },\n+    source: \"ReplayPage\",\n+  },\n+  {\n+    name: \"arcade_web_replay_load_errors_total\",\n+    type: \"counter\",\n+    description: \"Replay page failed to load\",\n+    defaultLabels: { surface: \"web\", result: \"error\", reason: \"incomplete\" },\n+    source: \"ReplayPage\",\n+  },\n+  {\n+    name: \"arcade_web_replay_load_ms\",\n+    type: \"histogram\",\n+    description: \"Time for the web client to load a replay\",\n+    defaultLabels: { surface: \"web\", result: \"ok\" },\n+    source: \"ReplayPage\",\n+  },\n   {\n     name: \"arcade_verify\",\n     type: \"counter\",\ndiff --git a/apps/api/src/interfaces/http/router.ts b/apps/api/src/interfaces/http/router.ts\nindex 8a59a16..4143732 100644\n--- a/apps/api/src/interfaces/http/router.ts\n+++ b/apps/api/src/interfaces/http/router.ts\n@@ -4,6 +4,7 @@ import type { AuthUseCases } from \"../../application/auth\";\n import type { GameUseCases } from \"../../application/games\";\n import type { ScoreboardUseCases } from \"../../application/scoreboard\";\n import type { AdminUseCases } from \"../../application/admin\";\n+import type { HistoryUseCases } from \"../../application/history\";\n import type { TraceCtx } from \"../../domain/ports\";\n import {\n   emitAction,\n@@ -38,6 +39,7 @@ export type AppServices = {\n   games: GameUseCases;\n   scoreboard: ScoreboardUseCases;\n   admin: AdminUseCases;\n+  history: HistoryUseCases;\n };\n \n export function createHandler(services: AppServices) {\n@@ -194,6 +196,21 @@ export function createHandler(services: AppServices) {\n         return respond(json(match), { game: match.gameId });\n       }\n \n+      if (path === \"/api/matches\" && req.method === \"GET\") {\n+        const user = await services.auth.me(sessionTokenFromRequest(req));\n+        if (!user) return respond(json({ error: \"unauthorized\" }, { status: 401 }));\n+        const matches = await services.history.listHistory(user, trace);\n+        return respond(json({ matches }));\n+      }\n+\n+      const replayGet = path.match(/^\\/api\\/matches\\/(\\d+)\\/replay$/);\n+      if (replayGet && req.method === \"GET\") {\n+        const user = await services.auth.me(sessionTokenFromRequest(req));\n+        if (!user) return respond(json({ error: \"unauthorized\" }, { status: 401 }));\n+        const replay = await services.history.replay(user, Number(replayGet[1]), trace);\n+        return respond(json(replay), { game: replay.gameId });\n+      }\n+\n       if (path === \"/api/scoreboard\" && req.method === \"GET\") {\n         const user = await services.auth.me(sessionTokenFromRequest(req));\n         if (!user) return respond(json({ error: \"unauthorized\" }, { status: 401 }));\ndiff --git a/apps/web/src/App.tsx b/apps/web/src/App.tsx\nindex fe6826b..90e68c7 100644\n--- a/apps/web/src/App.tsx\n+++ b/apps/web/src/App.tsx\n@@ -15,6 +15,7 @@ import { AdminPage } from \"./Admin\";\n import { AuthProvider, RequireAdmin, RequireAuth, useAuth } from \"./auth\";\n import { fw } from \"./fireweave/fw-harness\";\n import { metric as record } from \"./observability/openobserve\";\n+import { HistoryPage, ReplayPage } from \"./History\";\n import { LobbyPage } from \"./Lobby\";\n import { GameBoard } from \"./games/GameBoard\";\n import { ArcadeMark, GameMark } from \"./games/logos\";\n@@ -24,6 +25,7 @@ type LoginMode = \"player\" | \"admin\";\n \n const HeaderArrangementContext = createContext(false);\n const ProfileMenuContext = createContext(false);\n+const MatchReplayContext = createContext(false);\n \n function recordHeaderNav(target: string) {\n   void record(\"arcade_web_header_nav_clicks_total\", 1, {\n@@ -543,6 +545,7 @@ function Shell() {\n   const gamesActive =\n     location.pathname === \"/\" || location.pathname.startsWith(\"/play/\");\n   const profileMenu = useContext(ProfileMenuContext);\n+  const matchReplay = useContext(MatchReplayContext);\n \n   if (unifiedHeader) return <Outlet />;\n \n@@ -593,6 +596,14 @@ function Shell() {\n           >\n             scoreboard\n           </NavLink>\n+          {matchReplay ? (\n+            <NavLink\n+              to=\"/history\"\n+              className={({ isActive }) => `btn secondary ${isActive ? \"active\" : \"\"}`}\n+            >\n+              history\n+            </NavLink>\n+          ) : null}\n         </nav>\n       </div>\n       <Outlet />\n@@ -614,6 +625,8 @@ function AppRoutes() {\n         <Route index element={<LobbyPage />} />\n         <Route path=\"play/:gameId\" element={<PlayPage />} />\n         <Route path=\"scoreboard\" element={<ScoreboardPage />} />\n+        <Route path=\"history\" element={<HistoryPage />} />\n+        <Route path=\"history/:matchId\" element={<ReplayPage />} />\n         <Route\n           path=\"admin\"\n           element={\n@@ -632,6 +645,7 @@ function UnifiedHeader() {\n   const { user, logout } = useAuth();\n   const location = useLocation();\n   const profileMenu = useContext(ProfileMenuContext);\n+  const matchReplay = useContext(MatchReplayContext);\n   const isAdmin = user?.role === \"admin\";\n   const onAdmin = location.pathname.startsWith(\"/admin\");\n   const adminPortal = Boolean(isAdmin && onAdmin);\n@@ -686,6 +700,15 @@ function UnifiedHeader() {\n         >\n           scoreboard\n         </NavLink>\n+        {matchReplay ? (\n+          <NavLink\n+            to=\"/history\"\n+            className={({ isActive }) => `btn secondary ${isActive ? \"active\" : \"\"}`}\n+            onClick={() => recordHeaderNav(\"history\")}\n+          >\n+            history\n+          </NavLink>\n+        ) : null}\n       </nav>\n       <div className=\"topbar-actions\">\n         {profileMenu ? null : (\n@@ -721,9 +744,12 @@ function AppChrome() {\n   const profileMenu = fw.controlPoints.getBooleanValue(\"profile-avatar-menu\", false);\n   // @fireweave-controlpoint header-arrangement\n   const headerArrangement = fw.controlPoints.getBooleanValue(\"header-arrangement\", false);\n+  // @fireweave-controlpoint match-replay\n+  const matchReplay = fw.controlPoints.getBooleanValue(\"match-replay\", false);\n   const unified = headerArrangement && Boolean(user);\n \n   return (\n+    <MatchReplayContext.Provider value={matchReplay}>\n     <ProfileMenuContext.Provider value={profileMenu}>\n       <HeaderArrangementContext.Provider value={unified}>\n       <main\n@@ -763,6 +789,7 @@ function AppChrome() {\n       </main>\n       </HeaderArrangementContext.Provider>\n     </ProfileMenuContext.Provider>\n+    </MatchReplayContext.Provider>\n   );\n }\n \ndiff --git a/apps/web/src/History.tsx b/apps/web/src/History.tsx\nnew file mode 100644\nindex 0000000..2672667\n--- /dev/null\n+++ b/apps/web/src/History.tsx\n@@ -0,0 +1,203 @@\n+import { useEffect, useState } from \"react\";\n+import { Link, Navigate, useParams } from \"react-router-dom\";\n+import { api, ApiError, type HistoryMatch, type Match, type Replay } from \"./api\";\n+import { fw } from \"./fireweave/fw-harness\";\n+import { GameBoard } from \"./games/GameBoard\";\n+import { GameMark } from \"./games/logos\";\n+import { OutcomeFX } from \"./games/outcome\";\n+import { metric as record } from \"./observability/openobserve\";\n+\n+function resultLabel(winner: Match[\"winner\"]) {\n+  if (winner === \"human_win\") return \"you win\";\n+  if (winner === \"bot_win\") return \"bot wins\";\n+  if (winner === \"draw\") return \"draw\";\n+  return \"unfinished\";\n+}\n+\n+function actorLabel(actor: Replay[\"frames\"][number][\"actor\"]) {\n+  if (actor === \"human\") return \"you\";\n+  if (actor === \"bot\") return \"arcade bot\";\n+  return \"opening\";\n+}\n+\n+export function HistoryPage() {\n+  // @fireweave-controlpoint match-replay\n+  const enabled = fw.controlPoints.getBooleanValue(\"match-replay\", false);\n+  const [matches, setMatches] = useState<HistoryMatch[] | null>(null);\n+  const [error, setError] = useState(\"\");\n+\n+  useEffect(() => {\n+    if (!enabled) return;\n+    void api\n+      .history()\n+      .then((body) => {\n+        setMatches(body.matches);\n+        void record(\"arcade_web_history_views_total\", 1, {\n+          surface: \"web\",\n+          result: \"ok\",\n+        });\n+      })\n+      .catch((err: unknown) => {\n+        setError(err instanceof Error ? err.message : \"failed\");\n+        void record(\"arcade_web_history_load_errors_total\", 1, {\n+          surface: \"web\",\n+          result: \"error\",\n+          reason: err instanceof ApiError ? String(err.status) : \"network\",\n+        });\n+      });\n+  }, [enabled]);\n+\n+  if (!enabled) return <Navigate to=\"/\" replace />;\n+\n+  return (\n+    <section className=\"panel\">\n+      <h2>history</h2>\n+      <p className=\"hint\">finished matches you can step through</p>\n+      {error ? <p className=\"error\">{error}</p> : null}\n+      {matches && matches.length === 0 ? (\n+        <p className=\"hint\">no finished matches yet — play one, then come back</p>\n+      ) : null}\n+      {matches && matches.length > 0 ? (\n+        <ul className=\"history-list\">\n+          {matches.map((match) => (\n+            <li key={match.id}>\n+              <Link to={`/history/${match.id}`}>\n+                <span>\n+                  <GameMark id={match.gameId} />\n+                  <strong>{match.name}</strong>\n+                </span>\n+                <span>{resultLabel(match.winner)}</span>\n+                <time dateTime={match.createdAt}>\n+                  {new Date(match.createdAt).toLocaleString()}\n+                </time>\n+              </Link>\n+            </li>\n+          ))}\n+        </ul>\n+      ) : null}\n+    </section>\n+  );\n+}\n+\n+export function ReplayPage() {\n+  // @fireweave-controlpoint match-replay\n+  const enabled = fw.controlPoints.getBooleanValue(\"match-replay\", false);\n+  const { matchId } = useParams();\n+  const id = Number(matchId);\n+  const [replay, setReplay] = useState<Replay | null>(null);\n+  const [error, setError] = useState(\"\");\n+  const [step, setStep] = useState(0);\n+\n+  useEffect(() => {\n+    if (!enabled || !Number.isInteger(id)) return;\n+    const started = performance.now();\n+    void api\n+      .replay(id)\n+      .then((body) => {\n+        setReplay(body);\n+        setStep(0);\n+        void record(\"arcade_web_replay_loads_total\", 1, {\n+          surface: \"web\",\n+          result: \"ok\",\n+          game: body.gameId,\n+        });\n+        void record(\n+          \"arcade_web_replay_load_ms\",\n+          Math.round(performance.now() - started),\n+          { surface: \"web\", result: \"ok\", game: body.gameId },\n+          \"histogram\",\n+        );\n+      })\n+      .catch((err: unknown) => {\n+        const reason =\n+          err instanceof ApiError\n+            ? err.status === 409\n+              ? \"incomplete\"\n+              : String(err.status)\n+            : \"network\";\n+        setError(err instanceof Error ? err.message : \"failed\");\n+        void record(\"arcade_web_replay_load_errors_total\", 1, {\n+          surface: \"web\",\n+          result: \"error\",\n+          reason,\n+        });\n+        void record(\n+          \"arcade_web_replay_load_ms\",\n+          Math.round(performance.now() - started),\n+          { surface: \"web\", result: \"error\" },\n+          \"histogram\",\n+        );\n+      });\n+  }, [enabled, id]);\n+\n+  if (!enabled) return <Navigate to=\"/\" replace />;\n+  if (!Number.isInteger(id)) return <Navigate to=\"/history\" replace />;\n+\n+  const frame = replay?.frames[step];\n+  const last = replay ? step === replay.frames.length - 1 : false;\n+  const board: Match | null =\n+    replay && frame\n+      ? {\n+          id: replay.id,\n+          gameId: replay.gameId,\n+          state: frame.state,\n+          status: last ? \"finished\" : \"playing\",\n+          winner: last ? replay.winner : null,\n+        }\n+      : null;\n+  const statusClass =\n+    last && replay?.winner === \"human_win\" ? \"win\" : last && replay?.winner === \"bot_win\" ? \"lose\" : \"\";\n+\n+  return (\n+    <section className={`panel play-panel ${statusClass}`}>\n+      <div className=\"play-bar\">\n+        {replay ? <GameMark id={replay.gameId} /> : null}\n+        <div className=\"play-title\">\n+          <div className=\"status\">{replay?.name ?? \"replay\"}</div>\n+          <p className=\"hint\">\n+            {frame ? actorLabel(frame.actor) : error ? \"\" : \"loading…\"}\n+            {last && replay ? ` · ${resultLabel(replay.winner)}` : \"\"}\n+          </p>\n+        </div>\n+        <div className=\"row\">\n+          <Link className=\"btn secondary\" to=\"/history\">\n+            history\n+          </Link>\n+          <button\n+            className=\"btn secondary\"\n+            type=\"button\"\n+            disabled={!replay || step === 0}\n+            onClick={() => setStep((current) => Math.max(0, current - 1))}\n+          >\n+            previous\n+          </button>\n+          <span className=\"hint\">\n+            {replay ? `${step + 1} / ${replay.frames.length}` : \"—\"}\n+          </span>\n+          <button\n+            className=\"btn mint\"\n+            type=\"button\"\n+            disabled={!replay || last}\n+            onClick={() =>\n+              setStep((current) =>\n+                replay ? Math.min(replay.frames.length - 1, current + 1) : current,\n+              )\n+            }\n+          >\n+            next\n+          </button>\n+        </div>\n+      </div>\n+      {error ? <p className=\"error\">{error}</p> : null}\n+      {board ? (\n+        <div className=\"play-fit\" data-game={board.gameId} data-result={statusClass}>\n+          <OutcomeFX\n+            gameId={board.gameId}\n+            result={statusClass === \"win\" || statusClass === \"lose\" ? statusClass : \"\"}\n+          />\n+          <GameBoard match={board} busy onMove={() => {}} />\n+        </div>\n+      ) : null}\n+    </section>\n+  );\n+}\ndiff --git a/apps/web/src/api.ts b/apps/web/src/api.ts\nindex 1bb98e8..e7b91ab 100644\n--- a/apps/web/src/api.ts\n+++ b/apps/web/src/api.ts\n@@ -106,6 +106,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {\n   return data as T;\n }\n \n+export type HistoryMatch = {\n+  id: number;\n+  gameId: string;\n+  name: string;\n+  winner: Match[\"winner\"];\n+  createdAt: string;\n+};\n+export type Replay = {\n+  id: number;\n+  gameId: string;\n+  name: string;\n+  winner: Match[\"winner\"];\n+  createdAt: string;\n+  frames: Array<{ index: number; actor: \"human\" | \"bot\" | \"system\"; state: unknown }>;\n+};\n+\n export const api = {\n   me: () => request<{ user: User | null }>(\"/api/auth/me\"),\n   login: (username: string, password: string) =>\n@@ -129,5 +145,7 @@ export const api = {\n       body: JSON.stringify(body),\n     }),\n   scoreboard: () => request<Scoreboard>(\"/api/scoreboard\"),\n+  history: () => request<{ matches: HistoryMatch[] }>(\"/api/matches\"),\n+  replay: (matchId: number) => request<Replay>(`/api/matches/${matchId}/replay`),\n   adminInsights: () => request<AdminInsights>(\"/api/admin/insights\"),\n };\ndiff --git a/apps/web/src/fireweave/fw-providers.ts b/apps/web/src/fireweave/fw-providers.ts\nindex 0bff75b..a5d393c 100644\n--- a/apps/web/src/fireweave/fw-providers.ts\n+++ b/apps/web/src/fireweave/fw-providers.ts\n@@ -272,7 +272,7 @@ export async function makeConnectedVendorProvider(): Promise<FireweaveWebClient>\n export async function makeDevProvider(): Promise<FireweaveWebClient> {\n   fwClient = await initFireweave({\n     mode: 'local',\n-    local: { controlPoints: { \"profile-avatar-menu\": true, \"header-arrangement\": true } },\n+    local: { controlPoints: { \"profile-avatar-menu\": true, \"header-arrangement\": true, \"match-replay\": true } },\n     context: { targetingKey: resolveDeviceTargetingKey() },\n   });\n   return fwClient;\ndiff --git a/apps/web/src/fireweave/fw-tracker.ts b/apps/web/src/fireweave/fw-tracker.ts\nindex 13d1fe3..a1b9b35 100644\n--- a/apps/web/src/fireweave/fw-tracker.ts\n+++ b/apps/web/src/fireweave/fw-tracker.ts\n@@ -19,4 +19,5 @@\n export const FW_STAMPS: Array<{ stampId: string }> = [\n   { stampId: \"stmp_01M48AE7FHT2FEKHD88HXWY0V8\" },\n   { stampId: \"stmp_01M48DNJ3KM4EN54TA798ZZ98C\" },\n+  { stampId: \"stmp_01M48Q5RVH35KW30Q1ZA1C4X4M\" },\n ];\ndiff --git a/apps/web/src/styles.css b/apps/web/src/styles.css\nindex 655437b..cfb1925 100644\n--- a/apps/web/src/styles.css\n+++ b/apps/web/src/styles.css\n@@ -820,6 +820,31 @@ table.data th { font-size: 0.8rem; opacity: 0.7; }\n }\n \n .auth-modes { margin-top: 0.25rem; }\n+\n+.history-list {\n+  list-style: none;\n+  padding: 0;\n+  margin: 1rem 0 0;\n+  display: grid;\n+  gap: 0.5rem;\n+}\n+.history-list a {\n+  display: grid;\n+  grid-template-columns: 1fr auto auto;\n+  gap: 1rem;\n+  align-items: center;\n+  padding: 0.75rem 0.9rem;\n+  background: #fff;\n+  border: 1px solid var(--line);\n+  text-decoration: none;\n+  color: inherit;\n+}\n+.history-list a span:first-child {\n+  display: flex;\n+  align-items: center;\n+  gap: 0.55rem;\n+}\n+.history-list .game-mark { width: 28px; height: 28px; }\n .admin-shell { display: grid; gap: 0; }\n \n @media (max-width: 640px) {\n@@ -844,4 +869,5 @@ table.data th { font-size: 0.8rem; opacity: 0.7; }\n   .mast-unified .avatar-btn { width: 2rem; height: 2rem; font-size: 0.9rem; }\n   .tagline { display: none; }\n   .play-bar .hint { display: none; }\n+  .history-list a { grid-template-columns: 1fr; gap: 0.25rem; }\n }\ndiff --git a/docker/compose.dev.yml b/docker/compose.dev.yml\nindex abdf49a..54a584e 100644\n--- a/docker/compose.dev.yml\n+++ b/docker/compose.dev.yml\n@@ -36,6 +36,9 @@ services:\n     ports:\n       - \"3000:3000\"\n     environment:\n+      # Unset NODE_ENV makes the FireWeave harness default to production, so\n+      # local control-point seeds (match-replay and the rest) never apply.\n+      NODE_ENV: development\n       HOST: \"0.0.0.0\"\n       PORT: \"3000\"\n       WEB_DEV_ORIGIN: http://localhost:5173\ndiff --git a/scripts/dev.sh b/scripts/dev.sh\nindex e69ba4e..4a11a7f 100755\n--- a/scripts/dev.sh\n+++ b/scripts/dev.sh\n@@ -22,6 +22,7 @@ export DATABASE_URL=\"${DATABASE_URL:-postgres://tictac:tictac@127.0.0.1:5432/tic\n if [[ \"$DATABASE_URL\" == *\"@db:\"* ]]; then\n   export DATABASE_URL=\"postgres://${POSTGRES_USER:-tictac}:${POSTGRES_PASSWORD:-tictac}@127.0.0.1:5432/${POSTGRES_DB:-tictac}\"\n fi\n+export NODE_ENV=\"${NODE_ENV:-development}\"\n export PORT=\"${PORT:-3000}\"\n export HOST=\"${HOST:-127.0.0.1}\"\n export API_PROXY=\"${API_PROXY:-http://127.0.0.1:3000}\"\n",
+ "atBase": {
+  "name": "Secrets present at base",
+  "value": "observed",
+  "source": "measured",
+  "evidence": [
+   "scripts/dev.sh:23"
+  ],
+  "note": "scripts/dev.sh:23 (URL credentials): present in the repo before this change, not added by it. Redacted from the model payload; files matching .env* or named secrets or credentials are not sent at all. Not a gate trip, does not lower confidence"
+ },
+ "citation": {
+  "pathFiles": [
+   "apps/api/src/application/games.ts",
+   "apps/api/src/bootstrap.ts",
+   "apps/api/src/main.ts",
+   "apps/api/src/application/history.ts",
+   "apps/api/src/domain/ports.ts",
+   "apps/api/src/interfaces/http/router.ts",
+   "apps/api/src/fireweave/fw-providers.ts",
+   "apps/api/src/fireweave/fw-harness.ts",
+   "apps/api/src/infrastructure/db/client.ts",
+   "apps/api/src/infrastructure/db/match-repo.ts",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts",
+   "apps/api/src/infrastructure/observability/openobserve.ts",
+   "apps/web/src/App.tsx",
+   "apps/web/src/main.tsx",
+   "apps/web/src/History.tsx",
+   "apps/web/src/api.ts",
+   "apps/web/src/fireweave/fw-providers.ts",
+   "apps/web/src/fireweave/fw-harness.ts"
+  ],
+  "entries": [
+   "apps/api/src/main.ts",
+   "apps/web/src/main.tsx"
+  ],
+  "handlers": [
+   "apps/api/src/interfaces/http/router.ts:82",
+   "apps/api/src/interfaces/http/router.ts:122",
+   "apps/api/src/interfaces/http/router.ts:138",
+   "apps/api/src/interfaces/http/router.ts:199"
+  ],
+  "changed": [
+   "apps/api/src/application/games.ts:8",
+   "apps/api/src/application/games.ts:63",
+   "apps/api/src/application/games.ts:64",
+   "apps/api/src/application/games.ts:65",
+   "apps/api/src/application/games.ts:66",
+   "apps/api/src/application/games.ts:83",
+   "apps/api/src/application/games.ts:126",
+   "apps/api/src/application/games.ts:127",
+   "apps/api/src/application/games.ts:128",
+   "apps/api/src/application/games.ts:129",
+   "apps/api/src/application/games.ts:165",
+   "apps/api/src/application/games.ts:190",
+   "apps/api/src/application/history.ts:1",
+   "apps/api/src/application/history.ts:2",
+   "apps/api/src/application/history.ts:3",
+   "apps/api/src/application/history.ts:4",
+   "apps/api/src/application/history.ts:5",
+   "apps/api/src/application/history.ts:6",
+   "apps/api/src/application/history.ts:7",
+   "apps/api/src/application/history.ts:8",
+   "apps/api/src/application/history.ts:9",
+   "apps/api/src/application/history.ts:10",
+   "apps/api/src/application/history.ts:11",
+   "apps/api/src/application/history.ts:12",
+   "apps/api/src/application/history.ts:13",
+   "apps/api/src/application/history.ts:14",
+   "apps/api/src/application/history.ts:15",
+   "apps/api/src/application/history.ts:16",
+   "apps/api/src/application/history.ts:17",
+   "apps/api/src/application/history.ts:18",
+   "apps/api/src/application/history.ts:19",
+   "apps/api/src/application/history.ts:20",
+   "apps/api/src/application/history.ts:21",
+   "apps/api/src/application/history.ts:22",
+   "apps/api/src/application/history.ts:23",
+   "apps/api/src/application/history.ts:24",
+   "apps/api/src/application/history.ts:25",
+   "apps/api/src/application/history.ts:26",
+   "apps/api/src/application/history.ts:27",
+   "apps/api/src/application/history.ts:28",
+   "apps/api/src/application/history.ts:29",
+   "apps/api/src/application/history.ts:30",
+   "apps/api/src/application/history.ts:31",
+   "apps/api/src/application/history.ts:32",
+   "apps/api/src/application/history.ts:33",
+   "apps/api/src/application/history.ts:34",
+   "apps/api/src/application/history.ts:35",
+   "apps/api/src/application/history.ts:36",
+   "apps/api/src/application/history.ts:37",
+   "apps/api/src/application/history.ts:38",
+   "apps/api/src/application/history.ts:39",
+   "apps/api/src/application/history.ts:40",
+   "apps/api/src/application/history.ts:41",
+   "apps/api/src/application/history.ts:42",
+   "apps/api/src/application/history.ts:43",
+   "apps/api/src/application/history.ts:44",
+   "apps/api/src/application/history.ts:45",
+   "apps/api/src/application/history.ts:46",
+   "apps/api/src/application/history.ts:47",
+   "apps/api/src/application/history.ts:48",
+   "apps/api/src/application/history.ts:49",
+   "apps/api/src/application/history.ts:50",
+   "apps/api/src/application/history.ts:51",
+   "apps/api/src/application/history.ts:52",
+   "apps/api/src/application/history.ts:53",
+   "apps/api/src/application/history.ts:54",
+   "apps/api/src/application/history.ts:55",
+   "apps/api/src/application/history.ts:56",
+   "apps/api/src/application/history.ts:57",
+   "apps/api/src/application/history.ts:58",
+   "apps/api/src/application/history.ts:59",
+   "apps/api/src/application/history.ts:60",
+   "apps/api/src/application/history.ts:61",
+   "apps/api/src/application/history.ts:62",
+   "apps/api/src/application/history.ts:63",
+   "apps/api/src/application/history.ts:64",
+   "apps/api/src/application/history.ts:65",
+   "apps/api/src/application/history.ts:66",
+   "apps/api/src/application/history.ts:67",
+   "apps/api/src/application/history.ts:68",
+   "apps/api/src/application/history.ts:69",
+   "apps/api/src/application/history.ts:70",
+   "apps/api/src/application/history.ts:71",
+   "apps/api/src/application/history.ts:72",
+   "apps/api/src/application/history.ts:73",
+   "apps/api/src/application/history.ts:74",
+   "apps/api/src/application/history.ts:75",
+   "apps/api/src/application/history.ts:76",
+   "apps/api/src/application/history.ts:77",
+   "apps/api/src/application/history.ts:78",
+   "apps/api/src/application/history.ts:79",
+   "apps/api/src/application/history.ts:80",
+   "apps/api/src/application/history.ts:81",
+   "apps/api/src/application/history.ts:82",
+   "apps/api/src/application/history.ts:83",
+   "apps/api/src/application/history.ts:84",
+   "apps/api/src/application/history.ts:85",
+   "apps/api/src/application/history.ts:86",
+   "apps/api/src/application/history.ts:87",
+   "apps/api/src/application/history.ts:88",
+   "apps/api/src/application/history.ts:89",
+   "apps/api/src/application/history.ts:90",
+   "apps/api/src/application/history.ts:91",
+   "apps/api/src/application/history.ts:92",
+   "apps/api/src/application/history.ts:93",
+   "apps/api/src/application/history.ts:94",
+   "apps/api/src/application/history.ts:95",
+   "apps/api/src/application/history.ts:96",
+   "apps/api/src/application/history.ts:97",
+   "apps/api/src/application/history.ts:98",
+   "apps/api/src/application/history.ts:99",
+   "apps/api/src/application/history.ts:100",
+   "apps/api/src/application/history.ts:101",
+   "apps/api/src/application/history.ts:102",
+   "apps/api/src/application/history.ts:103",
+   "apps/api/src/application/history.ts:104",
+   "apps/api/src/application/history.ts:105",
+   "apps/api/src/application/history.ts:106",
+   "apps/api/src/application/history.ts:107",
+   "apps/api/src/application/history.ts:108",
+   "apps/api/src/application/history.ts:109",
+   "apps/api/src/application/history.ts:110",
+   "apps/api/src/application/history.ts:111",
+   "apps/api/src/application/history.ts:112",
+   "apps/api/src/application/history.ts:113",
+   "apps/api/src/application/history.ts:114",
+   "apps/api/src/application/history.ts:115",
+   "apps/api/src/application/history.ts:116",
+   "apps/api/src/application/history.ts:117",
+   "apps/api/src/application/history.ts:118",
+   "apps/api/src/application/history.ts:119",
+   "apps/api/src/application/history.ts:120",
+   "apps/api/src/application/history.ts:121",
+   "apps/api/src/application/history.ts:122",
+   "apps/api/src/application/history.ts:123",
+   "apps/api/src/application/history.ts:124",
+   "apps/api/src/application/history.ts:125",
+   "apps/api/src/application/history.ts:126",
+   "apps/api/src/application/history.ts:127",
+   "apps/api/src/application/history.ts:128",
+   "apps/api/src/application/history.ts:129",
+   "apps/api/src/application/history.ts:130",
+   "apps/api/src/application/history.ts:131",
+   "apps/api/src/application/history.ts:132",
+   "apps/api/src/application/history.ts:133",
+   "apps/api/src/application/history.ts:134",
+   "apps/api/src/application/history.ts:135",
+   "apps/api/src/application/history.ts:136",
+   "apps/api/src/application/history.ts:137",
+   "apps/api/src/application/history.ts:138",
+   "apps/api/src/application/history.ts:139",
+   "apps/api/src/application/history.ts:140",
+   "apps/api/src/application/history.ts:141",
+   "apps/api/src/application/history.ts:142",
+   "apps/api/src/application/history.ts:143",
+   "apps/api/src/application/history.ts:144",
+   "apps/api/src/application/history.ts:145",
+   "apps/api/src/application/history.ts:146",
+   "apps/api/src/application/history.ts:147",
+   "apps/api/src/application/history.ts:148",
+   "apps/api/src/application/history.ts:149",
+   "apps/api/src/application/history.ts:150",
+   "apps/api/src/application/history.ts:151",
+   "apps/api/src/application/history.ts:152",
+   "apps/api/src/application/history.ts:153",
+   "apps/api/src/application/history.ts:154",
+   "apps/api/src/application/history.ts:155",
+   "apps/api/src/application/history.ts:156",
+   "apps/api/src/application/history.ts:157",
+   "apps/api/src/application/history.ts:158",
+   "apps/api/src/application/history.ts:159",
+   "apps/api/src/application/history.ts:160",
+   "apps/api/src/application/history.ts:161",
+   "apps/api/src/application/history.ts:162",
+   "apps/api/src/application/history.ts:163",
+   "apps/api/src/application/history.ts:164",
+   "apps/api/src/application/history.ts:165",
+   "apps/api/src/application/history.ts:166",
+   "apps/api/src/application/history.ts:167",
+   "apps/api/src/application/history.ts:168",
+   "apps/api/src/application/history.ts:169",
+   "apps/api/src/application/history.ts:170",
+   "apps/api/src/bootstrap.ts:5",
+   "apps/api/src/bootstrap.ts:33",
+   "apps/api/src/domain/ports.ts:40",
+   "apps/api/src/domain/ports.ts:41",
+   "apps/api/src/domain/ports.ts:42",
+   "apps/api/src/domain/ports.ts:43",
+   "apps/api/src/domain/ports.ts:44",
+   "apps/api/src/domain/ports.ts:45",
+   "apps/api/src/domain/ports.ts:46",
+   "apps/api/src/domain/ports.ts:47",
+   "apps/api/src/domain/ports.ts:48",
+   "apps/api/src/domain/ports.ts:49",
+   "apps/api/src/domain/ports.ts:50",
+   "apps/api/src/domain/ports.ts:51",
+   "apps/api/src/domain/ports.ts:52",
+   "apps/api/src/domain/ports.ts:53",
+   "apps/api/src/domain/ports.ts:54",
+   "apps/api/src/domain/ports.ts:55",
+   "apps/api/src/domain/ports.ts:82",
+   "apps/api/src/domain/ports.ts:83",
+   "apps/api/src/domain/ports.ts:84",
+   "apps/api/src/fireweave/fw-providers.ts:204",
+   "apps/api/src/fireweave/fw-tracker.ts:19",
+   "apps/api/src/fireweave/fw-tracker.ts:20",
+   "apps/api/src/fireweave/fw-tracker.ts:21",
+   "apps/api/src/infrastructure/db/client.ts:69",
+   "apps/api/src/infrastructure/db/client.ts:70",
+   "apps/api/src/infrastructure/db/client.ts:73",
+   "apps/api/src/infrastructure/db/match-repo.ts:2",
+   "apps/api/src/infrastructure/db/match-repo.ts:3",
+   "apps/api/src/infrastructure/db/match-repo.ts:4",
+   "apps/api/src/infrastructure/db/match-repo.ts:5",
+   "apps/api/src/infrastructure/db/match-repo.ts:6",
+   "apps/api/src/infrastructure/db/match-repo.ts:7",
+   "apps/api/src/infrastructure/db/match-repo.ts:10",
+   "apps/api/src/infrastructure/db/match-repo.ts:11",
+   "apps/api/src/infrastructure/db/match-repo.ts:12",
+   "apps/api/src/infrastructure/db/match-repo.ts:13",
+   "apps/api/src/infrastructure/db/match-repo.ts:14",
+   "apps/api/src/infrastructure/db/match-repo.ts:15",
+   "apps/api/src/infrastructure/db/match-repo.ts:68",
+   "apps/api/src/infrastructure/db/match-repo.ts:69",
+   "apps/api/src/infrastructure/db/match-repo.ts:70",
+   "apps/api/src/infrastructure/db/match-repo.ts:71",
+   "apps/api/src/infrastructure/db/match-repo.ts:73",
+   "apps/api/src/infrastructure/db/match-repo.ts:78",
+   "apps/api/src/infrastructure/db/match-repo.ts:79",
+   "apps/api/src/infrastructure/db/match-repo.ts:84",
+   "apps/api/src/infrastructure/db/match-repo.ts:85",
+   "apps/api/src/infrastructure/db/match-repo.ts:86",
+   "apps/api/src/infrastructure/db/match-repo.ts:87",
+   "apps/api/src/infrastructure/db/match-repo.ts:88",
+   "apps/api/src/infrastructure/db/match-repo.ts:89",
+   "apps/api/src/infrastructure/db/match-repo.ts:90",
+   "apps/api/src/infrastructure/db/match-repo.ts:91",
+   "apps/api/src/infrastructure/db/match-repo.ts:92",
+   "apps/api/src/infrastructure/db/match-repo.ts:93",
+   "apps/api/src/infrastructure/db/match-repo.ts:94",
+   "apps/api/src/infrastructure/db/match-repo.ts:95",
+   "apps/api/src/infrastructure/db/match-repo.ts:96",
+   "apps/api/src/infrastructure/db/match-repo.ts:97",
+   "apps/api/src/infrastructure/db/match-repo.ts:98",
+   "apps/api/src/infrastructure/db/match-repo.ts:99",
+   "apps/api/src/infrastructure/db/match-repo.ts:100",
+   "apps/api/src/infrastructure/db/match-repo.ts:101",
+   "apps/api/src/infrastructure/db/match-repo.ts:102",
+   "apps/api/src/infrastructure/db/match-repo.ts:103",
+   "apps/api/src/infrastructure/db/match-repo.ts:104",
+   "apps/api/src/infrastructure/db/match-repo.ts:105",
+   "apps/api/src/infrastructure/db/match-repo.ts:106",
+   "apps/api/src/infrastructure/db/match-repo.ts:107",
+   "apps/api/src/infrastructure/db/match-repo.ts:108",
+   "apps/api/src/infrastructure/db/match-repo.ts:109",
+   "apps/api/src/infrastructure/db/match-repo.ts:110",
+   "apps/api/src/infrastructure/db/match-repo.ts:111",
+   "apps/api/src/infrastructure/db/match-repo.ts:112",
+   "apps/api/src/infrastructure/db/match-repo.ts:113",
+   "apps/api/src/infrastructure/db/match-repo.ts:114",
+   "apps/api/src/infrastructure/db/match-repo.ts:115",
+   "apps/api/src/infrastructure/db/match-repo.ts:116",
+   "apps/api/src/infrastructure/db/match-repo.ts:117",
+   "apps/api/src/infrastructure/db/match-repo.ts:118",
+   "apps/api/src/infrastructure/db/match-repo.ts:119",
+   "apps/api/src/infrastructure/db/match-repo.ts:120",
+   "apps/api/src/infrastructure/db/match-repo.ts:121",
+   "apps/api/src/infrastructure/db/match-repo.ts:122",
+   "apps/api/src/infrastructure/db/match-repo.ts:123",
+   "apps/api/src/infrastructure/db/match-repo.ts:124",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:204",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:205",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:206",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:207",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:208",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:209",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:210",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:211",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:212",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:213",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:214",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:215",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:216",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:217",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:218",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:219",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:220",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:221",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:222",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:223",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:224",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:225",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:226",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:227",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:228",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:229",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:230",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:231",
+   "apps/api/src/infrastructure/observability/actions-catalog.ts:232",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:169",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:170",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:171",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:172",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:173",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:174",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:175",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:176",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:177",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:178",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:179",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:180",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:181",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:182",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:183",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:184",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:185",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:186",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:187",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:188",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:189",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:190",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:191",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:192",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:193",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:194",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:195",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:196",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:197",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:198",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:199",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:200",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:201",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:202",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:203",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:204",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:205",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:206",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:207",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:208",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:209",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:210",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:211",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:212",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:213",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:214",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:215",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:216",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:217",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:218",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:219",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:220",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:221",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:222",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:223",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:224",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:225",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:226",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:227",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:228",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:229",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:230",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:231",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:232",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:233",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:234",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:235",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:236",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:237",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:238",
+   "apps/api/src/interfaces/http/router.ts:7",
+   "apps/api/src/interfaces/http/router.ts:42",
+   "apps/api/src/interfaces/http/router.ts:199",
+   "apps/api/src/interfaces/http/router.ts:200",
+   "apps/api/src/interfaces/http/router.ts:201",
+   "apps/api/src/interfaces/http/router.ts:202",
+   "apps/api/src/interfaces/http/router.ts:203",
+   "apps/api/src/interfaces/http/router.ts:204",
+   "apps/api/src/interfaces/http/router.ts:205",
+   "apps/api/src/interfaces/http/router.ts:206",
+   "apps/api/src/interfaces/http/router.ts:207",
+   "apps/api/src/interfaces/http/router.ts:208",
+   "apps/api/src/interfaces/http/router.ts:209",
+   "apps/api/src/interfaces/http/router.ts:210",
+   "apps/api/src/interfaces/http/router.ts:211",
+   "apps/api/src/interfaces/http/router.ts:212",
+   "apps/api/src/interfaces/http/router.ts:213",
+   "apps/web/src/App.tsx:18",
+   "apps/web/src/App.tsx:28",
+   "apps/web/src/App.tsx:548",
+   "apps/web/src/App.tsx:599",
+   "apps/web/src/App.tsx:600",
+   "apps/web/src/App.tsx:601",
+   "apps/web/src/App.tsx:602",
+   "apps/web/src/App.tsx:603",
+   "apps/web/src/App.tsx:604",
+   "apps/web/src/App.tsx:605",
+   "apps/web/src/App.tsx:606",
+   "apps/web/src/App.tsx:628",
+   "apps/web/src/App.tsx:629",
+   "apps/web/src/App.tsx:648",
+   "apps/web/src/App.tsx:703",
+   "apps/web/src/App.tsx:704",
+   "apps/web/src/App.tsx:705",
+   "apps/web/src/App.tsx:706",
+   "apps/web/src/App.tsx:707",
+   "apps/web/src/App.tsx:708",
+   "apps/web/src/App.tsx:709",
+   "apps/web/src/App.tsx:710",
+   "apps/web/src/App.tsx:711",
+   "apps/web/src/App.tsx:747",
+   "apps/web/src/App.tsx:748",
+   "apps/web/src/App.tsx:752",
+   "apps/web/src/App.tsx:792",
+   "apps/web/src/History.tsx:1",
+   "apps/web/src/History.tsx:2",
+   "apps/web/src/History.tsx:3",
+   "apps/web/src/History.tsx:4",
+   "apps/web/src/History.tsx:5",
+   "apps/web/src/History.tsx:6",
+   "apps/web/src/History.tsx:7",
+   "apps/web/src/History.tsx:8",
+   "apps/web/src/History.tsx:9",
+   "apps/web/src/History.tsx:10",
+   "apps/web/src/History.tsx:11",
+   "apps/web/src/History.tsx:12",
+   "apps/web/src/History.tsx:13",
+   "apps/web/src/History.tsx:14",
+   "apps/web/src/History.tsx:15",
+   "apps/web/src/History.tsx:16",
+   "apps/web/src/History.tsx:17",
+   "apps/web/src/History.tsx:18",
+   "apps/web/src/History.tsx:19",
+   "apps/web/src/History.tsx:20",
+   "apps/web/src/History.tsx:21",
+   "apps/web/src/History.tsx:22",
+   "apps/web/src/History.tsx:23",
+   "apps/web/src/History.tsx:24",
+   "apps/web/src/History.tsx:25",
+   "apps/web/src/History.tsx:26",
+   "apps/web/src/History.tsx:27",
+   "apps/web/src/History.tsx:28",
+   "apps/web/src/History.tsx:29",
+   "apps/web/src/History.tsx:30",
+   "apps/web/src/History.tsx:31",
+   "apps/web/src/History.tsx:32",
+   "apps/web/src/History.tsx:33",
+   "apps/web/src/History.tsx:34",
+   "apps/web/src/History.tsx:35",
+   "apps/web/src/History.tsx:36",
+   "apps/web/src/History.tsx:37",
+   "apps/web/src/History.tsx:38",
+   "apps/web/src/History.tsx:39",
+   "apps/web/src/History.tsx:40",
+   "apps/web/src/History.tsx:41",
+   "apps/web/src/History.tsx:42",
+   "apps/web/src/History.tsx:43",
+   "apps/web/src/History.tsx:44",
+   "apps/web/src/History.tsx:45",
+   "apps/web/src/History.tsx:46",
+   "apps/web/src/History.tsx:47",
+   "apps/web/src/History.tsx:48",
+   "apps/web/src/History.tsx:49",
+   "apps/web/src/History.tsx:50",
+   "apps/web/src/History.tsx:51",
+   "apps/web/src/History.tsx:52",
+   "apps/web/src/History.tsx:53",
+   "apps/web/src/History.tsx:54",
+   "apps/web/src/History.tsx:55",
+   "apps/web/src/History.tsx:56",
+   "apps/web/src/History.tsx:57",
+   "apps/web/src/History.tsx:58",
+   "apps/web/src/History.tsx:59",
+   "apps/web/src/History.tsx:60",
+   "apps/web/src/History.tsx:61",
+   "apps/web/src/History.tsx:62",
+   "apps/web/src/History.tsx:63",
+   "apps/web/src/History.tsx:64",
+   "apps/web/src/History.tsx:65",
+   "apps/web/src/History.tsx:66",
+   "apps/web/src/History.tsx:67",
+   "apps/web/src/History.tsx:68",
+   "apps/web/src/History.tsx:69",
+   "apps/web/src/History.tsx:70",
+   "apps/web/src/History.tsx:71",
+   "apps/web/src/History.tsx:72",
+   "apps/web/src/History.tsx:73",
+   "apps/web/src/History.tsx:74",
+   "apps/web/src/History.tsx:75",
+   "apps/web/src/History.tsx:76",
+   "apps/web/src/History.tsx:77",
+   "apps/web/src/History.tsx:78",
+   "apps/web/src/History.tsx:79",
+   "apps/web/src/History.tsx:80",
+   "apps/web/src/History.tsx:81",
+   "apps/web/src/History.tsx:82",
+   "apps/web/src/History.tsx:83",
+   "apps/web/src/History.tsx:84",
+   "apps/web/src/History.tsx:85",
+   "apps/web/src/History.tsx:86",
+   "apps/web/src/History.tsx:87",
+   "apps/web/src/History.tsx:88",
+   "apps/web/src/History.tsx:89",
+   "apps/web/src/History.tsx:90",
+   "apps/web/src/History.tsx:91",
+   "apps/web/src/History.tsx:92",
+   "apps/web/src/History.tsx:93",
+   "apps/web/src/History.tsx:94",
+   "apps/web/src/History.tsx:95",
+   "apps/web/src/History.tsx:96",
+   "apps/web/src/History.tsx:97",
+   "apps/web/src/History.tsx:98",
+   "apps/web/src/History.tsx:99",
+   "apps/web/src/History.tsx:100",
+   "apps/web/src/History.tsx:101",
+   "apps/web/src/History.tsx:102",
+   "apps/web/src/History.tsx:103",
+   "apps/web/src/History.tsx:104",
+   "apps/web/src/History.tsx:105",
+   "apps/web/src/History.tsx:106",
+   "apps/web/src/History.tsx:107",
+   "apps/web/src/History.tsx:108",
+   "apps/web/src/History.tsx:109",
+   "apps/web/src/History.tsx:110",
+   "apps/web/src/History.tsx:111",
+   "apps/web/src/History.tsx:112",
+   "apps/web/src/History.tsx:113",
+   "apps/web/src/History.tsx:114",
+   "apps/web/src/History.tsx:115",
+   "apps/web/src/History.tsx:116",
+   "apps/web/src/History.tsx:117",
+   "apps/web/src/History.tsx:118",
+   "apps/web/src/History.tsx:119",
+   "apps/web/src/History.tsx:120",
+   "apps/web/src/History.tsx:121",
+   "apps/web/src/History.tsx:122",
+   "apps/web/src/History.tsx:123",
+   "apps/web/src/History.tsx:124",
+   "apps/web/src/History.tsx:125",
+   "apps/web/src/History.tsx:126",
+   "apps/web/src/History.tsx:127",
+   "apps/web/src/History.tsx:128",
+   "apps/web/src/History.tsx:129",
+   "apps/web/src/History.tsx:130",
+   "apps/web/src/History.tsx:131",
+   "apps/web/src/History.tsx:132",
+   "apps/web/src/History.tsx:133",
+   "apps/web/src/History.tsx:134",
+   "apps/web/src/History.tsx:135",
+   "apps/web/src/History.tsx:136",
+   "apps/web/src/History.tsx:137",
+   "apps/web/src/History.tsx:138",
+   "apps/web/src/History.tsx:139",
+   "apps/web/src/History.tsx:140",
+   "apps/web/src/History.tsx:141",
+   "apps/web/src/History.tsx:142",
+   "apps/web/src/History.tsx:143",
+   "apps/web/src/History.tsx:144",
+   "apps/web/src/History.tsx:145",
+   "apps/web/src/History.tsx:146",
+   "apps/web/src/History.tsx:147",
+   "apps/web/src/History.tsx:148",
+   "apps/web/src/History.tsx:149",
+   "apps/web/src/History.tsx:150",
+   "apps/web/src/History.tsx:151",
+   "apps/web/src/History.tsx:152",
+   "apps/web/src/History.tsx:153",
+   "apps/web/src/History.tsx:154",
+   "apps/web/src/History.tsx:155",
+   "apps/web/src/History.tsx:156",
+   "apps/web/src/History.tsx:157",
+   "apps/web/src/History.tsx:158",
+   "apps/web/src/History.tsx:159",
+   "apps/web/src/History.tsx:160",
+   "apps/web/src/History.tsx:161",
+   "apps/web/src/History.tsx:162",
+   "apps/web/src/History.tsx:163",
+   "apps/web/src/History.tsx:164",
+   "apps/web/src/History.tsx:165",
+   "apps/web/src/History.tsx:166",
+   "apps/web/src/History.tsx:167",
+   "apps/web/src/History.tsx:168",
+   "apps/web/src/History.tsx:169",
+   "apps/web/src/History.tsx:170",
+   "apps/web/src/History.tsx:171",
+   "apps/web/src/History.tsx:172",
+   "apps/web/src/History.tsx:173",
+   "apps/web/src/History.tsx:174",
+   "apps/web/src/History.tsx:175",
+   "apps/web/src/History.tsx:176",
+   "apps/web/src/History.tsx:177",
+   "apps/web/src/History.tsx:178",
+   "apps/web/src/History.tsx:179",
+   "apps/web/src/History.tsx:180",
+   "apps/web/src/History.tsx:181",
+   "apps/web/src/History.tsx:182",
+   "apps/web/src/History.tsx:183",
+   "apps/web/src/History.tsx:184",
+   "apps/web/src/History.tsx:185",
+   "apps/web/src/History.tsx:186",
+   "apps/web/src/History.tsx:187",
+   "apps/web/src/History.tsx:188",
+   "apps/web/src/History.tsx:189",
+   "apps/web/src/History.tsx:190",
+   "apps/web/src/History.tsx:191",
+   "apps/web/src/History.tsx:192",
+   "apps/web/src/History.tsx:193",
+   "apps/web/src/History.tsx:194",
+   "apps/web/src/History.tsx:195",
+   "apps/web/src/History.tsx:196",
+   "apps/web/src/History.tsx:197",
+   "apps/web/src/History.tsx:198",
+   "apps/web/src/History.tsx:199",
+   "apps/web/src/History.tsx:200",
+   "apps/web/src/History.tsx:201",
+   "apps/web/src/History.tsx:202",
+   "apps/web/src/History.tsx:203",
+   "apps/web/src/api.ts:109",
+   "apps/web/src/api.ts:110",
+   "apps/web/src/api.ts:111",
+   "apps/web/src/api.ts:112",
+   "apps/web/src/api.ts:113",
+   "apps/web/src/api.ts:114",
+   "apps/web/src/api.ts:115",
+   "apps/web/src/api.ts:116",
+   "apps/web/src/api.ts:117",
+   "apps/web/src/api.ts:118",
+   "apps/web/src/api.ts:119",
+   "apps/web/src/api.ts:120",
+   "apps/web/src/api.ts:121",
+   "apps/web/src/api.ts:122",
+   "apps/web/src/api.ts:123",
+   "apps/web/src/api.ts:124",
+   "apps/web/src/api.ts:148",
+   "apps/web/src/api.ts:149",
+   "apps/web/src/fireweave/fw-providers.ts:275",
+   "apps/web/src/fireweave/fw-tracker.ts:22",
+   "apps/web/src/styles.css:823",
+   "apps/web/src/styles.css:824",
+   "apps/web/src/styles.css:825",
+   "apps/web/src/styles.css:826",
+   "apps/web/src/styles.css:827",
+   "apps/web/src/styles.css:828",
+   "apps/web/src/styles.css:829",
+   "apps/web/src/styles.css:830",
+   "apps/web/src/styles.css:831",
+   "apps/web/src/styles.css:832",
+   "apps/web/src/styles.css:833",
+   "apps/web/src/styles.css:834",
+   "apps/web/src/styles.css:835",
+   "apps/web/src/styles.css:836",
+   "apps/web/src/styles.css:837",
+   "apps/web/src/styles.css:838",
+   "apps/web/src/styles.css:839",
+   "apps/web/src/styles.css:840",
+   "apps/web/src/styles.css:841",
+   "apps/web/src/styles.css:842",
+   "apps/web/src/styles.css:843",
+   "apps/web/src/styles.css:844",
+   "apps/web/src/styles.css:845",
+   "apps/web/src/styles.css:846",
+   "apps/web/src/styles.css:847",
+   "apps/web/src/styles.css:872",
+   "docker/compose.dev.yml:39",
+   "docker/compose.dev.yml:40",
+   "docker/compose.dev.yml:41",
+   "scripts/dev.sh:25",
+   "apps/api/src/fireweave/fw-providers.ts@09422bc:204",
+   "apps/api/src/fireweave/fw-tracker.ts@09422bc:19",
+   "apps/api/src/infrastructure/db/match-repo.ts@09422bc:2",
+   "apps/api/src/infrastructure/db/match-repo.ts@09422bc:58",
+   "apps/api/src/infrastructure/db/match-repo.ts@09422bc:63",
+   "apps/web/src/fireweave/fw-providers.ts@09422bc:275"
+  ],
+  "added": [
+   "import { fw } from \"../fireweave/fw-harness\";",
+   "      // @fireweave-controlpoint match-replay",
+   "      const snap = await fw.controlPoints.getBooleanValue(\"match-replay\", false, {",
+   "        targetingKey: String(user.id),",
+   "      });",
+   "          state: snap ? match.state : undefined,",
+   "      // @fireweave-controlpoint match-replay",
+   "      const snap = await fw.controlPoints.getBooleanValue(\"match-replay\", false, {",
+   "        targetingKey: String(user.id),",
+   "      });",
+   "        state: snap ? state : undefined,",
+   "          state: snap ? state : undefined,",
+   "import { AppError, type MatchResult, type PublicUser } from \"@arcade/shared\";",
+   "import type {",
+   "  EngineCatalog,",
+   "  MatchRepository,",
+   "  ObservabilityPort,",
+   "  TraceCtx,",
+   "} from \"../domain/ports\";",
+   "import { fw } from \"../fireweave/fw-harness\";",
+   "",
+   "function traceFields(trace?: TraceCtx) {",
+   "  return { traceId: trace?.traceId, parentSpanId: trace?.parentSpanId };",
+   "}",
+   "",
+   "export type HistoryMatch = {",
+   "  id: number;",
+   "  gameId: string;",
+   "  name: string;",
+   "  winner: MatchResult;",
+   "  createdAt: string;",
+   "};",
+   "",
+   "export type ReplayFrame = {",
+   "  index: number;",
+   "  actor: \"human\" | \"bot\" | \"system\";",
+   "  state: unknown;",
+   "};",
+   "",
+   "export type Replay = {",
+   "  id: number;",
+   "  gameId: string;",
+   "  name: string;",
+   "  winner: MatchResult;",
+   "  createdAt: string;",
+   "  frames: ReplayFrame[];",
+   "};",
+   "",
+   "export function createHistoryUseCases(deps: {",
+   "  matches: MatchRepository;",
+   "  engines: EngineCatalog;",
+   "  obs: ObservabilityPort;",
+   "}) {",
+   "  const record = deps.obs.metric.bind(deps.obs);",
+   "",
+   "  return {",
+   "    async listHistory(user: PublicUser, trace?: TraceCtx): Promise<HistoryMatch[]> {",
+   "      // @fireweave-controlpoint match-replay",
+   "      const enabled = await fw.controlPoints.getBooleanValue(\"match-replay\", false, {",
+   "        targetingKey: String(user.id),",
+   "      });",
+   "      if (!enabled) throw new AppError(\"Not found\", 404, \"not_found\");",
+   "",
+   "      let rows;",
+   "      try {",
+   "        rows = await deps.matches.listFinished(user.id, 40);",
+   "      } catch (err) {",
+   "        await record(\"arcade_match_history_errors_total\", 1, { reason: \"query_failed\" }, \"counter\");",
+   "        await deps.obs.emitAction({",
+   "          event: \"match.history\",",
+   "          ...traceFields(trace),",
+   "          user: user.username,",
+   "          logLevel: \"error\",",
+   "          logFields: { reason: \"query_failed\" },",
+   "          statusCode: 2,",
+   "          statusMessage: err instanceof Error ? err.message : \"query failed\",",
+   "        });",
+   "        throw err;",
+   "      }",
+   "",
+   "      const names = new Map(deps.engines.list().map((engine) => [engine.id, engine.name]));",
+   "      await record(\"arcade_match_history_views_total\", 1, { result: \"ok\" }, \"counter\");",
+   "      await deps.obs.emitAction({",
+   "        event: \"match.history\",",
+   "        ...traceFields(trace),",
+   "        user: user.username,",
+   "        logFields: { matches: rows.length },",
+   "        spanAttributes: { matches: rows.length },",
+   "      });",
+   "      return rows.map((row) => ({",
+   "        id: row.id,",
+   "        gameId: row.gameId,",
+   "        name: names.get(row.gameId) ?? row.gameId,",
+   "        winner: row.winner,",
+   "        createdAt: row.createdAt,",
+   "      }));",
+   "    },",
+   "",
+   "    async replay(user: PublicUser, matchId: number, trace?: TraceCtx): Promise<Replay> {",
+   "      // @fireweave-controlpoint match-replay",
+   "      const enabled = await fw.controlPoints.getBooleanValue(\"match-replay\", false, {",
+   "        targetingKey: String(user.id),",
+   "      });",
+   "      if (!enabled) throw new AppError(\"Not found\", 404, \"not_found\");",
+   "",
+   "      const started = Date.now();",
+   "      let gameId = \"\";",
+   "      try {",
+   "        const match = await deps.matches.findForUser(user.id, matchId);",
+   "        if (!match) throw new AppError(\"Match not found\", 404, \"not_found\");",
+   "        gameId = match.gameId;",
+   "        if (match.status === \"playing\") {",
+   "          throw new AppError(\"Match is still in progress\", 409, \"still_playing\");",
+   "        }",
+   "        if (match.status !== \"finished\") {",
+   "          throw new AppError(\"Match cannot be replayed\", 409, \"incomplete\");",
+   "        }",
+   "        const events = await deps.matches.listEvents(match.id);",
+   "        if (events.length === 0 || events.some((event) => event.state == null)) {",
+   "          throw new AppError(\"Replay log is incomplete\", 409, \"incomplete\");",
+   "        }",
+   "        const names = new Map(deps.engines.list().map((engine) => [engine.id, engine.name]));",
+   "        const frames: ReplayFrame[] = events.map((event, index) => ({",
+   "          index,",
+   "          actor: event.actor,",
+   "          state: event.state,",
+   "        }));",
+   "        const elapsed = Date.now() - started;",
+   "        await record(",
+   "          \"arcade_replay_loads_total\",",
+   "          1,",
+   "          { result: \"ok\", game: gameId },",
+   "          \"counter\",",
+   "        );",
+   "        await record(",
+   "          \"arcade_replay_load_ms\",",
+   "          elapsed,",
+   "          { result: \"ok\", game: gameId },",
+   "          \"histogram\",",
+   "        );",
+   "        await deps.obs.emitAction({",
+   "          event: \"match.replay\",",
+   "          ...traceFields(trace),",
+   "          user: user.username,",
+   "          gameId,",
+   "          matchId: match.id,",
+   "          logFields: { frames: frames.length, duration_ms: elapsed },",
+   "          spanAttributes: { frames: frames.length, \"replay.duration_ms\": elapsed },",
+   "        });",
+   "        return {",
+   "          id: match.id,",
+   "          gameId,",
+   "          name: names.get(gameId) ?? gameId,",
+   "          winner: match.winner,",
+   "          createdAt: match.createdAt,",
+   "          frames,",
+   "        };",
+   "      } catch (err) {",
+   "        const reason = err instanceof AppError ? err.code : \"query_failed\";",
+   "        const elapsed = Date.now() - started;",
+   "        const labels = { result: \"error\", game: gameId || \"unknown\" };",
+   "        await record(\"arcade_replay_errors_total\", 1, { reason, game: labels.game }, \"counter\");",
+   "        await record(\"arcade_replay_loads_total\", 1, labels, \"counter\");",
+   "        await record(\"arcade_replay_load_ms\", elapsed, labels, \"histogram\");",
+   "        await deps.obs.emitAction({",
+   "          event: \"match.replay\",",
+   "          ...traceFields(trace),",
+   "          user: user.username,",
+   "          gameId: gameId || undefined,",
+   "          matchId,",
+   "          logLevel: \"error\",",
+   "          logFields: { reason, duration_ms: elapsed },",
+   "          statusCode: 2,",
+   "          statusMessage: err instanceof Error ? err.message : \"replay failed\",",
+   "        });",
+   "        throw err;",
+   "      }",
+   "    },",
+   "  };",
+   "}",
+   "",
+   "export type HistoryUseCases = ReturnType<typeof createHistoryUseCases>;",
+   "import { createHistoryUseCases } from \"./application/history\";",
+   "    history: createHistoryUseCases({ matches: matchRepo, engines, obs: observability }),",
+   "  /** Board after this ply. Present only when match replay snapshots are on. */",
+   "  state?: unknown;",
+   "};",
+   "",
+   "export type FinishedMatchRow = {",
+   "  id: number;",
+   "  gameId: string;",
+   "  status: string;",
+   "  winner: MatchResult;",
+   "  createdAt: string;",
+   "};",
+   "",
+   "export type StoredMatchEvent = {",
+   "  actor: \"human\" | \"bot\" | \"system\";",
+   "  move: unknown;",
+   "  state: unknown | null;",
+   "  listFinished(userId: number, limit?: number): Promise<FinishedMatchRow[]>;",
+   "  findForUser(userId: number, matchId: number): Promise<(MatchRecord & { createdAt: string }) | null>;",
+   "  listEvents(matchId: number): Promise<StoredMatchEvent[]>;",
+   "    local: { controlPoints: { \"match-replay\": true } },",
+   "export const FW_STAMPS: Array<{ stampId: string }> = [",
+   "  { stampId: \"stmp_01M48Q5RVH3DK9FVCWZ773DT12\" },",
+   "];",
+   "  await sql`ALTER TABLE match_events ADD COLUMN IF NOT EXISTS state JSONB`;",
+   "",
+   "  await sql`CREATE INDEX IF NOT EXISTS idx_matches_user_finished ON matches(user_id, status, id DESC)`;",
+   "import type {",
+   "  FinishedMatchRow,",
+   "  MatchRecord,",
+   "  MatchRepository,",
+   "  StoredMatchEvent,",
+   "} from \"../../domain/ports\";",
+   "function iso(value: unknown): string {",
+   "  if (value instanceof Date) return value.toISOString();",
+   "  const parsed = new Date(String(value));",
+   "  return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toISOString();",
+   "}",
+   "",
+   "    const state =",
+   "      event.state === undefined || event.state === null",
+   "        ? null",
+   "        : sql.json(event.state as never);",
+   "      INSERT INTO match_events (match_id, actor, move, trace_id, state)",
+   "        ${event.traceId ?? null},",
+   "        ${state}",
+   "  async listFinished(userId, limit = 40): Promise<FinishedMatchRow[]> {",
+   "    const rows = await sql`",
+   "      SELECT id, game_id AS \"gameId\", status, winner, created_at AS \"createdAt\"",
+   "      FROM matches",
+   "      WHERE user_id = ${userId} AND status = 'finished'",
+   "      ORDER BY id DESC",
+   "      LIMIT ${limit}",
+   "    `;",
+   "    return rows.map((row) => ({",
+   "      id: row.id as number,",
+   "      gameId: row.gameId as string,",
+   "      status: row.status as string,",
+   "      winner: (row.winner as MatchResult) ?? null,",
+   "      createdAt: iso(row.createdAt),",
+   "    }));",
+   "  },",
+   "",
+   "  async findForUser(userId, matchId) {",
+   "    const [row] = await sql`",
+   "      SELECT id, user_id, game_id, state, status, winner, created_at AS \"createdAt\"",
+   "      FROM matches",
+   "      WHERE id = ${matchId} AND user_id = ${userId}",
+   "    `;",
+   "    if (!row) return null;",
+   "    return { ...mapMatch(row), createdAt: iso(row.createdAt) };",
+   "  },",
+   "",
+   "  async listEvents(matchId): Promise<StoredMatchEvent[]> {",
+   "    const rows = await sql`",
+   "      SELECT actor, move, state",
+   "      FROM match_events",
+   "      WHERE match_id = ${matchId}",
+   "      ORDER BY id ASC",
+   "    `;",
+   "    return rows.map((row) => ({",
+   "      actor: row.actor as StoredMatchEvent[\"actor\"],",
+   "      move: row.move,",
+   "      state: row.state ?? null,",
+   "    }));",
+   "  },",
+   "",
+   "  {",
+   "    event: \"match.history\",",
+   "    description: \"Finished-match history listed\",",
+   "    metrics: [",
+   "      {",
+   "        name: \"arcade_match_history_views_total\",",
+   "        type: \"counter\",",
+   "        defaultLabels: { result: \"ok\" },",
+   "      },",
+   "    ],",
+   "    source: \"history.listHistory\",",
+   "  },",
+   "  {",
+   "    event: \"match.replay\",",
+   "    description: \"Stored match replay loaded or rejected\",",
+   "    metrics: [",
+   "      {",
+   "        name: \"arcade_replay_loads_total\",",
+   "        type: \"counter\",",
+   "        defaultLabels: { result: \"ok\", game: \"tictactoe\" },",
+   "      },",
+   "      {",
+   "        name: \"arcade_replay_load_ms\",",
+   "        type: \"histogram\",",
+   "        defaultLabels: { result: \"ok\", game: \"tictactoe\" },",
+   "      },",
+   "    ],",
+   "    source: \"history.replay\",",
+   "  },",
+   "  {",
+   "    name: \"arcade_match_history_views_total\",",
+   "    type: \"counter\",",
+   "    description: \"Finished-match history loads\",",
+   "    defaultLabels: { result: \"ok\" },",
+   "    source: \"history.listHistory\",",
+   "  },",
+   "  {",
+   "    name: \"arcade_match_history_errors_total\",",
+   "    type: \"counter\",",
+   "    description: \"Finished-match history query failures\",",
+   "    defaultLabels: { reason: \"query_failed\" },",
+   "    source: \"history.listHistory\",",
+   "  },",
+   "  {",
+   "    name: \"arcade_replay_loads_total\",",
+   "    type: \"counter\",",
+   "    description: \"Replay loads, successful or rejected\",",
+   "    defaultLabels: { result: \"ok\", game: \"tictactoe\" },",
+   "    source: \"history.replay\",",
+   "  },",
+   "  {",
+   "    name: \"arcade_replay_errors_total\",",
+   "    type: \"counter\",",
+   "    description: \"Replay failures by reason\",",
+   "    defaultLabels: { reason: \"incomplete\", game: \"tictactoe\" },",
+   "    source: \"history.replay\",",
+   "  },",
+   "  {",
+   "    name: \"arcade_replay_load_ms\",",
+   "    type: \"histogram\",",
+   "    description: \"Time to build a replay\",",
+   "    defaultLabels: { result: \"ok\", game: \"tictactoe\" },",
+   "    source: \"history.replay\",",
+   "  },",
+   "  {",
+   "    name: \"arcade_web_history_views_total\",",
+   "    type: \"counter\",",
+   "    description: \"History page loads from the web client\",",
+   "    defaultLabels: { surface: \"web\", result: \"ok\" },",
+   "    source: \"HistoryPage\",",
+   "  },",
+   "  {",
+   "    name: \"arcade_web_history_load_errors_total\",",
+   "    type: \"counter\",",
+   "    description: \"History page failed to load\",",
+   "    defaultLabels: { surface: \"web\", result: \"error\" },",
+   "    source: \"HistoryPage\",",
+   "  },",
+   "  {",
+   "    name: \"arcade_web_replay_loads_total\",",
+   "    type: \"counter\",",
+   "    description: \"Replay page loads from the web client\",",
+   "    defaultLabels: { surface: \"web\", result: \"ok\" },",
+   "    source: \"ReplayPage\",",
+   "  },",
+   "  {",
+   "    name: \"arcade_web_replay_load_errors_total\",",
+   "    type: \"counter\",",
+   "    description: \"Replay page failed to load\",",
+   "    defaultLabels: { surface: \"web\", result: \"error\", reason: \"incomplete\" },",
+   "    source: \"ReplayPage\",",
+   "  },",
+   "  {",
+   "    name: \"arcade_web_replay_load_ms\",",
+   "    type: \"histogram\",",
+   "    description: \"Time for the web client to load a replay\",",
+   "    defaultLabels: { surface: \"web\", result: \"ok\" },",
+   "    source: \"ReplayPage\",",
+   "  },",
+   "import type { HistoryUseCases } from \"../../application/history\";",
+   "  history: HistoryUseCases;",
+   "      if (path === \"/api/matches\" && req.method === \"GET\") {",
+   "        const user = await services.auth.me(sessionTokenFromRequest(req));",
+   "        if (!user) return respond(json({ error: \"unauthorized\" }, { status: 401 }));",
+   "        const matches = await services.history.listHistory(user, trace);",
+   "        return respond(json({ matches }));",
+   "      }",
+   "",
+   "      const replayGet = path.match(/^\\/api\\/matches\\/(\\d+)\\/replay$/);",
+   "      if (replayGet && req.method === \"GET\") {",
+   "        const user = await services.auth.me(sessionTokenFromRequest(req));",
+   "        if (!user) return respond(json({ error: \"unauthorized\" }, { status: 401 }));",
+   "        const replay = await services.history.replay(user, Number(replayGet[1]), trace);",
+   "        return respond(json(replay), { game: replay.gameId });",
+   "      }",
+   "",
+   "import { HistoryPage, ReplayPage } from \"./History\";",
+   "const MatchReplayContext = createContext(false);",
+   "  const matchReplay = useContext(MatchReplayContext);",
+   "          {matchReplay ? (",
+   "            <NavLink",
+   "              to=\"/history\"",
+   "              className={({ isActive }) => `btn secondary ${isActive ? \"active\" : \"\"}`}",
+   "            >",
+   "              history",
+   "            </NavLink>",
+   "          ) : null}",
+   "        <Route path=\"history\" element={<HistoryPage />} />",
+   "        <Route path=\"history/:matchId\" element={<ReplayPage />} />",
+   "  const matchReplay = useContext(MatchReplayContext);",
+   "        {matchReplay ? (",
+   "          <NavLink",
+   "            to=\"/history\"",
+   "            className={({ isActive }) => `btn secondary ${isActive ? \"active\" : \"\"}`}",
+   "            onClick={() => recordHeaderNav(\"history\")}",
+   "          >",
+   "            history",
+   "          </NavLink>",
+   "        ) : null}",
+   "  // @fireweave-controlpoint match-replay",
+   "  const matchReplay = fw.controlPoints.getBooleanValue(\"match-replay\", false);",
+   "    <MatchReplayContext.Provider value={matchReplay}>",
+   "    </MatchReplayContext.Provider>",
+   "import { useEffect, useState } from \"react\";",
+   "import { Link, Navigate, useParams } from \"react-router-dom\";",
+   "import { api, ApiError, type HistoryMatch, type Match, type Replay } from \"./api\";",
+   "import { fw } from \"./fireweave/fw-harness\";",
+   "import { GameBoard } from \"./games/GameBoard\";",
+   "import { GameMark } from \"./games/logos\";",
+   "import { OutcomeFX } from \"./games/outcome\";",
+   "import { metric as record } from \"./observability/openobserve\";",
+   "",
+   "function resultLabel(winner: Match[\"winner\"]) {",
+   "  if (winner === \"human_win\") return \"you win\";",
+   "  if (winner === \"bot_win\") return \"bot wins\";",
+   "  if (winner === \"draw\") return \"draw\";",
+   "  return \"unfinished\";",
+   "}",
+   "",
+   "function actorLabel(actor: Replay[\"frames\"][number][\"actor\"]) {",
+   "  if (actor === \"human\") return \"you\";",
+   "  if (actor === \"bot\") return \"arcade bot\";",
+   "  return \"opening\";",
+   "}",
+   "",
+   "export function HistoryPage() {",
+   "  // @fireweave-controlpoint match-replay",
+   "  const enabled = fw.controlPoints.getBooleanValue(\"match-replay\", false);",
+   "  const [matches, setMatches] = useState<HistoryMatch[] | null>(null);",
+   "  const [error, setError] = useState(\"\");",
+   "",
+   "  useEffect(() => {",
+   "    if (!enabled) return;",
+   "    void api",
+   "      .history()",
+   "      .then((body) => {",
+   "        setMatches(body.matches);",
+   "        void record(\"arcade_web_history_views_total\", 1, {",
+   "          surface: \"web\",",
+   "          result: \"ok\",",
+   "        });",
+   "      })",
+   "      .catch((err: unknown) => {",
+   "        setError(err instanceof Error ? err.message : \"failed\");",
+   "        void record(\"arcade_web_history_load_errors_total\", 1, {",
+   "          surface: \"web\",",
+   "          result: \"error\",",
+   "          reason: err instanceof ApiError ? String(err.status) : \"network\",",
+   "        });",
+   "      });",
+   "  }, [enabled]);",
+   "",
+   "  if (!enabled) return <Navigate to=\"/\" replace />;",
+   "",
+   "  return (",
+   "    <section className=\"panel\">",
+   "      <h2>history</h2>",
+   "      <p className=\"hint\">finished matches you can step through</p>",
+   "      {error ? <p className=\"error\">{error}</p> : null}",
+   "      {matches && matches.length === 0 ? (",
+   "        <p className=\"hint\">no finished matches yet — play one, then come back</p>",
+   "      ) : null}",
+   "      {matches && matches.length > 0 ? (",
+   "        <ul className=\"history-list\">",
+   "          {matches.map((match) => (",
+   "            <li key={match.id}>",
+   "              <Link to={`/history/${match.id}`}>",
+   "                <span>",
+   "                  <GameMark id={match.gameId} />",
+   "                  <strong>{match.name}</strong>",
+   "                </span>",
+   "                <span>{resultLabel(match.winner)}</span>",
+   "                <time dateTime={match.createdAt}>",
+   "                  {new Date(match.createdAt).toLocaleString()}",
+   "                </time>",
+   "              </Link>",
+   "            </li>",
+   "          ))}",
+   "        </ul>",
+   "      ) : null}",
+   "    </section>",
+   "  );",
+   "}",
+   "",
+   "export function ReplayPage() {",
+   "  // @fireweave-controlpoint match-replay",
+   "  const enabled = fw.controlPoints.getBooleanValue(\"match-replay\", false);",
+   "  const { matchId } = useParams();",
+   "  const id = Number(matchId);",
+   "  const [replay, setReplay] = useState<Replay | null>(null);",
+   "  const [error, setError] = useState(\"\");",
+   "  const [step, setStep] = useState(0);",
+   "",
+   "  useEffect(() => {",
+   "    if (!enabled || !Number.isInteger(id)) return;",
+   "    const started = performance.now();",
+   "    void api",
+   "      .replay(id)",
+   "      .then((body) => {",
+   "        setReplay(body);",
+   "        setStep(0);",
+   "        void record(\"arcade_web_replay_loads_total\", 1, {",
+   "          surface: \"web\",",
+   "          result: \"ok\",",
+   "          game: body.gameId,",
+   "        });",
+   "        void record(",
+   "          \"arcade_web_replay_load_ms\",",
+   "          Math.round(performance.now() - started),",
+   "          { surface: \"web\", result: \"ok\", game: body.gameId },",
+   "          \"histogram\",",
+   "        );",
+   "      })",
+   "      .catch((err: unknown) => {",
+   "        const reason =",
+   "          err instanceof ApiError",
+   "            ? err.status === 409",
+   "              ? \"incomplete\"",
+   "              : String(err.status)",
+   "            : \"network\";",
+   "        setError(err instanceof Error ? err.message : \"failed\");",
+   "        void record(\"arcade_web_replay_load_errors_total\", 1, {",
+   "          surface: \"web\",",
+   "          result: \"error\",",
+   "          reason,",
+   "        });",
+   "        void record(",
+   "          \"arcade_web_replay_load_ms\",",
+   "          Math.round(performance.now() - started),",
+   "          { surface: \"web\", result: \"error\" },",
+   "          \"histogram\",",
+   "        );",
+   "      });",
+   "  }, [enabled, id]);",
+   "",
+   "  if (!enabled) return <Navigate to=\"/\" replace />;",
+   "  if (!Number.isInteger(id)) return <Navigate to=\"/history\" replace />;",
+   "",
+   "  const frame = replay?.frames[step];",
+   "  const last = replay ? step === replay.frames.length - 1 : false;",
+   "  const board: Match | null =",
+   "    replay && frame",
+   "      ? {",
+   "          id: replay.id,",
+   "          gameId: replay.gameId,",
+   "          state: frame.state,",
+   "          status: last ? \"finished\" : \"playing\",",
+   "          winner: last ? replay.winner : null,",
+   "        }",
+   "      : null;",
+   "  const statusClass =",
+   "    last && replay?.winner === \"human_win\" ? \"win\" : last && replay?.winner === \"bot_win\" ? \"lose\" : \"\";",
+   "",
+   "  return (",
+   "    <section className={`panel play-panel ${statusClass}`}>",
+   "      <div className=\"play-bar\">",
+   "        {replay ? <GameMark id={replay.gameId} /> : null}",
+   "        <div className=\"play-title\">",
+   "          <div className=\"status\">{replay?.name ?? \"replay\"}</div>",
+   "          <p className=\"hint\">",
+   "            {frame ? actorLabel(frame.actor) : error ? \"\" : \"loading…\"}",
+   "            {last && replay ? ` · ${resultLabel(replay.winner)}` : \"\"}",
+   "          </p>",
+   "        </div>",
+   "        <div className=\"row\">",
+   "          <Link className=\"btn secondary\" to=\"/history\">",
+   "            history",
+   "          </Link>",
+   "          <button",
+   "            className=\"btn secondary\"",
+   "            type=\"button\"",
+   "            disabled={!replay || step === 0}",
+   "            onClick={() => setStep((current) => Math.max(0, current - 1))}",
+   "          >",
+   "            previous",
+   "          </button>",
+   "          <span className=\"hint\">",
+   "            {replay ? `${step + 1} / ${replay.frames.length}` : \"—\"}",
+   "          </span>",
+   "          <button",
+   "            className=\"btn mint\"",
+   "            type=\"button\"",
+   "            disabled={!replay || last}",
+   "            onClick={() =>",
+   "              setStep((current) =>",
+   "                replay ? Math.min(replay.frames.length - 1, current + 1) : current,",
+   "              )",
+   "            }",
+   "          >",
+   "            next",
+   "          </button>",
+   "        </div>",
+   "      </div>",
+   "      {error ? <p className=\"error\">{error}</p> : null}",
+   "      {board ? (",
+   "        <div className=\"play-fit\" data-game={board.gameId} data-result={statusClass}>",
+   "          <OutcomeFX",
+   "            gameId={board.gameId}",
+   "            result={statusClass === \"win\" || statusClass === \"lose\" ? statusClass : \"\"}",
+   "          />",
+   "          <GameBoard match={board} busy onMove={() => {}} />",
+   "        </div>",
+   "      ) : null}",
+   "    </section>",
+   "  );",
+   "}",
+   "export type HistoryMatch = {",
+   "  id: number;",
+   "  gameId: string;",
+   "  name: string;",
+   "  winner: Match[\"winner\"];",
+   "  createdAt: string;",
+   "};",
+   "export type Replay = {",
+   "  id: number;",
+   "  gameId: string;",
+   "  name: string;",
+   "  winner: Match[\"winner\"];",
+   "  createdAt: string;",
+   "  frames: Array<{ index: number; actor: \"human\" | \"bot\" | \"system\"; state: unknown }>;",
+   "};",
+   "",
+   "  history: () => request<{ matches: HistoryMatch[] }>(\"/api/matches\"),",
+   "  replay: (matchId: number) => request<Replay>(`/api/matches/${matchId}/replay`),",
+   "    local: { controlPoints: { \"profile-avatar-menu\": true, \"header-arrangement\": true, \"match-replay\": true } },",
+   "  { stampId: \"stmp_01M48Q5RVH35KW30Q1ZA1C4X4M\" },",
+   "",
+   ".history-list {",
+   "  list-style: none;",
+   "  padding: 0;",
+   "  margin: 1rem 0 0;",
+   "  display: grid;",
+   "  gap: 0.5rem;",
+   "}",
+   ".history-list a {",
+   "  display: grid;",
+   "  grid-template-columns: 1fr auto auto;",
+   "  gap: 1rem;",
+   "  align-items: center;",
+   "  padding: 0.75rem 0.9rem;",
+   "  background: #fff;",
+   "  border: 1px solid var(--line);",
+   "  text-decoration: none;",
+   "  color: inherit;",
+   "}",
+   ".history-list a span:first-child {",
+   "  display: flex;",
+   "  align-items: center;",
+   "  gap: 0.55rem;",
+   "}",
+   ".history-list .game-mark { width: 28px; height: 28px; }",
+   "  .history-list a { grid-template-columns: 1fr; gap: 0.25rem; }",
+   "      # Unset NODE_ENV makes the FireWeave harness default to production, so",
+   "      # local control-point seeds (match-replay and the rest) never apply.",
+   "      NODE_ENV: development",
+   "export NODE_ENV=\"${NODE_ENV:-development}\"",
+   "apps/api/src/application/history.ts",
+   "apps/web/src/History.tsx"
+  ],
+  "removed": [
+   "    local: { controlPoints: {} },",
+   "export const FW_STAMPS: Array<{ stampId: string }> = [];",
+   "import type { MatchRecord, MatchRepository } from \"../../domain/ports\";",
+   "      INSERT INTO match_events (match_id, actor, move, trace_id)",
+   "        ${event.traceId ?? null}",
+   "    local: { controlPoints: { \"profile-avatar-menu\": true, \"header-arrangement\": true } },"
+  ],
+  "secretAdded": false
+ },
+ "secretHit": false,
+ "owner": "Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>",
+ "codeowners": false
+}

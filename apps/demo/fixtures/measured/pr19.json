@@ -1,0 +1,2047 @@
+{
+ "repo": "apps/demo/fixtures/arcade.git",
+ "base": "32683da844b98c9e0721f35eb2bdac070274a949",
+ "head": "8933ffe1b4d1f8beb0da2774cdf60bcae3aca70a",
+ "title": "Pin games on the lobby",
+ "titleSource": "PR title, declared",
+ "files": [
+  {
+   "path": "apps/api/src/application/games.ts",
+   "status": "modified",
+   "added": 44,
+   "removed": 8
+  },
+  {
+   "path": "apps/api/src/bootstrap.ts",
+   "status": "modified",
+   "added": 2,
+   "removed": 1
+  },
+  {
+   "path": "apps/api/src/infrastructure/db/client.ts",
+   "status": "modified",
+   "added": 9,
+   "removed": 0
+  },
+  {
+   "path": "apps/api/src/infrastructure/db/pin-repo.ts",
+   "status": "added",
+   "added": 21,
+   "removed": 0
+  },
+  {
+   "path": "apps/api/src/infrastructure/observability/metrics-catalog.ts",
+   "status": "modified",
+   "added": 14,
+   "removed": 0
+  },
+  {
+   "path": "apps/api/src/interfaces/http/router.ts",
+   "status": "modified",
+   "added": 17,
+   "removed": 0
+  },
+  {
+   "path": "apps/web/src/Lobby.tsx",
+   "status": "modified",
+   "added": 125,
+   "removed": 23
+  },
+  {
+   "path": "apps/web/src/api.ts",
+   "status": "modified",
+   "added": 12,
+   "removed": 5
+  },
+  {
+   "path": "apps/web/src/fireweave/fw-providers.ts",
+   "status": "modified",
+   "added": 1,
+   "removed": 1
+  },
+  {
+   "path": "apps/web/src/fireweave/fw-tracker.ts",
+   "status": "modified",
+   "added": 1,
+   "removed": 0
+  },
+  {
+   "path": "apps/web/src/styles.css",
+   "status": "modified",
+   "added": 22,
+   "removed": 0
+  }
+ ],
+ "pr": {
+  "file": "apps/demo/fixtures/prs/pr19/pr.json",
+  "title": "Pin games on the lobby",
+  "body": "## Summary\n- Players can pin up to six games from the lobby. A Pinned row appears when the `pin-games` control point is on.\n- Pin and unpin stay available on the API. Failures cover an unknown game, a game that is already pinned, a game that is not pinned, and the six-pin cap.\n- The lobby records `arcade_web_pins_total` on success and `arcade_web_pin_errors_total` on failure.\n- The match-replay flag is read once in the games use case.\n\n## Test plan\n- [ ] With `pin-games` on, pin a game and confirm it shows in the Pinned row.\n- [ ] Unpin it and confirm the row clears.\n- [ ] Pin the same game twice and confirm the already-pinned error.\n- [ ] Pin a seventh game and confirm the limit error.\n- [ ] With the flag off, confirm the lobby has no pin controls.\n\n\nMade with [Cursor](https://cursor.com)",
+  "author": {
+   "login": "kalyan-fireweave",
+   "is_bot": false
+  },
+  "checks": [
+   {
+    "name": "FireWeave — flag contract",
+    "conclusion": "SUCCESS"
+   },
+   {
+    "name": "FireWeave — rollout readiness",
+    "conclusion": "SUCCESS"
+   }
+  ],
+  "required": {
+   "checks": [],
+   "source": "GET repos/fireweave-HQ-Demo/arcade/branches/main/protection: gh: Not Found (HTTP 404); GET repos/fireweave-HQ-Demo/arcade/branches/main: protected=false, 0 required status check(s); GET repos/fireweave-HQ-Demo/arcade/rules/branches/main: 0 required status check(s) in rules"
+  },
+  "reviews": 0
+ },
+ "prFiles": [
+  "apps/demo/fixtures/prs/pr19/pr.json"
+ ],
+ "gates": [
+  {
+   "gate": 1,
+   "name": "Table stakes",
+   "status": "pass",
+   "route": "none",
+   "checks": [
+    {
+     "name": "secrets",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no match in 268 added lines"
+    },
+    {
+     "name": "PII",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no match in 268 added lines"
+    },
+    {
+     "name": "hardcoded environment values",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no match in 244 added code lines (docs, config and comments skipped)"
+    },
+    {
+     "name": "required CI checks",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no required checks configured on the base branch when the PR was exported (GET repos/fireweave-HQ-Demo/arcade/branches/main/protection: gh: Not Found (HTTP 404); GET repos/fireweave-HQ-Demo/arcade/branches/main: protected=false, 0 required status check(s); GET repos/fireweave-HQ-Demo/arcade/rules/branches/main: 0 required status check(s) in rules), so the gate cannot block on CI"
+    }
+   ]
+  },
+  {
+   "gate": 2,
+   "name": "API contract",
+   "status": "pass",
+   "route": "none",
+   "checks": [
+    {
+     "name": "breaking change to route, schema or public signature",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no route, schema or exported signature removed or changed"
+    },
+    {
+     "name": "additive API surface",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [
+      "apps/api/src/infrastructure/db/pin-repo.ts:3",
+      "apps/api/src/infrastructure/observability/metrics-catalog.ts:240",
+      "apps/api/src/infrastructure/observability/metrics-catalog.ts:247",
+      "apps/api/src/interfaces/http/router.ts:174"
+     ],
+     "note": "added routes, schema entries or exports only"
+    }
+   ]
+  },
+  {
+   "gate": 3,
+   "name": "Destructive schema or data change",
+   "status": "pass",
+   "route": "none",
+   "checks": [
+    {
+     "name": "destructive schema change or mutation of existing data",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [],
+     "note": "no schema drop/alter and no unscoped or migration UPDATE/DELETE/ORM bulk write in 268 added lines"
+    },
+    {
+     "name": "additive schema change",
+     "status": "pass",
+     "source": "measured",
+     "evidence": [
+      "apps/api/src/infrastructure/db/client.ts:76"
+     ],
+     "note": "additive DDL only"
+    }
+   ]
+  }
+ ],
+ "early": [
+  {
+   "name": "Reversible or irreversible",
+   "value": "reversible",
+   "source": "measured",
+   "evidence": [],
+   "note": "no persisted write, outbound side effect, queue publish or external API client in 268 added lines"
+  },
+  {
+   "name": "Feature flag",
+   "value": "partial",
+   "source": "measured",
+   "evidence": [
+    "apps/api/src/application/games.ts:41",
+    "apps/api/src/application/games.ts:42",
+    "apps/web/src/Lobby.tsx:4",
+    "apps/web/src/Lobby.tsx:36",
+    "apps/web/src/Lobby.tsx:91",
+    "apps/web/src/Lobby.tsx:107",
+    "apps/web/src/Lobby.tsx:108",
+    "apps/web/src/Lobby.tsx:127",
+    "apps/web/src/Lobby.tsx:132",
+    "apps/web/src/Lobby.tsx:186",
+    "apps/web/src/Lobby.tsx:195",
+    "apps/web/src/Lobby.tsx:230",
+    "apps/web/src/Lobby.tsx:231",
+    "apps/web/src/Lobby.tsx:232",
+    "apps/web/src/Lobby.tsx:248",
+    "apps/web/src/fireweave/fw-providers.ts:275",
+    "apps/api/src/application/games.ts:40",
+    "apps/api/src/application/games.ts:43",
+    "apps/api/src/application/games.ts:47",
+    "apps/api/src/application/games.ts:53",
+    "apps/api/src/application/games.ts:77",
+    "apps/api/src/application/games.ts:137",
+    "apps/api/src/application/games.ts:272",
+    "apps/api/src/application/games.ts:276",
+    "apps/api/src/application/games.ts:289",
+    "apps/api/src/bootstrap.ts:10",
+    "apps/api/src/bootstrap.ts:31",
+    "apps/api/src/infrastructure/db/client.ts:75",
+    "apps/api/src/infrastructure/db/pin-repo.ts:1",
+    "apps/api/src/infrastructure/db/pin-repo.ts:11",
+    "apps/api/src/infrastructure/db/pin-repo.ts:15",
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:240",
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:247",
+    "apps/api/src/interfaces/http/router.ts:174",
+    "apps/api/src/interfaces/http/router.ts:180",
+    "apps/web/src/Lobby.tsx:3",
+    "apps/web/src/Lobby.tsx:7",
+    "apps/web/src/Lobby.tsx:22",
+    "apps/web/src/Lobby.tsx:29",
+    "apps/web/src/Lobby.tsx:35",
+    "apps/web/src/Lobby.tsx:45",
+    "apps/web/src/Lobby.tsx:63",
+    "apps/web/src/Lobby.tsx:86",
+    "apps/web/src/Lobby.tsx:104",
+    "apps/web/src/Lobby.tsx:126",
+    "apps/web/src/Lobby.tsx:134",
+    "apps/web/src/Lobby.tsx:150",
+    "apps/web/src/Lobby.tsx:181",
+    "apps/web/src/Lobby.tsx:243",
+    "apps/web/src/api.ts:59",
+    "apps/web/src/api.ts:64",
+    "apps/web/src/api.ts:88",
+    "apps/web/src/api.ts:92",
+    "apps/web/src/api.ts:103",
+    "apps/web/src/api.ts:106",
+    "apps/web/src/api.ts:141",
+    "apps/web/src/fireweave/fw-tracker.ts:23",
+    "apps/web/src/styles.css:394"
+   ],
+   "note": "flag `match-replay` (default false), `pin-games` (default false): 23 added lines inside the flag, 16 control lines, 180 outside it (blank, comment, bracket-only, docs and editor config lines are not classed) (in apps/api/src/application/games.ts, apps/api/src/bootstrap.ts, apps/api/src/infrastructure/db/client.ts, apps/api/src/infrastructure/db/pin-repo.ts, apps/api/src/infrastructure/observability/metrics-catalog.ts, apps/api/src/interfaces/http/router.ts, apps/web/src/Lobby.tsx, apps/web/src/api.ts, apps/web/src/fireweave/fw-tracker.ts, apps/web/src/styles.css). Classed by call site: fw at apps/web/src/Lobby.tsx:4 (1 reference(s), all on flag reads, so control). Whether the flag exists in production and both states are tested is not checked"
+  },
+  {
+   "name": "Path",
+   "value": "live",
+   "source": "declared",
+   "evidence": [
+    "apps/api/src/bootstrap.ts:2",
+    "apps/api/src/main.ts:2",
+    "apps/api/src/bootstrap.ts:6",
+    "apps/api/src/bootstrap.ts:10",
+    "apps/api/src/infrastructure/observability/openobserve.ts:9",
+    "apps/api/src/bootstrap.ts:14",
+    "apps/api/src/main.ts:3",
+    "apps/web/src/App.tsx:19",
+    "apps/web/src/main.tsx:5",
+    "apps/web/src/App.tsx:13",
+    "apps/web/src/fireweave/fw-harness.ts:46",
+    "apps/web/src/main.tsx:4"
+   ],
+   "note": "apps/api/src/application/games.ts reaches apps/api/src/main.ts in 2 import(s); apps/api/src/bootstrap.ts reaches apps/api/src/main.ts in 1 import(s); apps/api/src/infrastructure/db/client.ts reaches apps/api/src/main.ts in 2 import(s); apps/api/src/infrastructure/db/pin-repo.ts reaches apps/api/src/main.ts in 2 import(s); apps/api/src/infrastructure/observability/metrics-catalog.ts reaches apps/api/src/main.ts in 3 import(s); apps/api/src/interfaces/http/router.ts reaches apps/api/src/main.ts in 1 import(s); apps/web/src/Lobby.tsx reaches apps/web/src/main.tsx in 2 import(s); apps/web/src/api.ts reaches apps/web/src/main.tsx in 2 import(s); apps/web/src/fireweave/fw-providers.ts reaches apps/web/src/main.tsx in 2 import(s); not imported from any entry point: apps/web/src/fireweave/fw-tracker.ts. Import graph and routes measured; entry points declared by package.json scripts and index.html: apps/api/src/main.ts, apps/web/src/main.tsx. Not code paths, listed only: apps/web/src/styles.css (stylesheet)"
+  },
+  {
+   "name": "Reach",
+   "value": "high",
+   "source": "assumed",
+   "evidence": [
+    "apps/web/src/api.ts:141",
+    "apps/web/src/api.ts:100",
+    "apps/web/src/api.ts:143",
+    "apps/web/src/api.ts:145",
+    "apps/web/src/Lobby.tsx:141",
+    "apps/web/src/observability/openobserve.ts:34",
+    "apps/web/src/observability/openobserve.ts:23",
+    "apps/web/src/Lobby.tsx:145",
+    "apps/web/src/Lobby.tsx:188",
+    "apps/web/src/Lobby.tsx:136",
+    "apps/web/src/Lobby.tsx:205",
+    "apps/web/src/Lobby.tsx:230",
+    "apps/web/src/Lobby.tsx:231",
+    "apps/web/src/Lobby.tsx:232",
+    "apps/web/src/Lobby.tsx:250",
+    "apps/web/src/Lobby.tsx:139",
+    "apps/web/src/Lobby.tsx:128",
+    "apps/api/src/interfaces/http/router.ts:82",
+    "apps/api/src/interfaces/http/router.ts:122",
+    "apps/api/src/interfaces/http/router.ts:138",
+    "apps/api/src/interfaces/http/router.ts:174"
+   ],
+   "note": "measured: calls reach POST /api/client-telemetry (emitAction); POST /api/auth/register (services.auth.register, sessionCookie); POST /api/auth/login (services.auth.login, sessionCookie); GET /api/pins (services.auth.me, services.games.listPins, sessionTokenFromRequest). Worth unknown because the metrics catalog declares no tier for any of its 35 entries, so reach is assumed wide. Not code paths, listed only: apps/web/src/styles.css (stylesheet)"
+  },
+  {
+   "name": "Failure mode",
+   "value": "domain, infra",
+   "source": "measured",
+   "evidence": [
+    "apps/api/src/application/games.ts:40",
+    "apps/api/src/bootstrap.ts:10",
+    "apps/api/src/infrastructure/db/client.ts:74",
+    "apps/api/src/infrastructure/db/pin-repo.ts:1",
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:239",
+    "apps/api/src/interfaces/http/router.ts:174",
+    "apps/web/src/Lobby.tsx:3",
+    "apps/web/src/api.ts:59",
+    "apps/web/src/fireweave/fw-providers.ts:275",
+    "apps/web/src/fireweave/fw-tracker.ts:23",
+    "apps/web/src/styles.css:394"
+   ],
+   "note": "rules on touched paths: apps/api/src/application/games.ts -> domain; apps/api/src/bootstrap.ts -> domain; apps/api/src/infrastructure/db/client.ts -> infra; apps/api/src/infrastructure/db/pin-repo.ts -> infra; apps/api/src/infrastructure/observability/metrics-catalog.ts -> infra; apps/api/src/interfaces/http/router.ts -> domain; apps/web/src/Lobby.tsx -> domain; apps/web/src/api.ts -> domain; apps/web/src/fireweave/fw-providers.ts -> domain; apps/web/src/fireweave/fw-tracker.ts -> domain; apps/web/src/styles.css -> cosmetic. Matched on file path; each evidence line is the file's first change"
+  }
+ ],
+ "late": [
+  {
+   "name": "Detection apparatus",
+   "value": "slow",
+   "source": "measured",
+   "evidence": [
+    "apps/web/src/Lobby.tsx:145",
+    "docker/compose.prod.yml:49",
+    "scripts/deploy-prod.sh:74"
+   ],
+   "note": "domain: no business-level check (no value metric, no test of the changed domain files); infra: error rate metric arcade_web_pin_errors_total, deploy health check. Every failure mode needs its detector, so detection is slow. 2 metric/log calls on changed lines (arcade_web_pins_total: count, arcade_web_pin_errors_total: error rate). Checked in the repo only; alert config outside the repo (OpenObserve) is not an input"
+  },
+  {
+   "name": "Time to revert",
+   "value": "full build and deploy",
+   "source": "assumed",
+   "evidence": [
+    ".github/workflows/deploy.yml:15"
+   ],
+   "note": "no one-click rollback in 1 workflow file(s); CI run history is not an input, so pipeline duration is not measured. Declared job timeout: 5 min (a bound, not a measurement). Unknown rounds to slow: a full build and deploy to revert (W 2)"
+  },
+  {
+   "name": "History",
+   "value": "history unavailable",
+   "source": "assumed",
+   "evidence": [],
+   "note": "measured: 11 earlier commits touch the changed files, 0 reverts, 0 fix commits; repo history before base spans 8h (2026-10-06 to 2026-10-06). Too thin to read as a record (thin: < 5 commits or < 7 days)"
+  },
+  {
+   "name": "Provenance",
+   "value": "agent-assisted (Cursor)",
+   "source": "measured",
+   "evidence": [
+    "commit 8933ffe"
+   ],
+   "note": "commit trailers: Cursor <cursoragent@cursor.com>; PR description: \"Made with Cursor\"; author(s) in git: Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>. Whether a human was in the loop is not verifiable from the input"
+  },
+  {
+   "name": "Confidence: test coverage",
+   "value": "0 of 10 changed code files have a test",
+   "source": "measured",
+   "evidence": [],
+   "note": "tests that import a changed file; 0 covered by tests that existed before the change. Uncovered: apps/api/src/application/games.ts, apps/api/src/bootstrap.ts, apps/api/src/infrastructure/db/client.ts, apps/api/src/infrastructure/db/pin-repo.ts, apps/api/src/infrastructure/observability/metrics-catalog.ts, apps/api/src/interfaces/http/router.ts, apps/web/src/Lobby.tsx, apps/web/src/api.ts, apps/web/src/fireweave/fw-providers.ts, apps/web/src/fireweave/fw-tracker.ts"
+  },
+  {
+   "name": "Confidence: familiarity",
+   "value": "single-author repo, people part dropped",
+   "source": "measured",
+   "evidence": [],
+   "note": "repo authors before base: Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>; per file: apps/api/src/application/games.ts (1), apps/api/src/bootstrap.ts (1), apps/api/src/infrastructure/db/client.ts (1), apps/api/src/infrastructure/db/pin-repo.ts (0), apps/api/src/infrastructure/observability/metrics-catalog.ts (1), apps/api/src/interfaces/http/router.ts (1), apps/web/src/Lobby.tsx (1), apps/web/src/api.ts (1), apps/web/src/fireweave/fw-providers.ts (1), apps/web/src/fireweave/fw-tracker.ts (1), apps/web/src/styles.css (1). Reviewer familiarity needs review data: the PR export lists 0 reviews"
+  },
+  {
+   "name": "Confidence: review depth",
+   "value": "0 reviews",
+   "source": "declared",
+   "evidence": [],
+   "note": "the PR export lists 0 reviews"
+  }
+ ],
+ "flag": {
+  "flags": [
+   {
+    "key": "match-replay",
+    "defaultValue": "false",
+    "at": "apps/api/src/application/games.ts:42"
+   },
+   {
+    "key": "pin-games",
+    "defaultValue": "false",
+    "at": "apps/web/src/Lobby.tsx:108"
+   }
+  ],
+  "lines": [
+   [
+    "apps/api/src/application/games.ts:40",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:41",
+    "control"
+   ],
+   [
+    "apps/api/src/application/games.ts:42",
+    "control"
+   ],
+   [
+    "apps/api/src/application/games.ts:43",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:47",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:53",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:54",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:55",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:56",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:77",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:137",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:272",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:273",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:276",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:277",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:278",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:279",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:280",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:282",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:283",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:284",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:285",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:286",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:289",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:290",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:291",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:292",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:293",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:295",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:296",
+    "outside"
+   ],
+   [
+    "apps/api/src/application/games.ts:297",
+    "outside"
+   ],
+   [
+    "apps/api/src/bootstrap.ts:10",
+    "outside"
+   ],
+   [
+    "apps/api/src/bootstrap.ts:31",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/client.ts:75",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/client.ts:76",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/client.ts:77",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/client.ts:78",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/client.ts:79",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/client.ts:80",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/client.ts:82",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/pin-repo.ts:1",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/pin-repo.ts:3",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/pin-repo.ts:4",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/pin-repo.ts:5",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/pin-repo.ts:6",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/pin-repo.ts:7",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/pin-repo.ts:8",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/pin-repo.ts:11",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/pin-repo.ts:12",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/pin-repo.ts:15",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/pin-repo.ts:16",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/pin-repo.ts:17",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/pin-repo.ts:18",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/db/pin-repo.ts:19",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:240",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:241",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:242",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:243",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:244",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:247",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:248",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:249",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:250",
+    "outside"
+   ],
+   [
+    "apps/api/src/infrastructure/observability/metrics-catalog.ts:251",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:174",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:175",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:176",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:177",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:180",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:181",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:182",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:183",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:184",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:185",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:186",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:187",
+    "outside"
+   ],
+   [
+    "apps/api/src/interfaces/http/router.ts:188",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:3",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:4",
+    "control"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:7",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:22",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:23",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:24",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:29",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:30",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:31",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:35",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:36",
+    "control"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:37",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:38",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:39",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:40",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:42",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:43",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:44",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:45",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:46",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:47",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:48",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:50",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:51",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:52",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:53",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:54",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:55",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:56",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:57",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:58",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:59",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:63",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:64",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:65",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:66",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:67",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:68",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:69",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:70",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:71",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:72",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:73",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:74",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:75",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:76",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:86",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:87",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:88",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:89",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:90",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:91",
+    "control"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:92",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:93",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:104",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:105",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:107",
+    "control"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:108",
+    "control"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:126",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:127",
+    "control"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:128",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:129",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:130",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:131",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:132",
+    "control"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:134",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:136",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:137",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:138",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:139",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:140",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:141",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:142",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:143",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:144",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:145",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:150",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:181",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:182",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:183",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:184",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:185",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:186",
+    "control"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:187",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:188",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:195",
+    "control"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:197",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:198",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:199",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:200",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:201",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:202",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:203",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:204",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:205",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:207",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:208",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:211",
+    "inside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:230",
+    "control"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:231",
+    "control"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:232",
+    "control"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:243",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:244",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:245",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:246",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:247",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:248",
+    "control"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:249",
+    "outside"
+   ],
+   [
+    "apps/web/src/Lobby.tsx:250",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:59",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:60",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:64",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:88",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:92",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:103",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:106",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:141",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:142",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:143",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:144",
+    "outside"
+   ],
+   [
+    "apps/web/src/api.ts:145",
+    "outside"
+   ],
+   [
+    "apps/web/src/fireweave/fw-providers.ts:275",
+    "control"
+   ],
+   [
+    "apps/web/src/fireweave/fw-tracker.ts:23",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:394",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:395",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:396",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:398",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:399",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:400",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:401",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:402",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:403",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:404",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:405",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:406",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:407",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:408",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:409",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:410",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:412",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:413",
+    "outside"
+   ],
+   [
+    "apps/web/src/styles.css:414",
+    "outside"
+   ]
+  ],
+  "byCallSite": [
+   {
+    "name": "fw",
+    "at": "apps/web/src/Lobby.tsx:4",
+    "references": 1,
+    "cls": "control"
+   }
+  ]
+ },
+ "confidence": {
+  "measuredLevel": "low",
+  "why": [
+   "no test that existed before the change covers any of the 10 changed code files (measured)",
+   "single-author repo: familiarity dropped (W appendix)"
+  ],
+  "disagreements": []
+ },
+ "detectionDisagreements": [],
+ "detectors": [
+  {
+   "mode": "domain",
+   "detectors": [],
+   "absenceMeasured": true
+  },
+  {
+   "mode": "infra",
+   "detectors": [
+    {
+     "what": "error rate metric arcade_web_pin_errors_total",
+     "at": "apps/web/src/Lobby.tsx:145",
+     "source": "measured"
+    },
+    {
+     "what": "deploy health check",
+     "at": "docker/compose.prod.yml:49",
+     "source": "declared"
+    },
+    {
+     "what": "deploy health check",
+     "at": "scripts/deploy-prod.sh:74",
+     "source": "declared"
+    }
+   ],
+   "absenceMeasured": false
+  }
+ ],
+ "failure": {
+  "perFile": [
+   {
+    "path": "apps/api/src/application/games.ts",
+    "mode": "domain",
+    "at": "apps/api/src/application/games.ts:40"
+   },
+   {
+    "path": "apps/api/src/bootstrap.ts",
+    "mode": "domain",
+    "at": "apps/api/src/bootstrap.ts:10"
+   },
+   {
+    "path": "apps/api/src/infrastructure/db/client.ts",
+    "mode": "infra",
+    "at": "apps/api/src/infrastructure/db/client.ts:74"
+   },
+   {
+    "path": "apps/api/src/infrastructure/db/pin-repo.ts",
+    "mode": "infra",
+    "at": "apps/api/src/infrastructure/db/pin-repo.ts:1"
+   },
+   {
+    "path": "apps/api/src/infrastructure/observability/metrics-catalog.ts",
+    "mode": "infra",
+    "at": "apps/api/src/infrastructure/observability/metrics-catalog.ts:239"
+   },
+   {
+    "path": "apps/api/src/interfaces/http/router.ts",
+    "mode": "domain",
+    "at": "apps/api/src/interfaces/http/router.ts:174"
+   },
+   {
+    "path": "apps/web/src/Lobby.tsx",
+    "mode": "domain",
+    "at": "apps/web/src/Lobby.tsx:3"
+   },
+   {
+    "path": "apps/web/src/api.ts",
+    "mode": "domain",
+    "at": "apps/web/src/api.ts:59"
+   },
+   {
+    "path": "apps/web/src/fireweave/fw-providers.ts",
+    "mode": "domain",
+    "at": "apps/web/src/fireweave/fw-providers.ts:275"
+   },
+   {
+    "path": "apps/web/src/fireweave/fw-tracker.ts",
+    "mode": "domain",
+    "at": "apps/web/src/fireweave/fw-tracker.ts:23"
+   },
+   {
+    "path": "apps/web/src/styles.css",
+    "mode": "cosmetic",
+    "at": "apps/web/src/styles.css:394"
+   }
+  ],
+  "modes": [
+   "domain",
+   "infra"
+  ]
+ },
+ "commitMessage": "Read the match replay flag once in the games use case.\n\nCo-authored-by: Cursor <cursoragent@cursor.com>\n\nLet players pin up to six games on the lobby.\n\nCo-authored-by: Cursor <cursoragent@cursor.com>\n\n",
+ "diffText": "diff --git a/apps/api/src/application/games.ts b/apps/api/src/application/games.ts\nindex 2891a73..39d73cb 100644\n--- a/apps/api/src/application/games.ts\n+++ b/apps/api/src/application/games.ts\n@@ -37,10 +37,24 @@ function traceFields(trace?: TraceCtx) {\n   return { traceId: trace?.traceId, parentSpanId: trace?.parentSpanId };\n }\n \n+async function replaySnapshots(userId: number) {\n+  // @fireweave-controlpoint match-replay\n+  return fw.controlPoints.getBooleanValue(\"match-replay\", false, {\n+    targetingKey: String(userId),\n+  });\n+}\n+\n+const PIN_LIMIT = 6;\n+\n export function createGameUseCases(deps: {\n   matches: MatchRepository;\n   engines: EngineCatalog;\n   obs: ObservabilityPort;\n+  pins: {\n+    list(userId: number): Promise<string[]>;\n+    add(userId: number, gameId: string): Promise<void>;\n+    remove(userId: number, gameId: string): Promise<boolean>;\n+  };\n }) {\n   return {\n     async listGames(trace?: TraceCtx) {\n@@ -60,10 +74,7 @@ export function createGameUseCases(deps: {\n     },\n \n     async getOrCreateMatch(user: PublicUser, gameId: string, trace?: TraceCtx) {\n-      // @fireweave-controlpoint match-replay\n-      const snap = await fw.controlPoints.getBooleanValue(\"match-replay\", false, {\n-        targetingKey: String(user.id),\n-      });\n+      const snap = await replaySnapshots(user.id);\n       const engine = (() => {\n         try {\n           return deps.engines.require(gameId);\n@@ -123,10 +134,7 @@ export function createGameUseCases(deps: {\n       move: unknown,\n       trace?: TraceCtx,\n     ): Promise<MatchDto> {\n-      // @fireweave-controlpoint match-replay\n-      const snap = await fw.controlPoints.getBooleanValue(\"match-replay\", false, {\n-        targetingKey: String(user.id),\n-      });\n+      const snap = await replaySnapshots(user.id);\n       const engine = (() => {\n         try {\n           return deps.engines.require(gameId);\n@@ -260,6 +268,34 @@ export function createGameUseCases(deps: {\n       const updated = await deps.matches.update(match);\n       return toDto(updated);\n     },\n+\n+    async listPins(user: PublicUser) {\n+      return deps.pins.list(user.id);\n+    },\n+\n+    async pin(user: PublicUser, gameId: string) {\n+      try {\n+        deps.engines.require(gameId);\n+      } catch {\n+        throw new AppError(\"Unknown game\", 404, \"unknown_game\");\n+      }\n+      const current = await deps.pins.list(user.id);\n+      if (current.includes(gameId)) throw new AppError(\"Already pinned\", 409, \"already_pinned\");\n+      if (current.length >= PIN_LIMIT) throw new AppError(\"Pin limit reached\", 409, \"limit\");\n+      await deps.pins.add(user.id, gameId);\n+      return [...current, gameId];\n+    },\n+\n+    async unpin(user: PublicUser, gameId: string) {\n+      try {\n+        deps.engines.require(gameId);\n+      } catch {\n+        throw new AppError(\"Unknown game\", 404, \"unknown_game\");\n+      }\n+      const removed = await deps.pins.remove(user.id, gameId);\n+      if (!removed) throw new AppError(\"Not pinned\", 404, \"not_pinned\");\n+      return deps.pins.list(user.id);\n+    },\n   };\n }\n \ndiff --git a/apps/api/src/bootstrap.ts b/apps/api/src/bootstrap.ts\nindex 8fe56c9..0009908 100644\n--- a/apps/api/src/bootstrap.ts\n+++ b/apps/api/src/bootstrap.ts\n@@ -7,6 +7,7 @@ import { migrate, waitForDb } from \"./infrastructure/db/client\";\n import { userRepo } from \"./infrastructure/db/user-repo\";\n import { sessionRepo } from \"./infrastructure/db/session-repo\";\n import { matchRepo } from \"./infrastructure/db/match-repo\";\n+import { pinRepo } from \"./infrastructure/db/pin-repo\";\n import { createEngineCatalog } from \"./infrastructure/engines/registry\";\n import { observability } from \"./infrastructure/observability/adapter\";\n import { makePasswordHash } from \"./infrastructure/auth/password\";\n@@ -27,7 +28,7 @@ export async function getServices(): Promise<AppServices> {\n       sessions: sessionRepo,\n       obs: observability,\n     }),\n-    games: createGameUseCases({ matches: matchRepo, engines, obs: observability }),\n+    games: createGameUseCases({ matches: matchRepo, engines, obs: observability, pins: pinRepo }),\n     scoreboard: createScoreboardUseCases({ matches: matchRepo, obs: observability }),\n     admin: createAdminUseCases({ matches: matchRepo, engines, obs: observability }),\n     history: createHistoryUseCases({ matches: matchRepo, engines, obs: observability }),\ndiff --git a/apps/api/src/infrastructure/db/client.ts b/apps/api/src/infrastructure/db/client.ts\nindex 54f4bf1..29e2a06 100644\n--- a/apps/api/src/infrastructure/db/client.ts\n+++ b/apps/api/src/infrastructure/db/client.ts\n@@ -71,4 +71,13 @@ export async function migrate() {\n   await sql`CREATE INDEX IF NOT EXISTS idx_matches_user_game ON matches(user_id, game_id, status)`;\n   await sql`CREATE INDEX IF NOT EXISTS idx_matches_game ON matches(game_id)`;\n   await sql`CREATE INDEX IF NOT EXISTS idx_matches_user_finished ON matches(user_id, status, id DESC)`;\n+\n+  await sql`\n+    CREATE TABLE IF NOT EXISTS pins (\n+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,\n+      game_id TEXT NOT NULL,\n+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n+      PRIMARY KEY (user_id, game_id)\n+    )\n+  `;\n }\ndiff --git a/apps/api/src/infrastructure/db/pin-repo.ts b/apps/api/src/infrastructure/db/pin-repo.ts\nnew file mode 100644\nindex 0000000..d05b6d5\n--- /dev/null\n+++ b/apps/api/src/infrastructure/db/pin-repo.ts\n@@ -0,0 +1,21 @@\n+import { sql } from \"./client\";\n+\n+export const pinRepo = {\n+  async list(userId: number): Promise<string[]> {\n+    const rows = await sql`\n+      SELECT game_id FROM pins WHERE user_id = ${userId} ORDER BY created_at ASC\n+    `;\n+    return rows.map((row) => row.game_id as string);\n+  },\n+\n+  async add(userId: number, gameId: string): Promise<void> {\n+    await sql`INSERT INTO pins (user_id, game_id) VALUES (${userId}, ${gameId})`;\n+  },\n+\n+  async remove(userId: number, gameId: string): Promise<boolean> {\n+    const rows = await sql`\n+      DELETE FROM pins WHERE user_id = ${userId} AND game_id = ${gameId} RETURNING game_id\n+    `;\n+    return rows.length > 0;\n+  },\n+};\ndiff --git a/apps/api/src/infrastructure/observability/metrics-catalog.ts b/apps/api/src/infrastructure/observability/metrics-catalog.ts\nindex 85dac9f..5667b93 100644\n--- a/apps/api/src/infrastructure/observability/metrics-catalog.ts\n+++ b/apps/api/src/infrastructure/observability/metrics-catalog.ts\n@@ -236,6 +236,20 @@ export const METRICS_CATALOG: MetricDef[] = [\n     defaultLabels: { surface: \"web\", result: \"ok\" },\n     source: \"ReplayPage\",\n   },\n+  {\n+    name: \"arcade_web_pins_total\",\n+    type: \"counter\",\n+    description: \"Successful pin or unpin from the lobby\",\n+    defaultLabels: { surface: \"web\", result: \"ok\" },\n+    source: \"LobbyPage pin toggle\",\n+  },\n+  {\n+    name: \"arcade_web_pin_errors_total\",\n+    type: \"counter\",\n+    description: \"Lobby pin or unpin failed\",\n+    defaultLabels: { surface: \"web\", reason: \"limit\" },\n+    source: \"LobbyPage pin toggle\",\n+  },\n   {\n     name: \"arcade_verify\",\n     type: \"counter\",\ndiff --git a/apps/api/src/interfaces/http/router.ts b/apps/api/src/interfaces/http/router.ts\nindex 4143732..9beee13 100644\n--- a/apps/api/src/interfaces/http/router.ts\n+++ b/apps/api/src/interfaces/http/router.ts\n@@ -171,6 +171,23 @@ export function createHandler(services: AppServices) {\n         return respond(json({ games: await services.games.listGames(trace) }));\n       }\n \n+      if (path === \"/api/pins\" && req.method === \"GET\") {\n+        const user = await services.auth.me(sessionTokenFromRequest(req));\n+        if (!user) return respond(json({ error: \"unauthorized\", code: \"unauthorized\" }, { status: 401 }));\n+        return respond(json({ gameIds: await services.games.listPins(user) }));\n+      }\n+\n+      const pinPath = path.match(/^\\/api\\/games\\/([^/]+)\\/pin$/);\n+      if (pinPath && (req.method === \"POST\" || req.method === \"DELETE\")) {\n+        const user = await services.auth.me(sessionTokenFromRequest(req));\n+        if (!user) return respond(json({ error: \"unauthorized\", code: \"unauthorized\" }, { status: 401 }));\n+        const gameIds =\n+          req.method === \"POST\"\n+            ? await services.games.pin(user, pinPath[1]!)\n+            : await services.games.unpin(user, pinPath[1]!);\n+        return respond(json({ gameIds }));\n+      }\n+\n       const matchGet = path.match(/^\\/api\\/games\\/([^/]+)\\/match$/);\n       if (matchGet && req.method === \"GET\") {\n         const user = await services.auth.me(sessionTokenFromRequest(req));\ndiff --git a/apps/web/src/Lobby.tsx b/apps/web/src/Lobby.tsx\nindex bc4ba6a..66fc5c6 100644\n--- a/apps/web/src/Lobby.tsx\n+++ b/apps/web/src/Lobby.tsx\n@@ -1,9 +1,10 @@\n import { useEffect, useMemo, useState } from \"react\";\n import { Link } from \"react-router-dom\";\n-import { api, type GameInfo } from \"./api\";\n+import { ApiError, api, type GameInfo } from \"./api\";\n+import { fw } from \"./fireweave/fw-harness\";\n import { GameCover } from \"./games/covers\";\n import { CATEGORIES, inCategory, metaFor, type GameCategory } from \"./games/meta\";\n-import { emitClientAction } from \"./observability/openobserve\";\n+import { emitClientAction, metric } from \"./observability/openobserve\";\n \n const HOT_IDS = [\"connectfour\", \"tictactoe\", \"gomoku\", \"reversi\", \"memory\", \"nim\"];\n const QUICK_IDS = [\"tictactoe\", \"popout\", \"wildttt\", \"subtractsquare\", \"memory\", \"miserettt\"];\n@@ -18,31 +19,62 @@ function GameTile({\n   game,\n   size = \"md\",\n   delay = 0,\n+  pinsOn = false,\n+  pinned = false,\n+  onPin,\n }: {\n   game: GameInfo;\n   size?: \"sm\" | \"md\" | \"lg\" | \"hero\";\n   delay?: number;\n+  pinsOn?: boolean;\n+  pinned?: boolean;\n+  onPin?: (gameId: string) => void;\n }) {\n   const meta = metaFor(game.id);\n   return (\n-    <Link\n-      to={`/play/${game.id}`}\n-      className={`tile tile-${size}`}\n-      style={{ animationDelay: `${delay}ms`, [\"--tile-from\" as string]: meta.from, [\"--tile-to\" as string]: meta.to }}\n-    >\n-      <div className=\"tile-art\">\n-        <GameCover id={game.id} />\n-        <span className=\"tile-play\">Play</span>\n-      </div>\n-      <div className=\"tile-meta\">\n-        <h3>{game.name}</h3>\n-        {size === \"hero\" || size === \"lg\" ? <p>{meta.blurb}</p> : null}\n-      </div>\n-    </Link>\n+    <div className=\"tile-slot\">\n+      {pinsOn ? (\n+        <button\n+          type=\"button\"\n+          className={`pin-btn ${pinned ? \"on\" : \"\"}`}\n+          onClick={() => onPin?.(game.id)}\n+        >\n+          {pinned ? \"Unpin\" : \"Pin\"}\n+        </button>\n+      ) : null}\n+      <Link\n+        to={`/play/${game.id}`}\n+        className={`tile tile-${size}`}\n+        style={{ animationDelay: `${delay}ms`, [\"--tile-from\" as string]: meta.from, [\"--tile-to\" as string]: meta.to }}\n+      >\n+        <div className=\"tile-art\">\n+          <GameCover id={game.id} />\n+          <span className=\"tile-play\">Play</span>\n+        </div>\n+        <div className=\"tile-meta\">\n+          <h3>{game.name}</h3>\n+          {size === \"hero\" || size === \"lg\" ? <p>{meta.blurb}</p> : null}\n+        </div>\n+      </Link>\n+    </div>\n   );\n }\n \n-function Rail({ title, games, size = \"sm\" }: { title: string; games: GameInfo[]; size?: \"sm\" | \"md\" }) {\n+function Rail({\n+  title,\n+  games,\n+  size = \"sm\",\n+  pinsOn = false,\n+  pinnedIds,\n+  onPin,\n+}: {\n+  title: string;\n+  games: GameInfo[];\n+  size?: \"sm\" | \"md\";\n+  pinsOn?: boolean;\n+  pinnedIds?: Set<string>;\n+  onPin?: (gameId: string) => void;\n+}) {\n   if (!games.length) return null;\n   return (\n     <section className=\"lobby-rail\">\n@@ -51,7 +83,15 @@ function Rail({ title, games, size = \"sm\" }: { title: string; games: GameInfo[];\n       </div>\n       <div className=\"rail-track\">\n         {games.map((g, i) => (\n-          <GameTile key={g.id} game={g} size={size} delay={i * 35} />\n+          <GameTile\n+            key={g.id}\n+            game={g}\n+            size={size}\n+            delay={i * 35}\n+            pinsOn={pinsOn}\n+            pinned={pinnedIds?.has(g.id)}\n+            onPin={onPin}\n+          />\n         ))}\n       </div>\n     </section>\n@@ -61,7 +101,11 @@ function Rail({ title, games, size = \"sm\" }: { title: string; games: GameInfo[];\n export function LobbyPage() {\n   const [games, setGames] = useState<GameInfo[]>([]);\n   const [error, setError] = useState(\"\");\n+  const [pinError, setPinError] = useState(\"\");\n+  const [pinIds, setPinIds] = useState<string[]>([]);\n   const [cat, setCat] = useState<GameCategory>(\"all\");\n+  // @fireweave-controlpoint pin-games\n+  const pinsOn = fw.controlPoints.getBooleanValue(\"pin-games\", false);\n \n   useEffect(() => {\n     void api\n@@ -79,7 +123,31 @@ export function LobbyPage() {\n       .catch((e: Error) => setError(e.message));\n   }, []);\n \n+  useEffect(() => {\n+    if (!pinsOn) return;\n+    void api\n+      .pins()\n+      .then((r) => setPinIds(r.gameIds))\n+      .catch((e: Error) => setPinError(e.message));\n+  }, [pinsOn]);\n+\n+  const pinnedSet = useMemo(() => new Set(pinIds), [pinIds]);\n+\n+  async function togglePin(gameId: string) {\n+    setPinError(\"\");\n+    try {\n+      const next = pinnedSet.has(gameId) ? await api.unpin(gameId) : await api.pin(gameId);\n+      setPinIds(next.gameIds);\n+      void metric(\"arcade_web_pins_total\", 1, { surface: \"web\", result: \"ok\" });\n+    } catch (e) {\n+      const reason = e instanceof ApiError && e.code ? e.code : \"request_failed\";\n+      setPinError(e instanceof Error ? e.message : \"pin failed\");\n+      void metric(\"arcade_web_pin_errors_total\", 1, { surface: \"web\", reason });\n+    }\n+  }\n+\n   const featured = useMemo(() => games.slice(0, 3), [games]);\n+  const pinnedGames = useMemo(() => byIds(games, pinIds), [games, pinIds]);\n   const filtered = useMemo(() => games.filter((g) => inCategory(g.id, cat)), [games, cat]);\n   const hot = useMemo(() => byIds(games, HOT_IDS), [games]);\n   const quick = useMemo(() => byIds(games, QUICK_IDS), [games]);\n@@ -110,12 +178,38 @@ export function LobbyPage() {\n         </div>\n         <div className=\"lobby-featured\">\n           {featured.map((g, i) => (\n-            <GameTile key={g.id} game={g} size={i === 0 ? \"hero\" : \"lg\"} delay={i * 60} />\n+            <GameTile\n+              key={g.id}\n+              game={g}\n+              size={i === 0 ? \"hero\" : \"lg\"}\n+              delay={i * 60}\n+              pinsOn={pinsOn}\n+              pinned={pinnedSet.has(g.id)}\n+              onPin={(id) => void togglePin(id)}\n+            />\n           ))}\n           {!featured.length ? <p className=\"hint\">loading games…</p> : null}\n         </div>\n       </div>\n \n+      {pinsOn ? (\n+        <>\n+          {pinError ? <p className=\"error\">{pinError}</p> : null}\n+          {pinnedGames.length ? (\n+            <Rail\n+              title=\"Pinned\"\n+              games={pinnedGames}\n+              size=\"md\"\n+              pinsOn\n+              pinnedIds={pinnedSet}\n+              onPin={(id) => void togglePin(id)}\n+            />\n+          ) : (\n+            <p className=\"hint\">Pin a game to keep it here. Up to 6.</p>\n+          )}\n+        </>\n+      ) : null}\n+\n       <div className=\"lobby-cats\" role=\"tablist\" aria-label=\"Game categories\">\n         {CATEGORIES.map((c) => (\n           <button\n@@ -133,9 +227,9 @@ export function LobbyPage() {\n \n       {cat === \"all\" ? (\n         <>\n-          <Rail title=\"Can't stop playing\" games={hot} size=\"md\" />\n-          <Rail title=\"5-minute fun\" games={quick} size=\"sm\" />\n-          <Rail title=\"Train your brain\" games={brain} size=\"sm\" />\n+          <Rail title=\"Can't stop playing\" games={hot} size=\"md\" pinsOn={pinsOn} pinnedIds={pinnedSet} onPin={(id) => void togglePin(id)} />\n+          <Rail title=\"5-minute fun\" games={quick} size=\"sm\" pinsOn={pinsOn} pinnedIds={pinnedSet} onPin={(id) => void togglePin(id)} />\n+          <Rail title=\"Train your brain\" games={brain} size=\"sm\" pinsOn={pinsOn} pinnedIds={pinnedSet} onPin={(id) => void togglePin(id)} />\n         </>\n       ) : null}\n \n@@ -146,7 +240,15 @@ export function LobbyPage() {\n         </div>\n         <div className=\"lobby-grid\">\n           {filtered.map((g, i) => (\n-            <GameTile key={g.id} game={g} size=\"md\" delay={i * 30} />\n+            <GameTile\n+              key={g.id}\n+              game={g}\n+              size=\"md\"\n+              delay={i * 30}\n+              pinsOn={pinsOn}\n+              pinned={pinnedSet.has(g.id)}\n+              onPin={(id) => void togglePin(id)}\n+            />\n           ))}\n           {!filtered.length && games.length ? <p className=\"hint\">no games in this category</p> : null}\n           {!games.length ? <p className=\"hint\">loading games…</p> : null}\ndiff --git a/apps/web/src/api.ts b/apps/web/src/api.ts\nindex e7b91ab..eeaee79 100644\n--- a/apps/web/src/api.ts\n+++ b/apps/web/src/api.ts\n@@ -56,10 +56,12 @@ export type AdminInsights = {\n \n export class ApiError extends Error {\n   status: number;\n-  constructor(message: string, status: number) {\n+  code: string;\n+  constructor(message: string, status: number, code = \"\") {\n     super(message);\n     this.name = \"ApiError\";\n     this.status = status;\n+    this.code = code;\n   }\n }\n \n@@ -83,11 +85,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {\n     headers,\n   });\n \n-  let data: { error?: string } = {};\n+  let data: { error?: string; code?: string } = {};\n   const text = await res.text();\n   if (text) {\n     try {\n-      data = JSON.parse(text) as { error?: string };\n+      data = JSON.parse(text) as { error?: string; code?: string };\n     } catch {\n       data = { error: text.slice(0, 120) || \"request failed\" };\n     }\n@@ -98,10 +100,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {\n     if (path !== \"/api/auth/login\" && path !== \"/api/auth/register\") {\n       onUnauthorized?.();\n     }\n-    throw new ApiError(data.error ?? \"unauthorized\", 401);\n+    throw new ApiError(data.error ?? \"unauthorized\", 401, data.code ?? \"unauthorized\");\n   }\n   if (!res.ok) {\n-    throw new ApiError(data.error ?? \"request failed\", res.status);\n+    throw new ApiError(data.error ?? \"request failed\", res.status, data.code ?? \"request_failed\");\n   }\n   return data as T;\n }\n@@ -136,6 +138,11 @@ export const api = {\n     }),\n   logout: () => request<{ ok: boolean }>(\"/api/auth/logout\", { method: \"POST\" }),\n   games: () => request<{ games: GameInfo[] }>(\"/api/games\"),\n+  pins: () => request<{ gameIds: string[] }>(\"/api/pins\"),\n+  pin: (gameId: string) =>\n+    request<{ gameIds: string[] }>(`/api/games/${gameId}/pin`, { method: \"POST\" }),\n+  unpin: (gameId: string) =>\n+    request<{ gameIds: string[] }>(`/api/games/${gameId}/pin`, { method: \"DELETE\" }),\n   match: (gameId: string) => request<Match>(`/api/games/${gameId}/match`),\n   newMatch: (gameId: string) =>\n     request<Match>(`/api/games/${gameId}/match/new`, { method: \"POST\" }),\ndiff --git a/apps/web/src/fireweave/fw-providers.ts b/apps/web/src/fireweave/fw-providers.ts\nindex a5d393c..3973fa8 100644\n--- a/apps/web/src/fireweave/fw-providers.ts\n+++ b/apps/web/src/fireweave/fw-providers.ts\n@@ -272,7 +272,7 @@ export async function makeConnectedVendorProvider(): Promise<FireweaveWebClient>\n export async function makeDevProvider(): Promise<FireweaveWebClient> {\n   fwClient = await initFireweave({\n     mode: 'local',\n-    local: { controlPoints: { \"profile-avatar-menu\": true, \"header-arrangement\": true, \"match-replay\": true } },\n+    local: { controlPoints: { \"profile-avatar-menu\": true, \"header-arrangement\": true, \"match-replay\": true, \"pin-games\": true } },\n     context: { targetingKey: resolveDeviceTargetingKey() },\n   });\n   return fwClient;\ndiff --git a/apps/web/src/fireweave/fw-tracker.ts b/apps/web/src/fireweave/fw-tracker.ts\nindex a1b9b35..b7ccf89 100644\n--- a/apps/web/src/fireweave/fw-tracker.ts\n+++ b/apps/web/src/fireweave/fw-tracker.ts\n@@ -20,4 +20,5 @@ export const FW_STAMPS: Array<{ stampId: string }> = [\n   { stampId: \"stmp_01M48AE7FHT2FEKHD88HXWY0V8\" },\n   { stampId: \"stmp_01M48DNJ3KM4EN54TA798ZZ98C\" },\n   { stampId: \"stmp_01M48Q5RVH35KW30Q1ZA1C4X4M\" },\n+  { stampId: \"stmp_01M48SS4M1P7ERQBFW4EX53Y5H\" },\n ];\ndiff --git a/apps/web/src/styles.css b/apps/web/src/styles.css\nindex cfb1925..a85b299 100644\n--- a/apps/web/src/styles.css\n+++ b/apps/web/src/styles.css\n@@ -391,6 +391,28 @@ a.btn {\n   gap: 0.85rem;\n }\n \n+.tile-slot {\n+  position: relative;\n+  min-width: 0;\n+}\n+.pin-btn {\n+  position: absolute;\n+  z-index: 2;\n+  top: 0.45rem;\n+  right: 0.45rem;\n+  border: 0;\n+  border-radius: 999px;\n+  padding: 0.18rem 0.5rem;\n+  font: inherit;\n+  font-size: 0.72rem;\n+  cursor: pointer;\n+  background: rgba(255, 255, 255, 0.92);\n+  color: #0b1220;\n+}\n+.pin-btn.on {\n+  background: #0b1220;\n+  color: #fff;\n+}\n .tile {\n   --tile-from: #132045;\n   --tile-to: #00d4ff;\n",
+ "atBase": null,
+ "citation": {
+  "pathFiles": [
+   "apps/api/src/application/games.ts",
+   "apps/api/src/bootstrap.ts",
+   "apps/api/src/main.ts",
+   "apps/api/src/infrastructure/db/client.ts",
+   "apps/api/src/infrastructure/db/pin-repo.ts",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts",
+   "apps/api/src/infrastructure/observability/openobserve.ts",
+   "apps/api/src/interfaces/http/router.ts",
+   "apps/web/src/Lobby.tsx",
+   "apps/web/src/App.tsx",
+   "apps/web/src/main.tsx",
+   "apps/web/src/api.ts",
+   "apps/web/src/fireweave/fw-providers.ts",
+   "apps/web/src/fireweave/fw-harness.ts"
+  ],
+  "entries": [
+   "apps/api/src/main.ts",
+   "apps/web/src/main.tsx"
+  ],
+  "handlers": [
+   "apps/api/src/interfaces/http/router.ts:82",
+   "apps/api/src/interfaces/http/router.ts:122",
+   "apps/api/src/interfaces/http/router.ts:138",
+   "apps/api/src/interfaces/http/router.ts:174"
+  ],
+  "changed": [
+   "apps/api/src/application/games.ts:40",
+   "apps/api/src/application/games.ts:41",
+   "apps/api/src/application/games.ts:42",
+   "apps/api/src/application/games.ts:43",
+   "apps/api/src/application/games.ts:44",
+   "apps/api/src/application/games.ts:45",
+   "apps/api/src/application/games.ts:46",
+   "apps/api/src/application/games.ts:47",
+   "apps/api/src/application/games.ts:48",
+   "apps/api/src/application/games.ts:53",
+   "apps/api/src/application/games.ts:54",
+   "apps/api/src/application/games.ts:55",
+   "apps/api/src/application/games.ts:56",
+   "apps/api/src/application/games.ts:57",
+   "apps/api/src/application/games.ts:77",
+   "apps/api/src/application/games.ts:137",
+   "apps/api/src/application/games.ts:271",
+   "apps/api/src/application/games.ts:272",
+   "apps/api/src/application/games.ts:273",
+   "apps/api/src/application/games.ts:274",
+   "apps/api/src/application/games.ts:275",
+   "apps/api/src/application/games.ts:276",
+   "apps/api/src/application/games.ts:277",
+   "apps/api/src/application/games.ts:278",
+   "apps/api/src/application/games.ts:279",
+   "apps/api/src/application/games.ts:280",
+   "apps/api/src/application/games.ts:281",
+   "apps/api/src/application/games.ts:282",
+   "apps/api/src/application/games.ts:283",
+   "apps/api/src/application/games.ts:284",
+   "apps/api/src/application/games.ts:285",
+   "apps/api/src/application/games.ts:286",
+   "apps/api/src/application/games.ts:287",
+   "apps/api/src/application/games.ts:288",
+   "apps/api/src/application/games.ts:289",
+   "apps/api/src/application/games.ts:290",
+   "apps/api/src/application/games.ts:291",
+   "apps/api/src/application/games.ts:292",
+   "apps/api/src/application/games.ts:293",
+   "apps/api/src/application/games.ts:294",
+   "apps/api/src/application/games.ts:295",
+   "apps/api/src/application/games.ts:296",
+   "apps/api/src/application/games.ts:297",
+   "apps/api/src/application/games.ts:298",
+   "apps/api/src/bootstrap.ts:10",
+   "apps/api/src/bootstrap.ts:31",
+   "apps/api/src/infrastructure/db/client.ts:74",
+   "apps/api/src/infrastructure/db/client.ts:75",
+   "apps/api/src/infrastructure/db/client.ts:76",
+   "apps/api/src/infrastructure/db/client.ts:77",
+   "apps/api/src/infrastructure/db/client.ts:78",
+   "apps/api/src/infrastructure/db/client.ts:79",
+   "apps/api/src/infrastructure/db/client.ts:80",
+   "apps/api/src/infrastructure/db/client.ts:81",
+   "apps/api/src/infrastructure/db/client.ts:82",
+   "apps/api/src/infrastructure/db/pin-repo.ts:1",
+   "apps/api/src/infrastructure/db/pin-repo.ts:2",
+   "apps/api/src/infrastructure/db/pin-repo.ts:3",
+   "apps/api/src/infrastructure/db/pin-repo.ts:4",
+   "apps/api/src/infrastructure/db/pin-repo.ts:5",
+   "apps/api/src/infrastructure/db/pin-repo.ts:6",
+   "apps/api/src/infrastructure/db/pin-repo.ts:7",
+   "apps/api/src/infrastructure/db/pin-repo.ts:8",
+   "apps/api/src/infrastructure/db/pin-repo.ts:9",
+   "apps/api/src/infrastructure/db/pin-repo.ts:10",
+   "apps/api/src/infrastructure/db/pin-repo.ts:11",
+   "apps/api/src/infrastructure/db/pin-repo.ts:12",
+   "apps/api/src/infrastructure/db/pin-repo.ts:13",
+   "apps/api/src/infrastructure/db/pin-repo.ts:14",
+   "apps/api/src/infrastructure/db/pin-repo.ts:15",
+   "apps/api/src/infrastructure/db/pin-repo.ts:16",
+   "apps/api/src/infrastructure/db/pin-repo.ts:17",
+   "apps/api/src/infrastructure/db/pin-repo.ts:18",
+   "apps/api/src/infrastructure/db/pin-repo.ts:19",
+   "apps/api/src/infrastructure/db/pin-repo.ts:20",
+   "apps/api/src/infrastructure/db/pin-repo.ts:21",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:239",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:240",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:241",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:242",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:243",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:244",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:245",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:246",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:247",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:248",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:249",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:250",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:251",
+   "apps/api/src/infrastructure/observability/metrics-catalog.ts:252",
+   "apps/api/src/interfaces/http/router.ts:174",
+   "apps/api/src/interfaces/http/router.ts:175",
+   "apps/api/src/interfaces/http/router.ts:176",
+   "apps/api/src/interfaces/http/router.ts:177",
+   "apps/api/src/interfaces/http/router.ts:178",
+   "apps/api/src/interfaces/http/router.ts:179",
+   "apps/api/src/interfaces/http/router.ts:180",
+   "apps/api/src/interfaces/http/router.ts:181",
+   "apps/api/src/interfaces/http/router.ts:182",
+   "apps/api/src/interfaces/http/router.ts:183",
+   "apps/api/src/interfaces/http/router.ts:184",
+   "apps/api/src/interfaces/http/router.ts:185",
+   "apps/api/src/interfaces/http/router.ts:186",
+   "apps/api/src/interfaces/http/router.ts:187",
+   "apps/api/src/interfaces/http/router.ts:188",
+   "apps/api/src/interfaces/http/router.ts:189",
+   "apps/api/src/interfaces/http/router.ts:190",
+   "apps/web/src/Lobby.tsx:3",
+   "apps/web/src/Lobby.tsx:4",
+   "apps/web/src/Lobby.tsx:7",
+   "apps/web/src/Lobby.tsx:22",
+   "apps/web/src/Lobby.tsx:23",
+   "apps/web/src/Lobby.tsx:24",
+   "apps/web/src/Lobby.tsx:29",
+   "apps/web/src/Lobby.tsx:30",
+   "apps/web/src/Lobby.tsx:31",
+   "apps/web/src/Lobby.tsx:35",
+   "apps/web/src/Lobby.tsx:36",
+   "apps/web/src/Lobby.tsx:37",
+   "apps/web/src/Lobby.tsx:38",
+   "apps/web/src/Lobby.tsx:39",
+   "apps/web/src/Lobby.tsx:40",
+   "apps/web/src/Lobby.tsx:41",
+   "apps/web/src/Lobby.tsx:42",
+   "apps/web/src/Lobby.tsx:43",
+   "apps/web/src/Lobby.tsx:44",
+   "apps/web/src/Lobby.tsx:45",
+   "apps/web/src/Lobby.tsx:46",
+   "apps/web/src/Lobby.tsx:47",
+   "apps/web/src/Lobby.tsx:48",
+   "apps/web/src/Lobby.tsx:49",
+   "apps/web/src/Lobby.tsx:50",
+   "apps/web/src/Lobby.tsx:51",
+   "apps/web/src/Lobby.tsx:52",
+   "apps/web/src/Lobby.tsx:53",
+   "apps/web/src/Lobby.tsx:54",
+   "apps/web/src/Lobby.tsx:55",
+   "apps/web/src/Lobby.tsx:56",
+   "apps/web/src/Lobby.tsx:57",
+   "apps/web/src/Lobby.tsx:58",
+   "apps/web/src/Lobby.tsx:59",
+   "apps/web/src/Lobby.tsx:63",
+   "apps/web/src/Lobby.tsx:64",
+   "apps/web/src/Lobby.tsx:65",
+   "apps/web/src/Lobby.tsx:66",
+   "apps/web/src/Lobby.tsx:67",
+   "apps/web/src/Lobby.tsx:68",
+   "apps/web/src/Lobby.tsx:69",
+   "apps/web/src/Lobby.tsx:70",
+   "apps/web/src/Lobby.tsx:71",
+   "apps/web/src/Lobby.tsx:72",
+   "apps/web/src/Lobby.tsx:73",
+   "apps/web/src/Lobby.tsx:74",
+   "apps/web/src/Lobby.tsx:75",
+   "apps/web/src/Lobby.tsx:76",
+   "apps/web/src/Lobby.tsx:77",
+   "apps/web/src/Lobby.tsx:86",
+   "apps/web/src/Lobby.tsx:87",
+   "apps/web/src/Lobby.tsx:88",
+   "apps/web/src/Lobby.tsx:89",
+   "apps/web/src/Lobby.tsx:90",
+   "apps/web/src/Lobby.tsx:91",
+   "apps/web/src/Lobby.tsx:92",
+   "apps/web/src/Lobby.tsx:93",
+   "apps/web/src/Lobby.tsx:94",
+   "apps/web/src/Lobby.tsx:104",
+   "apps/web/src/Lobby.tsx:105",
+   "apps/web/src/Lobby.tsx:107",
+   "apps/web/src/Lobby.tsx:108",
+   "apps/web/src/Lobby.tsx:126",
+   "apps/web/src/Lobby.tsx:127",
+   "apps/web/src/Lobby.tsx:128",
+   "apps/web/src/Lobby.tsx:129",
+   "apps/web/src/Lobby.tsx:130",
+   "apps/web/src/Lobby.tsx:131",
+   "apps/web/src/Lobby.tsx:132",
+   "apps/web/src/Lobby.tsx:133",
+   "apps/web/src/Lobby.tsx:134",
+   "apps/web/src/Lobby.tsx:135",
+   "apps/web/src/Lobby.tsx:136",
+   "apps/web/src/Lobby.tsx:137",
+   "apps/web/src/Lobby.tsx:138",
+   "apps/web/src/Lobby.tsx:139",
+   "apps/web/src/Lobby.tsx:140",
+   "apps/web/src/Lobby.tsx:141",
+   "apps/web/src/Lobby.tsx:142",
+   "apps/web/src/Lobby.tsx:143",
+   "apps/web/src/Lobby.tsx:144",
+   "apps/web/src/Lobby.tsx:145",
+   "apps/web/src/Lobby.tsx:146",
+   "apps/web/src/Lobby.tsx:147",
+   "apps/web/src/Lobby.tsx:148",
+   "apps/web/src/Lobby.tsx:150",
+   "apps/web/src/Lobby.tsx:181",
+   "apps/web/src/Lobby.tsx:182",
+   "apps/web/src/Lobby.tsx:183",
+   "apps/web/src/Lobby.tsx:184",
+   "apps/web/src/Lobby.tsx:185",
+   "apps/web/src/Lobby.tsx:186",
+   "apps/web/src/Lobby.tsx:187",
+   "apps/web/src/Lobby.tsx:188",
+   "apps/web/src/Lobby.tsx:189",
+   "apps/web/src/Lobby.tsx:195",
+   "apps/web/src/Lobby.tsx:196",
+   "apps/web/src/Lobby.tsx:197",
+   "apps/web/src/Lobby.tsx:198",
+   "apps/web/src/Lobby.tsx:199",
+   "apps/web/src/Lobby.tsx:200",
+   "apps/web/src/Lobby.tsx:201",
+   "apps/web/src/Lobby.tsx:202",
+   "apps/web/src/Lobby.tsx:203",
+   "apps/web/src/Lobby.tsx:204",
+   "apps/web/src/Lobby.tsx:205",
+   "apps/web/src/Lobby.tsx:206",
+   "apps/web/src/Lobby.tsx:207",
+   "apps/web/src/Lobby.tsx:208",
+   "apps/web/src/Lobby.tsx:209",
+   "apps/web/src/Lobby.tsx:210",
+   "apps/web/src/Lobby.tsx:211",
+   "apps/web/src/Lobby.tsx:212",
+   "apps/web/src/Lobby.tsx:230",
+   "apps/web/src/Lobby.tsx:231",
+   "apps/web/src/Lobby.tsx:232",
+   "apps/web/src/Lobby.tsx:243",
+   "apps/web/src/Lobby.tsx:244",
+   "apps/web/src/Lobby.tsx:245",
+   "apps/web/src/Lobby.tsx:246",
+   "apps/web/src/Lobby.tsx:247",
+   "apps/web/src/Lobby.tsx:248",
+   "apps/web/src/Lobby.tsx:249",
+   "apps/web/src/Lobby.tsx:250",
+   "apps/web/src/Lobby.tsx:251",
+   "apps/web/src/api.ts:59",
+   "apps/web/src/api.ts:60",
+   "apps/web/src/api.ts:64",
+   "apps/web/src/api.ts:88",
+   "apps/web/src/api.ts:92",
+   "apps/web/src/api.ts:103",
+   "apps/web/src/api.ts:106",
+   "apps/web/src/api.ts:141",
+   "apps/web/src/api.ts:142",
+   "apps/web/src/api.ts:143",
+   "apps/web/src/api.ts:144",
+   "apps/web/src/api.ts:145",
+   "apps/web/src/fireweave/fw-providers.ts:275",
+   "apps/web/src/fireweave/fw-tracker.ts:23",
+   "apps/web/src/styles.css:394",
+   "apps/web/src/styles.css:395",
+   "apps/web/src/styles.css:396",
+   "apps/web/src/styles.css:397",
+   "apps/web/src/styles.css:398",
+   "apps/web/src/styles.css:399",
+   "apps/web/src/styles.css:400",
+   "apps/web/src/styles.css:401",
+   "apps/web/src/styles.css:402",
+   "apps/web/src/styles.css:403",
+   "apps/web/src/styles.css:404",
+   "apps/web/src/styles.css:405",
+   "apps/web/src/styles.css:406",
+   "apps/web/src/styles.css:407",
+   "apps/web/src/styles.css:408",
+   "apps/web/src/styles.css:409",
+   "apps/web/src/styles.css:410",
+   "apps/web/src/styles.css:411",
+   "apps/web/src/styles.css:412",
+   "apps/web/src/styles.css:413",
+   "apps/web/src/styles.css:414",
+   "apps/web/src/styles.css:415",
+   "apps/api/src/application/games.ts@32683da:63",
+   "apps/api/src/application/games.ts@32683da:64",
+   "apps/api/src/application/games.ts@32683da:65",
+   "apps/api/src/application/games.ts@32683da:66",
+   "apps/api/src/application/games.ts@32683da:126",
+   "apps/api/src/application/games.ts@32683da:127",
+   "apps/api/src/application/games.ts@32683da:128",
+   "apps/api/src/application/games.ts@32683da:129",
+   "apps/api/src/bootstrap.ts@32683da:30",
+   "apps/web/src/Lobby.tsx@32683da:3",
+   "apps/web/src/Lobby.tsx@32683da:6",
+   "apps/web/src/Lobby.tsx@32683da:28",
+   "apps/web/src/Lobby.tsx@32683da:29",
+   "apps/web/src/Lobby.tsx@32683da:30",
+   "apps/web/src/Lobby.tsx@32683da:31",
+   "apps/web/src/Lobby.tsx@32683da:32",
+   "apps/web/src/Lobby.tsx@32683da:33",
+   "apps/web/src/Lobby.tsx@32683da:34",
+   "apps/web/src/Lobby.tsx@32683da:35",
+   "apps/web/src/Lobby.tsx@32683da:36",
+   "apps/web/src/Lobby.tsx@32683da:37",
+   "apps/web/src/Lobby.tsx@32683da:38",
+   "apps/web/src/Lobby.tsx@32683da:39",
+   "apps/web/src/Lobby.tsx@32683da:40",
+   "apps/web/src/Lobby.tsx@32683da:41",
+   "apps/web/src/Lobby.tsx@32683da:45",
+   "apps/web/src/Lobby.tsx@32683da:54",
+   "apps/web/src/Lobby.tsx@32683da:113",
+   "apps/web/src/Lobby.tsx@32683da:136",
+   "apps/web/src/Lobby.tsx@32683da:137",
+   "apps/web/src/Lobby.tsx@32683da:138",
+   "apps/web/src/Lobby.tsx@32683da:149",
+   "apps/web/src/api.ts@32683da:59",
+   "apps/web/src/api.ts@32683da:86",
+   "apps/web/src/api.ts@32683da:90",
+   "apps/web/src/api.ts@32683da:101",
+   "apps/web/src/api.ts@32683da:104",
+   "apps/web/src/fireweave/fw-providers.ts@32683da:275"
+  ],
+  "added": [
+   "async function replaySnapshots(userId: number) {",
+   "  // @fireweave-controlpoint match-replay",
+   "  return fw.controlPoints.getBooleanValue(\"match-replay\", false, {",
+   "    targetingKey: String(userId),",
+   "  });",
+   "}",
+   "",
+   "const PIN_LIMIT = 6;",
+   "",
+   "  pins: {",
+   "    list(userId: number): Promise<string[]>;",
+   "    add(userId: number, gameId: string): Promise<void>;",
+   "    remove(userId: number, gameId: string): Promise<boolean>;",
+   "  };",
+   "      const snap = await replaySnapshots(user.id);",
+   "      const snap = await replaySnapshots(user.id);",
+   "",
+   "    async listPins(user: PublicUser) {",
+   "      return deps.pins.list(user.id);",
+   "    },",
+   "",
+   "    async pin(user: PublicUser, gameId: string) {",
+   "      try {",
+   "        deps.engines.require(gameId);",
+   "      } catch {",
+   "        throw new AppError(\"Unknown game\", 404, \"unknown_game\");",
+   "      }",
+   "      const current = await deps.pins.list(user.id);",
+   "      if (current.includes(gameId)) throw new AppError(\"Already pinned\", 409, \"already_pinned\");",
+   "      if (current.length >= PIN_LIMIT) throw new AppError(\"Pin limit reached\", 409, \"limit\");",
+   "      await deps.pins.add(user.id, gameId);",
+   "      return [...current, gameId];",
+   "    },",
+   "",
+   "    async unpin(user: PublicUser, gameId: string) {",
+   "      try {",
+   "        deps.engines.require(gameId);",
+   "      } catch {",
+   "        throw new AppError(\"Unknown game\", 404, \"unknown_game\");",
+   "      }",
+   "      const removed = await deps.pins.remove(user.id, gameId);",
+   "      if (!removed) throw new AppError(\"Not pinned\", 404, \"not_pinned\");",
+   "      return deps.pins.list(user.id);",
+   "    },",
+   "import { pinRepo } from \"./infrastructure/db/pin-repo\";",
+   "    games: createGameUseCases({ matches: matchRepo, engines, obs: observability, pins: pinRepo }),",
+   "",
+   "  await sql`",
+   "    CREATE TABLE IF NOT EXISTS pins (",
+   "      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,",
+   "      game_id TEXT NOT NULL,",
+   "      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),",
+   "      PRIMARY KEY (user_id, game_id)",
+   "    )",
+   "  `;",
+   "import { sql } from \"./client\";",
+   "",
+   "export const pinRepo = {",
+   "  async list(userId: number): Promise<string[]> {",
+   "    const rows = await sql`",
+   "      SELECT game_id FROM pins WHERE user_id = ${userId} ORDER BY created_at ASC",
+   "    `;",
+   "    return rows.map((row) => row.game_id as string);",
+   "  },",
+   "",
+   "  async add(userId: number, gameId: string): Promise<void> {",
+   "    await sql`INSERT INTO pins (user_id, game_id) VALUES (${userId}, ${gameId})`;",
+   "  },",
+   "",
+   "  async remove(userId: number, gameId: string): Promise<boolean> {",
+   "    const rows = await sql`",
+   "      DELETE FROM pins WHERE user_id = ${userId} AND game_id = ${gameId} RETURNING game_id",
+   "    `;",
+   "    return rows.length > 0;",
+   "  },",
+   "};",
+   "  {",
+   "    name: \"arcade_web_pins_total\",",
+   "    type: \"counter\",",
+   "    description: \"Successful pin or unpin from the lobby\",",
+   "    defaultLabels: { surface: \"web\", result: \"ok\" },",
+   "    source: \"LobbyPage pin toggle\",",
+   "  },",
+   "  {",
+   "    name: \"arcade_web_pin_errors_total\",",
+   "    type: \"counter\",",
+   "    description: \"Lobby pin or unpin failed\",",
+   "    defaultLabels: { surface: \"web\", reason: \"limit\" },",
+   "    source: \"LobbyPage pin toggle\",",
+   "  },",
+   "      if (path === \"/api/pins\" && req.method === \"GET\") {",
+   "        const user = await services.auth.me(sessionTokenFromRequest(req));",
+   "        if (!user) return respond(json({ error: \"unauthorized\", code: \"unauthorized\" }, { status: 401 }));",
+   "        return respond(json({ gameIds: await services.games.listPins(user) }));",
+   "      }",
+   "",
+   "      const pinPath = path.match(/^\\/api\\/games\\/([^/]+)\\/pin$/);",
+   "      if (pinPath && (req.method === \"POST\" || req.method === \"DELETE\")) {",
+   "        const user = await services.auth.me(sessionTokenFromRequest(req));",
+   "        if (!user) return respond(json({ error: \"unauthorized\", code: \"unauthorized\" }, { status: 401 }));",
+   "        const gameIds =",
+   "          req.method === \"POST\"",
+   "            ? await services.games.pin(user, pinPath[1]!)",
+   "            : await services.games.unpin(user, pinPath[1]!);",
+   "        return respond(json({ gameIds }));",
+   "      }",
+   "",
+   "import { ApiError, api, type GameInfo } from \"./api\";",
+   "import { fw } from \"./fireweave/fw-harness\";",
+   "import { emitClientAction, metric } from \"./observability/openobserve\";",
+   "  pinsOn = false,",
+   "  pinned = false,",
+   "  onPin,",
+   "  pinsOn?: boolean;",
+   "  pinned?: boolean;",
+   "  onPin?: (gameId: string) => void;",
+   "    <div className=\"tile-slot\">",
+   "      {pinsOn ? (",
+   "        <button",
+   "          type=\"button\"",
+   "          className={`pin-btn ${pinned ? \"on\" : \"\"}`}",
+   "          onClick={() => onPin?.(game.id)}",
+   "        >",
+   "          {pinned ? \"Unpin\" : \"Pin\"}",
+   "        </button>",
+   "      ) : null}",
+   "      <Link",
+   "        to={`/play/${game.id}`}",
+   "        className={`tile tile-${size}`}",
+   "        style={{ animationDelay: `${delay}ms`, [\"--tile-from\" as string]: meta.from, [\"--tile-to\" as string]: meta.to }}",
+   "      >",
+   "        <div className=\"tile-art\">",
+   "          <GameCover id={game.id} />",
+   "          <span className=\"tile-play\">Play</span>",
+   "        </div>",
+   "        <div className=\"tile-meta\">",
+   "          <h3>{game.name}</h3>",
+   "          {size === \"hero\" || size === \"lg\" ? <p>{meta.blurb}</p> : null}",
+   "        </div>",
+   "      </Link>",
+   "    </div>",
+   "function Rail({",
+   "  title,",
+   "  games,",
+   "  size = \"sm\",",
+   "  pinsOn = false,",
+   "  pinnedIds,",
+   "  onPin,",
+   "}: {",
+   "  title: string;",
+   "  games: GameInfo[];",
+   "  size?: \"sm\" | \"md\";",
+   "  pinsOn?: boolean;",
+   "  pinnedIds?: Set<string>;",
+   "  onPin?: (gameId: string) => void;",
+   "}) {",
+   "          <GameTile",
+   "            key={g.id}",
+   "            game={g}",
+   "            size={size}",
+   "            delay={i * 35}",
+   "            pinsOn={pinsOn}",
+   "            pinned={pinnedIds?.has(g.id)}",
+   "            onPin={onPin}",
+   "          />",
+   "  const [pinError, setPinError] = useState(\"\");",
+   "  const [pinIds, setPinIds] = useState<string[]>([]);",
+   "  // @fireweave-controlpoint pin-games",
+   "  const pinsOn = fw.controlPoints.getBooleanValue(\"pin-games\", false);",
+   "  useEffect(() => {",
+   "    if (!pinsOn) return;",
+   "    void api",
+   "      .pins()",
+   "      .then((r) => setPinIds(r.gameIds))",
+   "      .catch((e: Error) => setPinError(e.message));",
+   "  }, [pinsOn]);",
+   "",
+   "  const pinnedSet = useMemo(() => new Set(pinIds), [pinIds]);",
+   "",
+   "  async function togglePin(gameId: string) {",
+   "    setPinError(\"\");",
+   "    try {",
+   "      const next = pinnedSet.has(gameId) ? await api.unpin(gameId) : await api.pin(gameId);",
+   "      setPinIds(next.gameIds);",
+   "      void metric(\"arcade_web_pins_total\", 1, { surface: \"web\", result: \"ok\" });",
+   "    } catch (e) {",
+   "      const reason = e instanceof ApiError && e.code ? e.code : \"request_failed\";",
+   "      setPinError(e instanceof Error ? e.message : \"pin failed\");",
+   "      void metric(\"arcade_web_pin_errors_total\", 1, { surface: \"web\", reason });",
+   "    }",
+   "  }",
+   "",
+   "  const pinnedGames = useMemo(() => byIds(games, pinIds), [games, pinIds]);",
+   "            <GameTile",
+   "              key={g.id}",
+   "              game={g}",
+   "              size={i === 0 ? \"hero\" : \"lg\"}",
+   "              delay={i * 60}",
+   "              pinsOn={pinsOn}",
+   "              pinned={pinnedSet.has(g.id)}",
+   "              onPin={(id) => void togglePin(id)}",
+   "            />",
+   "      {pinsOn ? (",
+   "        <>",
+   "          {pinError ? <p className=\"error\">{pinError}</p> : null}",
+   "          {pinnedGames.length ? (",
+   "            <Rail",
+   "              title=\"Pinned\"",
+   "              games={pinnedGames}",
+   "              size=\"md\"",
+   "              pinsOn",
+   "              pinnedIds={pinnedSet}",
+   "              onPin={(id) => void togglePin(id)}",
+   "            />",
+   "          ) : (",
+   "            <p className=\"hint\">Pin a game to keep it here. Up to 6.</p>",
+   "          )}",
+   "        </>",
+   "      ) : null}",
+   "",
+   "          <Rail title=\"Can't stop playing\" games={hot} size=\"md\" pinsOn={pinsOn} pinnedIds={pinnedSet} onPin={(id) => void togglePin(id)} />",
+   "          <Rail title=\"5-minute fun\" games={quick} size=\"sm\" pinsOn={pinsOn} pinnedIds={pinnedSet} onPin={(id) => void togglePin(id)} />",
+   "          <Rail title=\"Train your brain\" games={brain} size=\"sm\" pinsOn={pinsOn} pinnedIds={pinnedSet} onPin={(id) => void togglePin(id)} />",
+   "            <GameTile",
+   "              key={g.id}",
+   "              game={g}",
+   "              size=\"md\"",
+   "              delay={i * 30}",
+   "              pinsOn={pinsOn}",
+   "              pinned={pinnedSet.has(g.id)}",
+   "              onPin={(id) => void togglePin(id)}",
+   "            />",
+   "  code: string;",
+   "  constructor(message: string, status: number, code = \"\") {",
+   "    this.code = code;",
+   "  let data: { error?: string; code?: string } = {};",
+   "      data = JSON.parse(text) as { error?: string; code?: string };",
+   "    throw new ApiError(data.error ?? \"unauthorized\", 401, data.code ?? \"unauthorized\");",
+   "    throw new ApiError(data.error ?? \"request failed\", res.status, data.code ?? \"request_failed\");",
+   "  pins: () => request<{ gameIds: string[] }>(\"/api/pins\"),",
+   "  pin: (gameId: string) =>",
+   "    request<{ gameIds: string[] }>(`/api/games/${gameId}/pin`, { method: \"POST\" }),",
+   "  unpin: (gameId: string) =>",
+   "    request<{ gameIds: string[] }>(`/api/games/${gameId}/pin`, { method: \"DELETE\" }),",
+   "    local: { controlPoints: { \"profile-avatar-menu\": true, \"header-arrangement\": true, \"match-replay\": true, \"pin-games\": true } },",
+   "  { stampId: \"stmp_01M48SS4M1P7ERQBFW4EX53Y5H\" },",
+   ".tile-slot {",
+   "  position: relative;",
+   "  min-width: 0;",
+   "}",
+   ".pin-btn {",
+   "  position: absolute;",
+   "  z-index: 2;",
+   "  top: 0.45rem;",
+   "  right: 0.45rem;",
+   "  border: 0;",
+   "  border-radius: 999px;",
+   "  padding: 0.18rem 0.5rem;",
+   "  font: inherit;",
+   "  font-size: 0.72rem;",
+   "  cursor: pointer;",
+   "  background: rgba(255, 255, 255, 0.92);",
+   "  color: #0b1220;",
+   "}",
+   ".pin-btn.on {",
+   "  background: #0b1220;",
+   "  color: #fff;",
+   "}",
+   "apps/api/src/infrastructure/db/pin-repo.ts"
+  ],
+  "removed": [
+   "      // @fireweave-controlpoint match-replay",
+   "      const snap = await fw.controlPoints.getBooleanValue(\"match-replay\", false, {",
+   "        targetingKey: String(user.id),",
+   "      });",
+   "      // @fireweave-controlpoint match-replay",
+   "      const snap = await fw.controlPoints.getBooleanValue(\"match-replay\", false, {",
+   "        targetingKey: String(user.id),",
+   "      });",
+   "    games: createGameUseCases({ matches: matchRepo, engines, obs: observability }),",
+   "import { api, type GameInfo } from \"./api\";",
+   "import { emitClientAction } from \"./observability/openobserve\";",
+   "    <Link",
+   "      to={`/play/${game.id}`}",
+   "      className={`tile tile-${size}`}",
+   "      style={{ animationDelay: `${delay}ms`, [\"--tile-from\" as string]: meta.from, [\"--tile-to\" as string]: meta.to }}",
+   "    >",
+   "      <div className=\"tile-art\">",
+   "        <GameCover id={game.id} />",
+   "        <span className=\"tile-play\">Play</span>",
+   "      </div>",
+   "      <div className=\"tile-meta\">",
+   "        <h3>{game.name}</h3>",
+   "        {size === \"hero\" || size === \"lg\" ? <p>{meta.blurb}</p> : null}",
+   "      </div>",
+   "    </Link>",
+   "function Rail({ title, games, size = \"sm\" }: { title: string; games: GameInfo[]; size?: \"sm\" | \"md\" }) {",
+   "          <GameTile key={g.id} game={g} size={size} delay={i * 35} />",
+   "            <GameTile key={g.id} game={g} size={i === 0 ? \"hero\" : \"lg\"} delay={i * 60} />",
+   "          <Rail title=\"Can't stop playing\" games={hot} size=\"md\" />",
+   "          <Rail title=\"5-minute fun\" games={quick} size=\"sm\" />",
+   "          <Rail title=\"Train your brain\" games={brain} size=\"sm\" />",
+   "            <GameTile key={g.id} game={g} size=\"md\" delay={i * 30} />",
+   "  constructor(message: string, status: number) {",
+   "  let data: { error?: string } = {};",
+   "      data = JSON.parse(text) as { error?: string };",
+   "    throw new ApiError(data.error ?? \"unauthorized\", 401);",
+   "    throw new ApiError(data.error ?? \"request failed\", res.status);",
+   "    local: { controlPoints: { \"profile-avatar-menu\": true, \"header-arrangement\": true, \"match-replay\": true } },"
+  ],
+  "secretAdded": false
+ },
+ "secretHit": false,
+ "owner": "Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>",
+ "codeowners": false
+}
