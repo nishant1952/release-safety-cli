@@ -1,3 +1,5 @@
 node_modules/
 out/*.tmp
 .env
+data/
+logs/

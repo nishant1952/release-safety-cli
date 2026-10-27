@@ -1,0 +1,66 @@
+{
+  "source": "writeup.md, section 2: What we do when we cannot know",
+  "gates": {
+    "rule": "Gates (1a): if a condition cannot be verified, route to a human, do not block.",
+    "unverifiable": "human"
+  },
+  "damage": {
+    "rule": "Damage (1b): missing data rounds up. Assume the path is live, the reach is wide and the data is touched.",
+    "assume": {
+      "Path": "live",
+      "Reach": "high"
+    },
+    "notApplied": {
+      "the data is touched": "data writes are read from the diff (gate 3, reversibility), and 'The diff is always present, so signals derived from it are never missing.' (W 2)"
+    }
+  },
+  "reversibility": {
+    "rule": "Reversibility (1c): missing data rounds to slow. Assume no flag, no alert on the changed path, an all-at-once rollout and a full build and deploy to revert, never 'instant'.",
+    "assume": {
+      "Feature flag": "none",
+      "Detection apparatus": "slow",
+      "Rollout mechanism": "all-at-once",
+      "Time to revert": "full build and deploy"
+    }
+  },
+  "probability": {
+    "rule": "Probability (1d): missing data lowers confidence. It does not raise risk on its own. Missing history is reported as 'history unavailable', never 'zero incidents'.",
+    "signals": [
+      "Failure mode",
+      "Failure mode (LLM second opinion)",
+      "History",
+      "Provenance",
+      "Confidence: test coverage",
+      "Confidence: familiarity",
+      "Confidence: review depth",
+      "Confidence: diff vs task (LLM)"
+    ],
+    "lowerConfidenceSteps": 1
+  },
+  "disagreement": {
+    "rule": "Two measured signals that disagree lower confidence, and the brief says so.",
+    "lowerConfidenceSteps": 1
+  },
+  "model": {
+    "rule": "Round 3 model contract (a deviation from W 2's one-way rule, see DECISIONS.md): the write-up rounds missing data toward caution; a cited line is not missing data; the one-way rule still holds for measured facts. The model may move an assumed signal one step on its scale, citing the line it rests on. It never sees or changes measured or declared signals, gate results or the mode.",
+    "scales": {
+      "Path": [
+        "live",
+        "unreached"
+      ],
+      "Reach": [
+        "high",
+        "low",
+        "none"
+      ],
+      "Detection apparatus": [
+        "slow",
+        "fast"
+      ],
+      "Time to revert": [
+        "full build and deploy",
+        "one-click rollback"
+      ]
+    }
+  }
+}
