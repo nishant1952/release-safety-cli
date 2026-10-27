@@ -5,7 +5,7 @@ import { dirname } from "node:path";
 
 // USD per million tokens at Anthropic list prices (cache writes at 1.25x input).
 const PRICES: Record<string, { input: number; output: number; cacheRead: number }> = {
-  "claude-opus-5-5": { input: 4, output: 20, cacheRead: 0.2 },
+  "claude-sonnet-5-5": { input: 2, output: 10, cacheRead: 0.2 },
 };
 
 export interface Usage {

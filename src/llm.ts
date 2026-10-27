@@ -6,7 +6,7 @@ import { costOf, logLlmCall, tokensOf, type LlmLogEntry } from "./llmlog";
 
 export const NO_CREDENTIAL = "no ANTHROPIC_API_KEY";
 
-const MODEL = "claude-opus-5-5";
+const MODEL = "claude-sonnet-5-5";
 
 export const llmAvailable = () => Boolean(process.env.ANTHROPIC_API_KEY);
 

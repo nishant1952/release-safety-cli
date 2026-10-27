@@ -18,7 +18,7 @@ const stubApi = () =>
     port: 0,
     fetch: () =>
       Response.json({
-        id: "msg_x", type: "message", role: "assistant", model: "claude-opus-5-5",
+        id: "msg_x", type: "message", role: "assistant", model: "claude-sonnet-5-5",
         content: [{ type: "text", text: '{"ok":true}' }], stop_reason: "end_turn", stop_sequence: null,
         usage: { input_tokens: 10, output_tokens: 2 },
       }),
@@ -33,8 +33,8 @@ test("tokens and estimated cost at list prices", () => {
     output_tokens_details: { thinking_tokens: 500 },
   });
   expect(t).toEqual({ input: 10_000, output: 2_000, thinking: 500, cache_read: 1_000, cache_write: 0, total: 13_000 });
-  // Opus 5.5: 10k x $4 + 1k x $0.20 + 2k x $20, per million.
-  expect(costOf("claude-opus-5-5", t)).toEqual({ usd: 0.0802, basis: "Anthropic list price" });
+  // Sonnet 5.5: 10k x $2 + 1k x $0.20 + 2k x $10, per million.
+  expect(costOf("claude-sonnet-5-5", t)).toEqual({ usd: 0.0402, basis: "Anthropic list price" });
   expect(costOf("some-other-model", t)).toBeNull();
 });
 
@@ -71,17 +71,17 @@ test("askJson logs request, response, request id, tokens, latency and cost (loca
   const [entry] = readFileSync(log, "utf8").trim().split("\n").map((l) => JSON.parse(l));
   expect(entry).toMatchObject({
     purpose: "failure-mode second opinion",
-    model: "claude-opus-5-5",
+    model: "claude-sonnet-5-5",
     outcome: "ok",
     request_id: "req_test_123",
     request: { max_tokens: 4000, effort: "low", system: "sys", user: "user prompt" },
     response: { id: "msg_test", stop_reason: "end_turn", text: '{"modes":["domain"]}' },
     tokens: { input: 1200, output: 80, total: 1280 },
-    cost: { usd: 0.0064, basis: "Anthropic list price" },
+    cost: { usd: 0.0032, basis: "Anthropic list price" },
     error: null,
   });
   expect(entry.latency_ms).toBeGreaterThanOrEqual(0);
-  expect(llmSummary()).toContain("1 calls (1 ok) on claude-opus-5-5, 1,200 input / 80 output tokens, est. $0.0064");
+  expect(llmSummary()).toContain("1 calls (1 ok) on claude-sonnet-5-5, 1,200 input / 80 output tokens, est. $0.0032");
 });
 
 test("an API error is logged with its status and returns null", async () => {
