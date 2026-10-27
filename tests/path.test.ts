@@ -21,7 +21,9 @@ test("PR 13: import chains from changed files up to an entry point", () => {
     "apps/web/src/fireweave/fw-harness.ts:46",
     "apps/web/src/main.tsx:4",
   ]);
-  expect(chain("apps/web/src/styles.css")).toEqual(["apps/web/src/main.tsx:6"]);
+  // A stylesheet is not a code path: listed, never chained (Round 3, Unit 2).
+  expect(facts.chains.has("apps/web/src/styles.css")).toBe(false);
+  expect(facts.nonCode).toEqual(["apps/web/src/styles.css"]);
   expect(facts.chains.get("apps/web/src/fireweave/fw-tracker.ts")).toBeNull();
 });
 
@@ -48,7 +50,7 @@ test("PR 13: path is live, declared (entry points come from config)", () => {
 });
 
 test("no entry point found: the path is assumed live (W 2)", () => {
-  const s = pathSignal({ entries: [], chains: new Map([["a.ts", null]]), routes: [] });
+  const s = pathSignal({ entries: [], chains: new Map([["a.ts", null]]), routes: [], nonCode: [], onlyNonCode: false });
   expect([s.value, s.source]).toEqual(["live", "assumed"]);
   expect(s.note).toBe("no entry point found in workspace package.json scripts or index.html, so the path is assumed live");
 });

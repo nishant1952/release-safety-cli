@@ -194,7 +194,7 @@ export function detectionSignal(f: DetectionFacts): Signal<"fast" | "slow"> {
     : "no metric or log call on changed lines";
   const evidence = [...new Set(results.flatMap((r) => r.detectors.map((d) => d.at)))];
   if (!results.length)
-    return { name: "Detection apparatus", value: "fast", source: "measured", evidence, note: "no failure mode (docs- or test-only change)" };
+    return { name: "Detection apparatus", value: "fast", source: "measured", evidence, note: "no failure mode a detector must watch (docs, tests, editor config or stylesheets only)" };
   if (missing.length)
     return {
       name: "Detection apparatus",

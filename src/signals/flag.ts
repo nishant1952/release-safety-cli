@@ -4,6 +4,7 @@
 import { Node, Project, SyntaxKind, type Identifier, type Project as TsProject, type SourceFile } from "ts-morph";
 import { loadProject, repoPath, TS_FILE } from "../ast";
 import { ref, type Diff, type Line } from "../diff";
+import { nonCodeKind } from "../files";
 import { Git } from "../git";
 import type { Signal } from "../types";
 
@@ -247,6 +248,10 @@ export function flagFacts(diff: Diff): FlagFacts {
 
   const lines = new Map<string, LineClass>();
   const classify = (l: Line): LineClass | null => {
+    // Docs and editor config never run, so they are neither inside nor outside a flag. Stylesheets,
+    // CI, compose, scripts and lockfiles still count: no flag turns them off.
+    const kind = nonCodeKind(l.file);
+    if (kind === "docs" || kind === "editor config") return null;
     if (keyLine(l.text)) return "control";
     if (STRUCTURAL.test(l.text) || COMMENT.test(l.text)) return null;
     if (!TS_FILE.test(l.file)) return "outside";
@@ -303,7 +308,7 @@ export function featureFlag(diff: Diff, facts: FlagFacts): Signal<"none" | "part
     evidence: [...control, ...runStarts(outside)],
     note:
       `flag ${flagText}: ${inside.length} added lines inside the flag, ${control.length} control lines, ` +
-      `${outside.length} outside it (blank, comment and bracket-only lines are not classed)` +
+      `${outside.length} outside it (blank, comment, bracket-only, docs and editor config lines are not classed)` +
       (outside.length ? ` (in ${outsideFiles.join(", ")})` : "") +
       (callSite.length ? `. Classed by call site: ${callSite.join("; ")}` : "") +
       ". Whether the flag exists in production and both states are tested is not checked",

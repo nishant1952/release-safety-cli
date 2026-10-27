@@ -5,6 +5,7 @@ import { posix } from "node:path";
 import { Node, SyntaxKind, type SourceFile } from "ts-morph";
 import { loadProject, repoPath } from "../ast";
 import type { Diff } from "../diff";
+import { listNonCode, nonCodeKind } from "../files";
 import { Git } from "../git";
 import type { Signal } from "../types";
 
@@ -34,6 +35,10 @@ export interface PathFacts {
   /** changed file -> importer chain up to an entry point (empty if it is an entry), null if unreached */
   chains: Map<string, Hop[] | null>;
   routes: RouteReach[];
+  /** changed files that are not a code path (docs, stylesheets, lockfiles, CI and compose YAML, scripts, editor config) */
+  nonCode: string[];
+  /** every changed file, deleted ones included, is non-code */
+  onlyNonCode: boolean;
 }
 
 function resolveSpec(from: string, spec: string, files: Set<string>, pkgs: Map<string, string>): string | null {
@@ -219,15 +224,26 @@ export function pathFacts(diff: Diff): PathFacts {
   const entrySet = new Set(entries);
   const chains = new Map<string, Hop[] | null>();
   const routes: RouteReach[] = [];
-  for (const f of diff.files.filter((f) => f.status !== "deleted")) {
+  const nonCode = diff.files.filter((f) => nonCodeKind(f.path) !== null).map((f) => f.path);
+  for (const f of diff.files.filter((f) => f.status !== "deleted" && nonCodeKind(f.path) === null)) {
     chains.set(f.path, chainToEntry(f.path, entrySet, importers));
     const sf = project.getSourceFile(`/${f.path}`);
     if (sf && /\.(tsx|jsx)$/.test(f.path)) routes.push(...routeReach(sf, f.added.map((l) => l.line)));
   }
-  return { entries, chains, routes };
+  return { entries, chains, routes, nonCode, onlyNonCode: nonCode.length === diff.files.length && nonCode.length > 0 };
 }
 
-export function pathSignal(facts: PathFacts): Signal<"live" | "unreached"> {
+export function pathSignal(facts: PathFacts): Signal<"live" | "unreached" | "not a code path"> {
+  const listed = facts.nonCode.length ? `. Not code paths, listed only: ${listNonCode(facts.nonCode)}` : "";
+  // A change made only of non-code files reaches no code: measured from the file list.
+  if (facts.onlyNonCode)
+    return {
+      name: "Path",
+      value: "not a code path",
+      source: "measured",
+      evidence: [],
+      note: `every changed file is a non-code file: ${listNonCode(facts.nonCode)}`,
+    };
   const routeText = facts.routes.map((r) => {
     const children = r.childPaths.length ? ` with child routes ${r.childPaths.join(", ")}` : "";
     const wrap = r.wrappers.length ? ` behind ${r.wrappers.join(", ")}` : "";
@@ -242,7 +258,8 @@ export function pathSignal(facts: PathFacts): Signal<"live" | "unreached"> {
       source: "assumed",
       evidence: [...new Set(routeEvidence)],
       note: `no entry point found in workspace package.json scripts or index.html, so the path is assumed live` +
-        (routeText.length ? `; measured in code: ${routeText.join("; ")}` : ""),
+        (routeText.length ? `; measured in code: ${routeText.join("; ")}` : "") +
+        listed,
     };
   const live = [...facts.chains].filter(([, c]) => c !== null);
   const unreached = [...facts.chains].filter(([, c]) => c === null).map(([f]) => f);
@@ -261,6 +278,6 @@ export function pathSignal(facts: PathFacts): Signal<"live" | "unreached"> {
     value: live.length ? "live" : "unreached",
     source: "declared",
     evidence: [...new Set(evidence)],
-    note: `${parts.join("; ")}. Import graph and routes measured; entry points declared by package.json scripts and index.html: ${facts.entries.join(", ")}`,
+    note: `${parts.join("; ")}. Import graph and routes measured; entry points declared by package.json scripts and index.html: ${facts.entries.join(", ")}${listed}`,
   };
 }

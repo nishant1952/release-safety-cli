@@ -37,7 +37,8 @@ test("PR 13: catalog has 21 entries and no tiers, so reach is assumed high", () 
   const s = reachSignal(facts);
   expect([s.value, s.source]).toEqual(["high", "assumed"]);
   expect(s.note).toEndWith(
-    "Worth unknown because the metrics catalog declares no tier for any of its 21 entries, so reach is assumed wide",
+    "Worth unknown because the metrics catalog declares no tier for any of its 21 entries, so reach is assumed wide. " +
+      "Not code paths, listed only: apps/web/src/styles.css (stylesheet)",
   );
 });
 

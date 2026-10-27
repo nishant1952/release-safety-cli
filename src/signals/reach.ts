@@ -6,6 +6,7 @@
 import { Node, SyntaxKind } from "ts-morph";
 import { loadProject, repoPath } from "../ast";
 import type { Diff } from "../diff";
+import { listNonCode, nonCodeKind } from "../files";
 import { Git } from "../git";
 import type { Signal } from "../types";
 
@@ -31,6 +32,9 @@ export interface ReachFacts {
   handlers: Handler[];
   /** catalog entries and how many declare a tier; null when the catalog file is not in the repo */
   catalog: { entries: number; tiers: { name: string; tier: string; source: string }[] } | null;
+  /** changed files that are not a code path; they carry no reach */
+  nonCode: string[];
+  onlyNonCode: boolean;
 }
 
 /** /api/... literals in a node (template literals keep their static head), with their line. */
@@ -142,15 +146,28 @@ function readCatalog(diff: Diff): ReachFacts["catalog"] {
 }
 
 export function reachFacts(diff: Diff): ReachFacts {
-  const endpoints = followCalls(diff);
+  const nonCode = diff.files.filter((f) => nonCodeKind(f.path) !== null).map((f) => f.path);
+  const onlyNonCode = nonCode.length > 0 && nonCode.length === diff.files.length;
+  const endpoints = onlyNonCode ? [] : followCalls(diff);
   return {
     endpoints,
     handlers: findHandlers(diff, endpoints),
     catalog: readCatalog(diff),
+    nonCode,
+    onlyNonCode,
   };
 }
 
-export function reachSignal(facts: ReachFacts): Signal<"high" | "low"> {
+export function reachSignal(facts: ReachFacts): Signal<"high" | "low" | "none"> {
+  if (facts.onlyNonCode)
+    return {
+      name: "Reach",
+      value: "none",
+      source: "measured",
+      evidence: [],
+      note: `every changed file is a non-code file, so no system is reached: ${listNonCode(facts.nonCode)}`,
+    };
+  const listed = facts.nonCode.length ? `. Not code paths, listed only: ${listNonCode(facts.nonCode)}` : "";
   const systems = facts.handlers.map((h) => `${h.method} ${h.path}${h.calls.length ? ` (${h.calls.join(", ")})` : ""}`);
   const evidence = [
     ...new Set([...facts.endpoints.flatMap((e) => e.via.flatMap((v) => v.split(" -> "))), ...facts.handlers.map((h) => h.at)]),
@@ -171,7 +188,7 @@ export function reachSignal(facts: ReachFacts): Signal<"high" | "low"> {
       value: "high",
       source: "assumed",
       evidence,
-      note: `${reached}. Worth unknown because ${why}, so reach is assumed wide`,
+      note: `${reached}. Worth unknown because ${why}, so reach is assumed wide${listed}`,
     };
   }
   const value = matched.every((t) => t.tier === "low") ? "low" : "high";
@@ -180,6 +197,6 @@ export function reachSignal(facts: ReachFacts): Signal<"high" | "low"> {
     value,
     source: "declared",
     evidence,
-    note: `${reached}. Catalog tiers: ${matched.map((t) => `${t.name}=${t.tier}`).join(", ")}`,
+    note: `${reached}. Catalog tiers: ${matched.map((t) => `${t.name}=${t.tier}`).join(", ")}${listed}`,
   };
 }

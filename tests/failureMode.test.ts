@@ -11,7 +11,7 @@ test("PR 13: rules on touched paths give domain and infra", () => {
     ["apps/web/src/App.tsx", "domain", "apps/web/src/App.tsx:1"],
     ["apps/web/src/fireweave/fw-providers.ts", "infra", "apps/web/src/fireweave/fw-providers.ts:275"],
     ["apps/web/src/fireweave/fw-tracker.ts", "infra", "apps/web/src/fireweave/fw-tracker.ts:19"],
-    ["apps/web/src/styles.css", "domain", "apps/web/src/styles.css:715"],
+    ["apps/web/src/styles.css", "cosmetic", "apps/web/src/styles.css:715"],
   ]);
   const s = failureModeSignal(facts);
   expect([s.value, s.source]).toEqual(["domain, infra", "measured"]);

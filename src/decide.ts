@@ -119,8 +119,9 @@ export function decide(input: DecisionInput): Decision {
   if (gateMode) mode = stricter(mode, gateMode);
 
   // W 3: "When a change lands in Staged or Human only because it has no flag, the cheapest way left is to add one".
+  // No flag can wrap a change that is not a code path (docs, CI, stylesheets only), so no advice then.
   let flagAdvice: string | null = null;
-  if (flag.value !== "full") {
+  if (flag.value !== "full" && path.value !== "not a code path") {
     const withFlag = GRID[damage][windowOf(signals, "full").window];
     if (MODES.indexOf(withFlag) < MODES.indexOf(gridMode))
       flagAdvice =
