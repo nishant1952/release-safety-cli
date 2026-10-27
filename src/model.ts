@@ -29,7 +29,15 @@ export interface Proposal {
 export interface ContractAnswer {
   proposals: Proposal[];
   failure_modes: { modes: string[]; reason: string };
-  coherence: { coherent: boolean; mismatches: string[] };
+  coherence: { coherent: boolean; mismatches: Mismatch[] };
+}
+
+/** One coherence item. A claim that the change adds, removes or includes something is checked against the diff. */
+export interface Mismatch {
+  text: string;
+  claim: "adds" | "removes" | "includes credentials" | "other";
+  /** the exact text from the diff the claim is about; "" for "other" and "includes credentials" */
+  subject: string;
 }
 
 export const CONTRACT_SCHEMA = {
@@ -58,7 +66,22 @@ export const CONTRACT_SCHEMA = {
     },
     coherence: {
       type: "object",
-      properties: { coherent: { type: "boolean" }, mismatches: { type: "array", items: { type: "string" } } },
+      properties: {
+        coherent: { type: "boolean" },
+        mismatches: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              text: { type: "string" },
+              claim: { type: "string", enum: ["adds", "removes", "includes credentials", "other"] },
+              subject: { type: "string" },
+            },
+            required: ["text", "claim", "subject"],
+            additionalProperties: false,
+          },
+        },
+      },
       required: ["coherent", "mismatches"],
       additionalProperties: false,
     },
@@ -106,7 +129,10 @@ const SYSTEM =
   "Also answer two questions. failure_modes: how the change can fail in production, every mode that applies: infra " +
   "(resources, latency, availability, config, build), security (auth, secrets, permissions, data exposure), domain (wrong " +
   "business values or behaviour that error rates cannot see). coherence: does the change do what its task and description " +
-  "say, nothing missing, nothing extra; list each concrete mismatch.";
+  "say, nothing missing, nothing extra; list each concrete mismatch as text, claim and subject. When the item says the " +
+  "change adds or removes something, claim is \"adds\" or \"removes\" and subject is the exact text from the diff it is " +
+  "about; when it says the change includes a secret or credential, claim is \"includes credentials\"; otherwise claim is " +
+  "\"other\". subject is \"\" unless claim is adds or removes.";
 
 export function contractPrompt(diffText: string, signals: Signal[], pr: PrMeta | null, commitMessage: string, base7: string): string {
   const rows = fillable(signals).map(
@@ -123,7 +149,7 @@ export interface Ruling {
   refused: string[];
 }
 
-/** What code knows about the change when it checks a citation. Built from measured facts by citationContext. */
+/** What code knows about the change when it checks a citation or a claim. Built from measured facts by citationContext. */
 export interface CitationContext {
   /** code files on the measured path: changed files whose import chain reaches an entry point, and every importer on it */
   pathFiles: Set<string>;
@@ -133,9 +159,14 @@ export interface CitationContext {
   handlers: Set<string>;
   /** added and removed lines */
   changed: Set<string>;
+  /** text of the added lines and the paths of added files; the same for removed lines and deleted files */
+  added: string[];
+  removed: string[];
+  /** gate 1 found a secret on an added line */
+  secretAdded: boolean;
 }
 
-export function citationContext(diff: Diff, paths: PathFacts, reach: ReachFacts): CitationContext {
+export function citationContext(diff: Diff, paths: PathFacts, reach: ReachFacts, secretAdded = false): CitationContext {
   const pathFiles = new Set<string>();
   for (const [file, chain] of paths.chains)
     if (chain) for (const f of [file, ...chain.map((h) => h.file)]) pathFiles.add(f);
@@ -144,7 +175,28 @@ export function citationContext(diff: Diff, paths: PathFacts, reach: ReachFacts)
     entries: new Set(paths.entries),
     handlers: new Set(reach.handlers.map((h) => h.at)),
     changed: new Set([...diff.added, ...diff.removed].map((l) => ref(l, diff.base))),
+    added: [...diff.added.map((l) => l.text), ...diff.files.filter((f) => f.status === "added").map((f) => f.path)],
+    removed: [...diff.removed.map((l) => l.text), ...diff.files.filter((f) => f.status === "deleted").map((f) => f.path)],
+    secretAdded,
   };
+}
+
+// An item that says the change adds or includes real (plaintext, hardcoded) credentials is a credentials claim, whatever
+// kind the model gave it. "adds a password reset flow" is not: it names a feature, not a value.
+const CREDENTIAL_CLAIM =
+  /\b(adds?|added|includes?|included|introduces?|introduced|commits?|committed|contains?|exposes?|leaks?)\b[^.;]*\b(real|actual|live|plaintext|plain-text|hard-?coded)\s+(credentials?|passwords?|secrets?|api keys?|tokens?)\b/i;
+const squash = (t: string) => t.replace(/\s+/g, " ").trim().toLowerCase();
+
+/** Why the diff does not support a coherence claim, or null when it does (or the item asserts nothing checkable). */
+export function unsupportedClaim(m: Mismatch, ctx: CitationContext): string | null {
+  const claim = m.claim !== "removes" && CREDENTIAL_CLAIM.test(m.text) ? "includes credentials" : m.claim;
+  if (claim === "includes credentials")
+    return ctx.secretAdded ? null : "gate 1 found no secret on an added line; a value present at base was not added by this change";
+  if (claim === "other") return null;
+  const subject = squash(m.subject);
+  if (!subject) return `the item says the change ${claim} something but names no text from the diff`;
+  const lines = claim === "adds" ? ctx.added : ctx.removed;
+  return lines.some((l) => squash(l).includes(subject)) ? null : `"${m.subject}" is on no ${claim === "adds" ? "added" : "removed"} line or file`;
 }
 
 const isCode = (file: string) => CODE_FILE.test(file) && nonCodeKind(file) === null;
@@ -272,6 +324,8 @@ export interface Contract {
   ruling: Ruling;
   failureMode: Signal & { agrees: boolean | null };
   coherence: Signal & { coherent: boolean | null };
+  /** coherence items dropped because the diff does not support them; listed, never lowering confidence */
+  unsupported: string[];
 }
 
 /** One call; without a key, or with a secret in the diff, nothing is sent and every assumed signal stays assumed. */
@@ -292,6 +346,7 @@ export async function modelContract(
   const cohName = "Confidence: diff vs task (LLM)";
   const off = (note: string, fmNote = note): Contract => ({
     ruling: { accepted: [], refused: [] },
+    unsupported: [],
     failureMode: { name: fmName, value: "unavailable", source: "assumed", evidence: [], note: fmNote, agrees: null },
     coherence: { name: cohName, value: "unavailable", source: "assumed", evidence: [], note, coherent: null },
   });
@@ -301,8 +356,14 @@ export async function modelContract(
   if (!answer) return off("LLM call failed or was refused");
   const modes = [...new Set(answer.failure_modes.modes)].sort();
   const agrees = modes.join(",") === rules.modes.join(",");
+  const checked = answer.coherence.mismatches.map((m) => ({ m, why: unsupportedClaim(m, ctx) }));
+  const kept = checked.filter((c) => c.why === null).map((c) => c.m);
+  const dropped = checked.filter((c) => c.why !== null);
+  // A mismatch the diff does not support is not a mismatch: with none left, the read is coherent.
+  const coherent = kept.length ? false : dropped.length ? true : answer.coherence.coherent;
   return {
     ruling: judge(answer.proposals, signals, quote, ctx, base7),
+    unsupported: dropped.map((c) => `model claim not supported by the diff: "${c.m.text}" (${c.why})`),
     failureMode: {
       name: fmName,
       value: modes.join(", ") || "none",
@@ -313,11 +374,13 @@ export async function modelContract(
     },
     coherence: {
       name: cohName,
-      value: answer.coherence.coherent ? "coherent" : "mismatch",
+      value: coherent ? "coherent" : "mismatch",
       source: "assumed",
       evidence: [],
-      note: answer.coherence.mismatches.length ? answer.coherence.mismatches.join("; ") : "no mismatch named",
-      coherent: answer.coherence.coherent,
+      note:
+        (kept.length ? kept.map((m) => m.text).join("; ") : "no mismatch named") +
+        (dropped.length ? ` (${dropped.length} item(s) dropped as not supported by the diff, listed under Disagreements)` : ""),
+      coherent,
     },
   };
 }

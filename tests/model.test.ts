@@ -91,7 +91,7 @@ test("no API key: no call, every assumed signal stays assumed, both reads unavai
 });
 
 test("the failure-mode and coherence questions ride in the same call and are compared with the rules", async () => {
-  const c = await modelContract("diff", signals, null, "", rules, quote, ctx, "30ac194", canned({ ...answer([]), failure_modes: { modes: ["domain", "security"], reason: "r" }, coherence: { coherent: false, mismatches: ["x"] } }), true);
+  const c = await modelContract("diff", signals, null, "", rules, quote, ctx, "30ac194", canned({ ...answer([]), failure_modes: { modes: ["domain", "security"], reason: "r" }, coherence: { coherent: false, mismatches: [{ text: "x", claim: "other", subject: "" }] } }), true);
   expect([c.failureMode.value, c.failureMode.agrees, c.failureMode.note]).toEqual(["domain, security", false, "disagrees with the rules (domain, infra). r"]);
   expect([c.coherence.value, c.coherence.coherent, c.coherence.note]).toEqual(["mismatch", false, "x"]);
 });

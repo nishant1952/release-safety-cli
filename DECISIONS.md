@@ -164,3 +164,16 @@ Standing decisions from the owner, not reopened here: the model may fill assumed
 - The provenance row is as before: "model (cited): <sentence> Was "<value>" (assumed): <old note>".
 - Confidence lines: a line that names a filled signal as "<value> (assumed)" is reworded to say the model filled it, from what to what, and that confidence is computed before a fill. Today no fillable signal is a probability signal, so no such line appears on the 21 PRs; the rewrite is a guard, covered by a unit test.
 - Effect without a key: none (no reason rests on a model (cited) signal); out/pr13.md and the 21 modes are unchanged.
+
+### Unit 4: coherence items are checked against the diff
+- On the live PR 1 run one coherence item said the `.env.example` change "includes real credentials". The values were already there at the base commit, and the item still counted toward low confidence.
+- The coherence answer is now structured: each mismatch is `{text, claim, subject}`, where claim is "adds", "removes", "includes credentials" or "other", and subject is the exact text from the diff for adds and removes. Code checks the claim (src/model.ts `unsupportedClaim`):
+  - adds X: X (whitespace and case normalised) is on an added line, or is the path of an added file;
+  - removes X: X is on a removed line, or is the path of a deleted file;
+  - includes credentials: gate 1 found a secret on an added line;
+  - other: not checked, kept.
+- An adds or removes item with no subject asserts something it does not name, so it is dropped.
+- The model's label is not trusted for credentials. An item whose text says the change adds, includes, commits, contains, exposes or leaks real, actual, live, plaintext or hardcoded credentials, passwords, secrets, API keys or tokens is checked as "includes credentials", whatever claim it carries. A feature such as "adds a password reset flow" is not caught, because it names no value.
+- A gate 1 secret on an added line withholds the call (Unit 1), so a credentials claim can never be supported while a call is made. On these inputs every such claim is dropped, which is the intent: a value present at base was not added by the change.
+- A dropped item is listed under Disagreements as `model claim not supported by the diff: "<text>" (<why>)` and does not lower confidence. The coherence signal keeps only the supported items, and its note gives the dropped count. If every item is dropped, the read is coherent: a mismatch the diff does not support is not a mismatch. If the model says "not coherent" but names no item, that answer stands as before.
+- Effect without a key: none.

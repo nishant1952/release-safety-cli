@@ -58,7 +58,7 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
   const atBase = secretsAtBase(diff, contextLines(fullDiff));
   const available = opts.ask ? true : llmAvailable();
   const contract = await modelContract(
-    fullDiff, rounded, pr, commitMessage, failure, quote, citationContext(diff, paths, reach), diff.base.slice(0, 7), opts.ask, available,
+    fullDiff, rounded, pr, commitMessage, failure, quote, citationContext(diff, paths, reach, secretHit), diff.base.slice(0, 7), opts.ask, available,
     secretHit ? "gate 1 found a secret in the diff" : null,
   );
   const { agrees: llmAgrees, ...failureLlm } = contract.failureMode;
@@ -115,7 +115,8 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
     unknown,
     // A refused model proposal is a code-vs-model disagreement, listed with the rule that refused it. It does not
     // lower confidence: code kept the assumed value, so nothing the decision rests on changed.
-    disagreements: [...disagreements, ...contract.ruling.refused],
+    // A coherence item the diff does not support is listed the same way, without lowering confidence.
+    disagreements: [...disagreements, ...contract.ruling.refused, ...contract.unsupported],
   };
 }
 
