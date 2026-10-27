@@ -9,11 +9,8 @@ bun install && bun run brief <repo-path> <base>..<head> [--out file] [--pr pr.js
 ```
 
 - `--pr` points at a `gh pr view --json` export; by default it is found by matching the range against `data/*/REFS.txt`. `data/` is gitignored and not shipped; without an export the brief says no PR export was found and gate 1's CI check is unverifiable.
-- With a credential in the environment or `.env` (Bun loads it), three optional LLM uses run: a failure-mode second opinion, a diff-vs-task coherence check, and two-sentence wording for reasons that already have evidence lines. They can only lower confidence or tighten the mode, never loosen it. Without a key the two reads show as unavailable and no wording is added. The diff is sent only in that case, and never when gate 1 finds a secret.
-  - Claude in Amazon Bedrock: `AWS_BEARER_TOKEN_BEDROCK=<Bedrock API key>` and `AWS_REGION=<region>` (default `us-east-1`); model `anthropic.claude-sonnet-5-5`. Short-term keys expire within 12 hours; an expired key shows the LLM rows as unavailable.
-  - Anthropic API: `ANTHROPIC_API_KEY=<key>`; model `claude-opus-5-5`, with server-side refusal fallback.
-  - If both are set, Bedrock is used.
-  - Every LLM call is appended as one JSON line to `logs/llm-calls.jsonl` (gitignored; `--llm-log` or `LLM_LOG` to change): purpose, provider, model, endpoint, request id, the full system and user prompt (it contains the diff), the schema, the response text and stop reason, input/output/thinking/cache tokens, latency, outcome and error, and an estimated cost at Anthropic list prices (Bedrock bills separately). A one-line summary goes to stderr after the run; the brief itself is unchanged.
+- With `ANTHROPIC_API_KEY` in the environment or `.env` (Bun loads it), three optional LLM uses run on the Anthropic API (model `claude-opus-5-5`, server-side refusal fallback): a failure-mode second opinion, a diff-vs-task coherence check, and two-sentence wording for reasons that already have evidence lines. They can only lower confidence or tighten the mode, never loosen it. Without a key the two reads show as unavailable and no wording is added. The diff is sent only in that case, and never when gate 1 finds a secret.
+  - Every LLM call is appended as one JSON line to `logs/llm-calls.jsonl` (gitignored; `--llm-log` or `LLM_LOG` to change): purpose, model, endpoint, request id, the full system and user prompt (it contains the diff), the schema, the response text and stop reason, input/output/thinking/cache tokens, latency, outcome and error, and an estimated cost at Anthropic list prices. A one-line summary goes to stderr after the run; the brief itself is unchanged.
 
 The PR 13 brief:
 

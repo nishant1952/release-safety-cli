@@ -3,11 +3,9 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
-// USD per million tokens at Anthropic list prices (cache writes at 1.25x input). Bedrock bills
-// separately, so for Bedrock calls the figure is an estimate on these prices.
+// USD per million tokens at Anthropic list prices (cache writes at 1.25x input).
 const PRICES: Record<string, { input: number; output: number; cacheRead: number }> = {
   "claude-opus-5-5": { input: 4, output: 20, cacheRead: 0.2 },
-  "claude-sonnet-5-5": { input: 2, output: 10, cacheRead: 0.2 },
 };
 
 export interface Usage {
@@ -41,20 +39,19 @@ export function tokensOf(u: Usage): Tokens {
 }
 
 /** Estimated USD cost; null when the model has no listed price. */
-export function costOf(model: string, provider: string, t: Tokens): { usd: number; basis: string } | null {
-  const p = PRICES[model.replace(/^anthropic\./, "")];
+export function costOf(model: string, t: Tokens): { usd: number; basis: string } | null {
+  const p = PRICES[model];
   if (!p) return null;
   const usd = (t.input * p.input + t.cache_write * p.input * 1.25 + t.cache_read * p.cacheRead + t.output * p.output) / 1e6;
   return {
     usd: Math.round(usd * 1e6) / 1e6,
-    basis: provider === "bedrock" ? "Anthropic list price; Amazon Bedrock bills separately" : "Anthropic list price",
+    basis: "Anthropic list price",
   };
 }
 
 export interface LlmLogEntry {
   ts: string;
   purpose: string;
-  provider: string;
   model: string;
   endpoint: string;
   outcome: "ok" | "refusal" | "api_error" | "bad_json";
@@ -102,7 +99,7 @@ export function llmSummary(): string | null {
   const usd = entries.reduce((n, e) => n + (e.cost?.usd ?? 0), 0);
   const failed = entries.length - ok;
   return (
-    `LLM: ${entries.length} calls (${ok} ok${failed ? `, ${failed} not ok` : ""}) on ${entries[0].provider} ${entries[0].model}, ` +
+    `LLM: ${entries.length} calls (${ok} ok${failed ? `, ${failed} not ok` : ""}) on ${entries[0].model}, ` +
     `${input.toLocaleString("en-US")} input / ${output.toLocaleString("en-US")} output tokens, ` +
     `est. $${usd.toFixed(4)} (${entries[0].cost?.basis ?? "no price listed"}). ${warned ? `Log not written (${logPath})` : `Log: ${logPath}`}`
   );

@@ -24,7 +24,7 @@ const stubApi = () =>
       }),
   });
 
-test("tokens and estimated cost at list prices; Bedrock IDs priced by their base model", () => {
+test("tokens and estimated cost at list prices", () => {
   const t = tokensOf({
     input_tokens: 10_000,
     output_tokens: 2_000,
@@ -33,10 +33,9 @@ test("tokens and estimated cost at list prices; Bedrock IDs priced by their base
     output_tokens_details: { thinking_tokens: 500 },
   });
   expect(t).toEqual({ input: 10_000, output: 2_000, thinking: 500, cache_read: 1_000, cache_write: 0, total: 13_000 });
-  // Sonnet 5.5: 10k x $2 + 1k x $0.20 + 2k x $10, per million.
-  expect(costOf("anthropic.claude-sonnet-5-5", "bedrock", t)).toEqual({ usd: 0.0402, basis: "Anthropic list price; Amazon Bedrock bills separately" });
-  expect(costOf("claude-opus-5-5", "anthropic", t)!.usd).toBe(0.0802);
-  expect(costOf("some-other-model", "anthropic", t)).toBeNull();
+  // Opus 5.5: 10k x $4 + 1k x $0.20 + 2k x $20, per million.
+  expect(costOf("claude-opus-5-5", t)).toEqual({ usd: 0.0802, basis: "Anthropic list price" });
+  expect(costOf("some-other-model", t)).toBeNull();
 });
 
 test("askJson logs request, response, request id, tokens, latency and cost (local stub API)", async () => {
@@ -72,7 +71,6 @@ test("askJson logs request, response, request id, tokens, latency and cost (loca
   const [entry] = readFileSync(log, "utf8").trim().split("\n").map((l) => JSON.parse(l));
   expect(entry).toMatchObject({
     purpose: "failure-mode second opinion",
-    provider: "anthropic",
     model: "claude-opus-5-5",
     outcome: "ok",
     request_id: "req_test_123",
@@ -83,7 +81,7 @@ test("askJson logs request, response, request id, tokens, latency and cost (loca
     error: null,
   });
   expect(entry.latency_ms).toBeGreaterThanOrEqual(0);
-  expect(llmSummary()).toContain("1 calls (1 ok) on anthropic claude-opus-5-5, 1,200 input / 80 output tokens, est. $0.0064");
+  expect(llmSummary()).toContain("1 calls (1 ok) on claude-opus-5-5, 1,200 input / 80 output tokens, est. $0.0064");
 });
 
 test("an API error is logged with its status and returns null", async () => {
@@ -116,4 +114,9 @@ test("an unwritable log path never changes the answer or crashes the run", async
   }
   expect(llmSummary()).toContain("1 calls (1 ok)");
   expect(llmSummary()).toEndWith("Log not written (/dev/null/not-a-dir/calls.jsonl)");
+});
+
+test("without ANTHROPIC_API_KEY no call is made and nothing is logged", async () => {
+  expect(await askJson("s", "u", {}, "reason wording")).toBeNull();
+  expect(llmSummary()).toBeNull();
 });
