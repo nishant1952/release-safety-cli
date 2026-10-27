@@ -45,7 +45,7 @@ test("PR 11: advisory checks treated as required trip gate 1: Human -> Block", a
   const { brief, cell } = await decide(pr11, { advisoryAsRequired: true });
   expect([brief.mode, cell.gateMode, brief.gates[0].route]).toEqual(["Block", "Block", "block"]);
   const ci = brief.gates[0].checks.find((c) => c.name === "required CI checks")!;
-  expect([ci.status, ci.source]).toEqual(["trip", "measured"]);
+  expect([ci.status, ci.source]).toEqual(["trip", "declared by owner"]);
   expect(ci.note).toContain("required and not green: FireWeave — flag contract (FAILURE)");
   expect(ci.note).toContain("the owner treats every check in the rollup as required");
   expect(brief.gates[0].checks.some((c) => c.name === "advisory CI checks")).toBe(false);
@@ -59,8 +59,15 @@ test("measured beats declared: an owner value for a measured signal is a disagre
   const { brief } = await decide(pr13, { signals: { "Detection apparatus": "fast" } });
   const det = brief.signals.find((s) => s.name === "Detection apparatus")!;
   expect([det.value, det.source]).toEqual(["slow", "measured"]);
-  expect(brief.disagreements).toContain('the owner declares Detection apparatus = "fast", but it is measured as "slow"; measured beats declared, so the measured value stands (W 2)');
+  expect(brief.disagreements).toContain('the owner declares Detection apparatus = "fast", but it is measured as "slow"; measured beats declared, so the measured value stands');
   expect(brief.mode).toBe(base.brief.mode);
+}, 30_000);
+
+test("an owner value outside a decision signal's values is refused, so it cannot fall through the grid as favourable", async () => {
+  expect(decide(pr13, { signals: { Reach: "banana" } })).rejects.toThrow('"banana" is not a value of Reach; it must be one of: high, low, none');
+  expect(decide(pr13, { signals: { "Time to revert": "instant" } })).rejects.toThrow("a measured pipeline is set with revertMinutes");
+  // A probability signal only lowers confidence, so its value is free text.
+  expect((await decide(pr13, { signals: { History: "two reverts last month" } })).brief.signals.find((s) => s.name === "History")!.source).toBe("declared by owner");
 }, 30_000);
 
 test("an unknown signal or a model read cannot be declared", async () => {

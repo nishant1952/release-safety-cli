@@ -22,6 +22,21 @@ export interface Overrides {
   revertMinutes?: number | null;
 }
 
+/**
+ * The values the decision tests for each signal it reads (src/decide.ts, src/unknown.ts). An owner value outside
+ * the set would fall through the grid's equality tests as favourable ("Reach = banana" is not "high"), so it is
+ * refused. Time to revert as a measured pipeline comes only from revertMinutes. Other signals only lower
+ * confidence, so their values are free text.
+ */
+export const VALUES: Record<string, string[]> = {
+  "Reversible or irreversible": ["irreversible", "reversible"],
+  "Feature flag": ["none", "partial", "full"],
+  Path: ["live", "unreached", "not a code path"],
+  Reach: ["high", "low", "none"],
+  "Detection apparatus": ["slow", "fast"],
+  "Time to revert": ["full build and deploy", "one-click rollback"],
+};
+
 /** Signals the model writes in decide; an owner value for them has nothing to replace. */
 const MODEL_READS = ["Failure mode (LLM second opinion)", "Confidence: diff vs task (LLM)"];
 
@@ -51,7 +66,10 @@ export function applyOverrides(m: Measured, o: Overrides = {}): Applied {
   if (o.advisoryAsRequired && pr?.checks && pr.required) {
     const checks = [...new Set([...pr.required.checks, ...pr.checks.map((c) => c.name)])];
     pr = { ...pr, required: { checks, source: `${pr.required.source}; the owner treats every check in the rollup as required` } };
-    gates = [withCiChecks(gates[0], pr), ...gates.slice(1)];
+    // The required set is now the owner's, so the CI verdict rests on the owner.
+    const gate1 = withCiChecks(gates[0], pr);
+    gate1.checks = gate1.checks.map((c) => (c.name === "required CI checks" ? { ...c, source: "declared by owner" } : c));
+    gates = [gate1, ...gates.slice(1)];
   }
 
   if (o.stylesheetsCovered && m.flag.flags.length) {
@@ -72,6 +90,9 @@ export function applyOverrides(m: Measured, o: Overrides = {}): Applied {
   }
 
   const values = { ...o.signals };
+  for (const [name, v] of Object.entries(values))
+    if (VALUES[name] && !VALUES[name].includes(v.trim()))
+      throw new Error(`"${v}" is not a value of ${name}; it must be one of: ${VALUES[name].join(", ")}${name === "Time to revert" ? " (a measured pipeline is set with revertMinutes)" : ""}`);
   const why: Record<string, string> = {};
   if (o.revertMinutes !== undefined && o.revertMinutes !== null) {
     if (!(o.revertMinutes >= 0)) throw new Error(`revertMinutes must be a number of minutes, got ${o.revertMinutes}`);
@@ -89,7 +110,7 @@ export function applyOverrides(m: Measured, o: Overrides = {}): Applied {
     const v = values[s.name]?.trim();
     if (!v || v === s.value) return s;
     if (s.source === "measured") {
-      disagreements.push(`the owner declares ${s.name} = "${v}", but it is measured as "${s.value}"; measured beats declared, so the measured value stands (W 2)`);
+      disagreements.push(`the owner declares ${s.name} = "${v}", but it is measured as "${s.value}"; measured beats declared, so the measured value stands`);
       return s;
     }
     return owned(s, v, why[s.name] ?? "declared by the owner");

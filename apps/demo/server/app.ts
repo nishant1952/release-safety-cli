@@ -4,7 +4,7 @@
 import type { Brief } from "../../../src/brief";
 import { redact } from "../../../src/gates";
 import type { CallProgress } from "../../../src/llm";
-import type { Overrides } from "../../../src/overrides";
+import { VALUES, type Overrides } from "../../../src/overrides";
 import { makeQuoter } from "../../../src/render";
 import { decide, type Decided, type Measured } from "../../../src/run";
 import { loadMeasured, PR_NUMBERS } from "./fixtures";
@@ -46,15 +46,8 @@ export type Progress =
 
 const READ_ONLY = ["Failure mode (LLM second opinion)", "Confidence: diff vs task (LLM)"];
 
-// The values the decision tests for (src/decide.ts, src/unknown.ts FAVOURABLE, policy.json scales).
-const CHOICES: Record<string, string[]> = {
-  "Reversible or irreversible": ["irreversible", "reversible"],
-  "Feature flag": ["none", "partial", "full"],
-  Path: ["live", "unreached", "not a code path"],
-  Reach: ["high", "low", "none"],
-  "Detection apparatus": ["slow", "fast"],
-  "Time to revert": ["full build and deploy", "one-click rollback", "measured pipeline under 15 minutes"],
-};
+// The values the decision tests for, from src/overrides.ts; the minutes switch gives a measured pipeline.
+const CHOICES = VALUES;
 
 export const cellText = (c: Decided["cell"]) => `${c.damage} x ${c.window}`;
 
@@ -85,7 +78,8 @@ export async function run(m: Measured, overrides: Overrides, modelKey: string | 
           },
     );
   const started = performance.now();
-  const d = await decide(m, overrides, useModel ? modelKey! : undefined, { quote: redactingQuoter(m), progress: onCall });
+  // With a key and the model switched off, decide is still handed the key, so the brief says "switched off".
+  const d = await decide(m, overrides, modelKey ?? undefined, { quote: redactingQuoter(m), progress: onCall });
   return { ...d, overrides, model: useModel, ms: Math.round(performance.now() - started) };
 }
 

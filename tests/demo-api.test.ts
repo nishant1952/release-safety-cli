@@ -105,8 +105,9 @@ test("with a key: a progress event per call, the key used and never echoed, noth
   expect(existsSync(logFile)).toBe(false);
 }, 30_000);
 
-test("model switched off with a key: no call is made", async () => {
+test("model switched off with a key: no call is made, and the brief says it is switched off", async () => {
   const before = seenKeys.length;
   const r = await resultOf(await post("/api/prs/13/run", { overrides: { model: false }, modelKey: "sk-page-only" }));
   expect([r.model, seenKeys.length]).toEqual([false, before]);
+  expect(r.brief.signals.find((s) => s.name === "Confidence: diff vs task (LLM)")!.note).toBe("diff not sent to the LLM: the model is switched off");
 });
