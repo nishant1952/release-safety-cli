@@ -276,7 +276,8 @@ function OwnerPanel({ detail, shown, panel, setPanel, modelKey, setModelKey, run
                   ) : (
                     <>
                       <input
-                        value={typed ?? s.value}
+                        // The shown run's value; only a typed value is sent.
+                        value={typed ?? now.value}
                         list={detail.choices[s.name] ? list : undefined}
                         onChange={(e) => setPanel({ values: { ...panel.values, [s.name]: e.target.value } })}
                         aria-label={s.name}

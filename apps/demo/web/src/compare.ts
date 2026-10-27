@@ -21,7 +21,8 @@ export interface BriefDiff {
   cell: Change<string>;
   gates: Change<string>[];
   confidence: Change<string>;
-  reasons: { added: Reason[]; removed: Reason[]; unchanged: number };
+  /** unchanged = same text; reworded = same text whose LLM wording or model evidence changed */
+  reasons: { added: Reason[]; removed: Reason[]; reworded: Reason[]; unchanged: number };
   changedRows: Row[];
   unchangedRows: Row[];
   disagreements: { added: string[]; removed: string[] };
@@ -29,7 +30,8 @@ export interface BriefDiff {
 
 const change = <T>(before: T, after: T): Change<T> => ({ before, after, changed: before !== after });
 export const cellOf = (r: RunResult) => `${r.cell.damage} x ${r.cell.window}`;
-const gateText = (g: RunResult["brief"]["gates"][number]) => `${g.gate}. ${g.name}: ${g.status}${g.route !== "none" ? ` → ${g.route}` : ""}`;
+const gateText = (g: RunResult["brief"]["gates"][number]) => `${g.gate}. ${g.name}: ${g.status}${g.route !== "none" ? `, routes to ${g.route}` : ""}`;
+const extras = (r: Reason) => JSON.stringify([r.prose ?? null, r.model ?? null]);
 
 export function diffRuns(before: RunResult, after: RunResult): BriefDiff {
   const b = before.brief;
@@ -54,6 +56,7 @@ export function diffRuns(before: RunResult, after: RunResult): BriefDiff {
     reasons: {
       added: a.reasons.filter((r) => !bTexts.has(r.text)),
       removed: b.reasons.filter((r) => !aTexts.has(r.text)),
+      reworded: a.reasons.filter((r) => bTexts.has(r.text) && extras(r) !== extras(b.reasons.find((x) => x.text === r.text)!)),
       unchanged: a.reasons.filter((r) => bTexts.has(r.text)).length,
     },
     changedRows: rows.filter((r) => !same(r)),

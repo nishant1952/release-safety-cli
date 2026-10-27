@@ -25,6 +25,7 @@ test("PR 13, Reach low: grid cell and the Reach row move, the mode does not, the
     "High damage: the path is live (declared)",
     "Probability: measured confidence is low,",
   ]);
+  expect(d.reasons.reworded).toEqual([]);
   // Compared with itself, nothing moved.
   const same = diffRuns(after, after);
   expect([same.changedRows.length, same.reasons.added.length, same.cell.changed]).toEqual([0, 0, false]);
@@ -34,11 +35,17 @@ test("PR 11, advisory checks as required: Human -> Block, gate 1 moves, the advi
   const m = loadMeasured(11);
   const d = diffRuns(await run(m, {}, null), await run(m, { advisoryAsRequired: true }, null));
   expect([d.mode.before, d.mode.after]).toEqual(["Human", "Block"]);
-  expect(d.gates.filter((g) => g.changed).map((g) => [g.before, g.after])).toEqual([["1. Table stakes: trip → human", "1. Table stakes: trip → block"]]);
+  expect(d.gates.filter((g) => g.changed).map((g) => [g.before, g.after])).toEqual([["1. Table stakes: trip, routes to human", "1. Table stakes: trip, routes to block"]]);
   expect(d.reasons.added[0].text.startsWith("Gate 1 (Table stakes) is trip, so it routes to block")).toBe(true);
 });
 
 test("history lines name the overrides", () => {
   expect(describeOverrides({ signals: { Reach: "low" }, revertMinutes: 5, advisoryAsRequired: true }, true)).toBe("Reach = low; revert 5 min; advisory checks required; model on");
   expect(describeOverrides({}, false)).toBe("no overrides");
+});
+
+test("the model's wording on an unchanged reason is listed as reworded, not as unchanged", () => {
+  const worded = { ...base13, brief: { ...base13.brief, reasons: base13.brief.reasons.map((r, i) => (i === 0 ? { ...r, prose: "One. Two." } : r)) } };
+  const d = diffRuns(base13, worded);
+  expect([d.reasons.added.length, d.reasons.removed.length, d.reasons.reworded.map((r) => r.prose)]).toEqual([0, 0, ["One. Two."]]);
 });

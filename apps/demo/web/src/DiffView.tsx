@@ -22,10 +22,10 @@ function Moved({ label, c }: { label: string; c: Change<string> }) {
   );
 }
 
-function ReasonItem({ r, kind }: { r: Reason; kind: "added" | "removed" }) {
+function ReasonItem({ r, kind }: { r: Reason; kind: "added" | "removed" | "reworded" }) {
   return (
     <li className={kind}>
-      <span className="sign">{kind === "added" ? "+" : "−"}</span> {inline(r.text)}
+      <span className="sign">{kind === "added" ? "+" : kind === "removed" ? "−" : "~"}</span> {inline(r.text)}
       {r.model?.map((m) => (
         <div key={m.signal} className="model-ev">
           the model's citation for {m.signal} (was {m.was}, assumed): <code>{m.cite}</code>. {m.reasoning}
@@ -69,7 +69,15 @@ export function DiffView({ before, after, beforeLabel, compare, setCompare }: { 
       ) : (
         <p className="muted">None.</p>
       )}
-      {d.reasons.unchanged > 0 && <p className="muted small">{d.reasons.unchanged} reason(s) unchanged.</p>}
+      {d.reasons.reworded.length > 0 && (
+        <>
+          <h3>Same reasons, new model wording or evidence</h3>
+          <ul className="reasons">
+            {d.reasons.reworded.map((r, i) => <ReasonItem key={`w${i}`} r={r} kind="reworded" />)}
+          </ul>
+        </>
+      )}
+      {d.reasons.unchanged > 0 && <p className="muted small">{d.reasons.unchanged} reason(s) with unchanged text.</p>}
 
       {(d.disagreements.added.length > 0 || d.disagreements.removed.length > 0) && (
         <>
