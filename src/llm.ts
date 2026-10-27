@@ -1,6 +1,7 @@
-// Optional LLM reads (spec "LLM use"): only when ANTHROPIC_API_KEY is set, only to classify failure
-// mode, judge diff-vs-task coherence, or word reasons that already have evidence. Callers may use
-// the answer to lower confidence or tighten the mode, never to loosen it.
+// Optional LLM calls: only when ANTHROPIC_API_KEY is set. The model contract (src/model.ts) may fill an
+// assumed signal one step with a cited line that code checks, and answers the failure-mode and
+// coherence reads, which only lower confidence or tighten the mode; reason wording never changes a
+// decision. Measured and declared signals, gates and the mode are never the model's to change.
 import Anthropic from "@anthropic-ai/sdk";
 import { costOf, logLlmCall, tokensOf, type LlmLogEntry } from "./llmlog";
 

@@ -40,5 +40,27 @@
   "disagreement": {
     "rule": "Two measured signals that disagree lower confidence, and the brief says so.",
     "lowerConfidenceSteps": 1
+  },
+  "model": {
+    "rule": "Round 3 model contract (a deviation from W 2's one-way rule, see DECISIONS.md): the write-up rounds missing data toward caution; a cited line is not missing data; the one-way rule still holds for measured facts. The model may move an assumed signal one step on its scale, citing the line it rests on. It never sees or changes measured or declared signals, gate results or the mode.",
+    "scales": {
+      "Path": [
+        "live",
+        "unreached"
+      ],
+      "Reach": [
+        "high",
+        "low",
+        "none"
+      ],
+      "Detection apparatus": [
+        "slow",
+        "fast"
+      ],
+      "Time to revert": [
+        "full build and deploy",
+        "one-click rollback"
+      ]
+    }
   }
 }

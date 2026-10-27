@@ -1,10 +1,9 @@
 // W 1d item 1, appendix Probability rank 1: "Failure mode (primary): how the change can fail:
-// infra, security or domain", extracted from "The diff, an LLM read as a second opinion only".
+// infra, security or domain", extracted from "The diff, an LLM read as a second opinion only" (the second
+// opinion is a field of the one model call, src/model.ts).
 // Ignore case: "Docs- or test-only changes".
 import { ref, type Diff } from "../diff";
 import { nonCodeKind } from "../files";
-import { askJson, llmAvailable, NO_CREDENTIAL } from "../llm";
-import type { PrMeta } from "../pr";
 import type { Signal } from "../types";
 
 export type Mode = "infra" | "security" | "domain";
@@ -59,50 +58,6 @@ export function failureModeSignal(facts: FailureModeFacts): Signal {
     source: "measured",
     evidence: facts.perFile.map((p) => p.at),
     note: `rules on touched paths: ${facts.perFile.map((p) => `${p.path} -> ${p.mode}`).join("; ")}. Matched on file path; each evidence line is the file's first change`,
-  };
-}
-
-const SCHEMA = {
-  type: "object",
-  properties: {
-    modes: { type: "array", items: { type: "string", enum: ["infra", "security", "domain"] } },
-    reason: { type: "string" },
-  },
-  required: ["modes", "reason"],
-  additionalProperties: false,
-};
-
-/** LLM second opinion. Unavailable without a credential; tagged assumed (a model opinion). */
-export async function failureModeSecondOpinion(
-  diffText: string,
-  pr: PrMeta | null,
-  rules: FailureModeFacts,
-  ask: typeof askJson = askJson,
-  available = llmAvailable(),
-  withheld: string | null = null,
-): Promise<Signal & { agrees: boolean | null }> {
-  const name = "Failure mode (LLM second opinion)";
-  const unavailable = (note: string) => ({ name, value: "unavailable", source: "assumed" as const, evidence: [], note, agrees: null });
-  if (!available) return unavailable(`${NO_CREDENTIAL}; rules only`);
-  if (withheld) return unavailable(`diff not sent to the LLM: ${withheld}`);
-  const answer = await ask<{ modes: string[]; reason: string }>(
-    "You classify how a code change can fail in production. Modes: infra (resources, latency, availability, config, build), " +
-      "security (auth, secrets, permissions, data exposure), domain (wrong business values or behaviour that error rates cannot see). " +
-      "Return every mode that applies.",
-    `PR title: ${pr?.title ?? "(none)"}\n\nPR description:\n${pr?.body ?? "(none)"}\n\nDiff:\n${diffText}`,
-    SCHEMA,
-    "failure-mode second opinion",
-  );
-  if (!answer) return unavailable("LLM call failed or was refused");
-  const modes = [...new Set(answer.modes)].sort();
-  const agrees = modes.join(",") === rules.modes.join(",");
-  return {
-    name,
-    value: modes.join(", ") || "none",
-    source: "assumed",
-    evidence: [],
-    note: `${agrees ? "agrees with" : "disagrees with"} the rules (${rules.modes.join(", ")}). ${answer.reason}`,
-    agrees,
   };
 }
 

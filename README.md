@@ -27,7 +27,14 @@ Gate 1 reads CI as follows:
 - A required check that is pending, or absent from the rollup, routes to a human.
 - With no required checks configured, CI cannot block; red advisory checks are listed and each lowers confidence one notch.
 - Without `required-checks.json`, every rollup check is treated as required and tagged assumed.
-- With `ANTHROPIC_API_KEY` in the environment or `.env` (Bun loads it), three optional LLM uses run on the Anthropic API (model `claude-sonnet-5-5`, server-side refusal fallback): a failure-mode second opinion, a diff-vs-task coherence check, and two-sentence wording for reasons that already have evidence lines. They can only lower confidence or tighten the mode, never loosen it. Without a key the two reads show as unavailable and no wording is added. The diff is sent only in that case, and never when gate 1 finds a secret.
+- With `ANTHROPIC_API_KEY` in the environment or `.env` (Bun loads it), two optional LLM uses run on the Anthropic API (model `claude-sonnet-5-5`, server-side refusal fallback).
+  - The **model contract** is one structured call.
+    - For each assumed signal with a scale in `src/policy.json`, the model answers "no change" or proposes a value one step away, citing the `file:line` it rests on.
+    - Code accepts a proposal only when the cited line exists and the step is within one. An accepted value is tagged `model (cited)`; a refused one is listed under Disagreements.
+    - The model never sees measured or declared signals, gate results or the mode.
+    - The same call answers the failure-mode second opinion and the diff-vs-task coherence check; those can only lower confidence or tighten the mode.
+  - **Reason wording** adds two sentences for reasons that already have evidence lines.
+  - Without a key, every assumed signal stays assumed, the two reads show as unavailable, and no wording is added. The diff is sent only in that case, and never when gate 1 finds a secret.
   - Every LLM call is appended as one JSON line to `logs/llm-calls.jsonl` (gitignored; `--llm-log` or `LLM_LOG` to change): purpose, model, endpoint, request id, the full system and user prompt (it contains the diff), the schema, the response text and stop reason, input/output/thinking/cache tokens, latency, outcome and error, and an estimated cost at Anthropic list prices. A one-line summary goes to stderr after the run; the brief itself is unchanged.
 
 The PR 13 brief:

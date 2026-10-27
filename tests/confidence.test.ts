@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { loadDiff } from "../src/diff";
 import { loadPr } from "../src/pr";
-import { coherenceCheck, confidenceFacts, confidenceSignals } from "../src/signals/confidence";
+import { confidenceFacts, confidenceSignals } from "../src/signals/confidence";
 import { PR_JSON, RANGE, REPO } from "./fixture";
 
 const diff = loadDiff(REPO, RANGE);
@@ -41,12 +41,6 @@ test("PR 13 without a PR export: provenance still measured from git", () => {
   expect(prov.note).toContain("PR description: no PR export found");
 });
 
-test("coherence: unavailable without a key; an LLM mismatch reports coherent=false", async () => {
-  const off = await coherenceCheck("", null, "", undefined, false);
-  expect([off.value, off.source, off.coherent]).toEqual(["unavailable", "assumed", null]);
-  const on = await coherenceCheck("", null, "", (async () => ({ coherent: false, mismatches: ["x"] })) as any, true);
-  expect([on.value, on.coherent, on.note]).toEqual(["mismatch", false, "x"]);
-});
 
 test("agent-written: tests added in the same change do not count; pre-existing tests do", async () => {
   const facts = confidenceFacts(diff, await loadPr(PR_JSON));

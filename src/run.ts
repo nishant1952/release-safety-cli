@@ -10,10 +10,11 @@ import { INTERNAL_SIGNATURES, redAdvisory, runGates } from "./gates";
 import { Git } from "./git";
 import { applyPolicy } from "./policy";
 import { findPrFiles, loadPr } from "./pr";
-import { coherenceCheck, confidenceFacts, confidenceSignals } from "./signals/confidence";
+import { confidenceFacts, confidenceSignals } from "./signals/confidence";
 import { detectionDisagreements, detectionFacts, detectionSignal, perMode } from "./signals/detection";
 import { historyFacts, historySignal } from "./signals/history";
-import { failureModeFacts, failureModeSecondOpinion, failureModeSignal, llmDisagreements } from "./signals/failureMode";
+import { failureModeFacts, failureModeSignal, llmDisagreements } from "./signals/failureMode";
+import { applyRuling, modelContract } from "./model";
 import { featureFlag, flagFacts } from "./signals/flag";
 import { pathFacts, pathSignal } from "./signals/path";
 import { reachFacts, reachSignal } from "./signals/reach";
@@ -39,33 +40,29 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
   const detection = detectionFacts(diff, failure);
   // Never send a diff with a detected secret to the API.
   const secretHit = gates[0].checks.some((c) => c.name === "secrets" && c.status === "trip");
-  const { agrees: llmAgrees, ...failureLlm } = await failureModeSecondOpinion(
-    diffText(diff), pr, failure, undefined, undefined, secretHit ? "gate 1 found a secret in the diff" : null,
-  );
   const confFacts = confidenceFacts(diff, pr);
   const conf = confidenceSignals(confFacts, pr !== null);
   const commitMessage = new Git(diff.repo).run(["log", "--no-merges", "--format=%B", `${diff.base}..${diff.head}`]);
-  const { coherent, ...coherence } = await coherenceCheck(
-    diffText(diff), pr, commitMessage, undefined, undefined, secretHit ? "gate 1 found a secret in the diff" : null,
+  const ruleSignals = {
+    early: [reversibility(diff), featureFlag(diff, flags), pathSignal(paths), reachSignal(reach), failureModeSignal(failure)],
+    late: [detectionSignal(detection), revertSignal(revertFacts(diff)), historySignal(historyFacts(diff)), ...conf.signals],
+  };
+  // The model sees the assumed values after the missing-data policy has rounded them (W 2), as the brief shows them.
+  const rounded = applyPolicy([...ruleSignals.early, ...ruleSignals.late], conf.measuredLevel, []).signals;
+  const quote = makeQuoter(diff.repo, diff.base, diff.head);
+  const contract = await modelContract(
+    diffText(diff), rounded, pr, commitMessage, failure, quote, diff.base.slice(0, 7), undefined, undefined, secretHit ? "gate 1 found a secret in the diff" : null,
   );
-  const extracted = [
-    reversibility(diff),
-    featureFlag(diff, flags),
-    pathSignal(paths),
-    reachSignal(reach),
-    failureModeSignal(failure),
-    failureLlm,
-    detectionSignal(detection),
-    revertSignal(revertFacts(diff)),
-    historySignal(historyFacts(diff)),
-    ...conf.signals,
-    coherence,
-  ];
+  const { agrees: llmAgrees, ...failureLlm } = contract.failureMode;
+  const { coherent, ...coherence } = contract.coherence;
+  const extracted = [...ruleSignals.early, failureLlm, ...ruleSignals.late, coherence];
   // W 2: "Measured beats declared" - the catalog (declared) is checked against the code (measured).
   const disagreements: string[] = [
     ...detectionDisagreements(detection),
     ...conf.disagreements,
     ...llmDisagreements(llmAgrees, failure, failureLlm),
+    // A refused model proposal is a code-vs-model disagreement.
+    ...contract.ruling.refused,
     // Declared inputs that conflict: two PR exports for one range.
     ...(prFiles.length > 1 ? [`${prFiles.length} PR exports match this range (${prFiles.map((f) => f.split("/").slice(-2, -1)[0]).join(", ")}); the first is used`] : []),
   ];
@@ -76,8 +73,9 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
     .flatMap((g) => g.checks.filter((c) => c.name === INTERNAL_SIGNATURES).map((c) => `gate ${g.gate}: ${c.evidence.length} export(s) removed or changed in modules internal to the repo (declared by package.json)`));
   // Unit 5: each red check nothing requires lowers confidence one notch.
   notches.push(...redAdvisory(pr).map((c) => `gate 1: red advisory check ${c.name} (${c.conclusion}), not required on the repo`));
+  // Confidence is computed before accepted proposals are applied, so a model answer can only lower it.
   const policy = applyPolicy(extracted, conf.measuredLevel, disagreements, notches);
-  const signals = policy.signals;
+  const signals = applyRuling(policy.signals, contract.ruling);
   const finalLevel = coherent === false && policy.level !== "low" ? "low" : policy.level;
 
   const decisionInput = { gates, signals, measuredConfidence: conf.measuredLevel, coherent };

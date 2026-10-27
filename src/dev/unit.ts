@@ -6,11 +6,11 @@ import { findPrFile, loadPr } from "../pr";
 import { featureFlag, flagFacts } from "../signals/flag";
 import { pathFacts, pathSignal } from "../signals/path";
 import { reachFacts, reachSignal } from "../signals/reach";
-import { failureModeFacts, failureModeSecondOpinion, failureModeSignal } from "../signals/failureMode";
-import { diffText } from "../diff";
+import { failureModeFacts, failureModeSignal } from "../signals/failureMode";
 import { detectionDisagreements, detectionFacts, detectionSignal } from "../signals/detection";
 import { historyFacts, historySignal } from "../signals/history";
-import { coherenceCheck, confidenceFacts, confidenceSignals } from "../signals/confidence";
+import { confidenceFacts, confidenceSignals } from "../signals/confidence";
+import { buildBrief } from "../run";
 import { revertFacts, revertSignal } from "../signals/revert";
 import { reversibility } from "../signals/reversible";
 import type { Signal } from "../types";
@@ -74,7 +74,6 @@ switch (unit) {
   case "failure-mode": {
     const facts = failureModeFacts(diff);
     printSignal(failureModeSignal(facts));
-    printSignal(await failureModeSecondOpinion(diffText(diff), pr, facts));
     break;
   }
   case "detection": {
@@ -97,8 +96,6 @@ switch (unit) {
     console.log(JSON.stringify({ ...facts, fileAuthors: facts.fileAuthors.map((f) => `${f.file}:${f.authors.length}`) }));
     const r = confidenceSignals(facts, pr !== null);
     for (const s of r.signals) printSignal(s);
-    const { coherent, ...coh } = await coherenceCheck("", pr, "");
-    printSignal(coh);
     console.log(`measured level: ${r.measuredLevel}\nwhy: ${r.why.join(" | ")}\ndisagreements: ${JSON.stringify(r.disagreements)}`);
     break;
   }
@@ -106,6 +103,13 @@ switch (unit) {
     const facts = revertFacts(diff);
     console.log(JSON.stringify(facts));
     printSignal(revertSignal(facts));
+    break;
+  }
+  case "model": {
+    // The whole chain, then the signals the model call filled or was refused on (needs ANTHROPIC_API_KEY).
+    const b = await buildBrief({ repo, range, prFile: findPrFile(diff.base, diff.head) });
+    for (const s of b.signals.filter((s) => s.source !== "measured" && s.source !== "declared")) printSignal(s);
+    console.log(`mode: ${b.mode}\nrefused: ${JSON.stringify(b.disagreements?.filter((d) => d.startsWith("model proposed")))}`);
     break;
   }
   default:

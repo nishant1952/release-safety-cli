@@ -7,7 +7,6 @@
 import { posix } from "node:path";
 import type { Diff } from "../diff";
 import { Git } from "../git";
-import { askJson, llmAvailable, NO_CREDENTIAL } from "../llm";
 import type { PrMeta } from "../pr";
 import type { Signal } from "../types";
 
@@ -156,42 +155,4 @@ export function confidenceSignals(f: ConfidenceFacts, prFound: boolean): Confide
   }
   if (singleAuthor) why.push("single-author repo: familiarity dropped (W appendix)");
   return { signals, measuredLevel: level, why, disagreements, agentWritten };
-}
-
-const COHERENCE_SCHEMA = {
-  type: "object",
-  properties: { coherent: { type: "boolean" }, mismatches: { type: "array", items: { type: "string" } } },
-  required: ["coherent", "mismatches"],
-  additionalProperties: false,
-};
-
-/** LLM check of the diff against the task and PR description. Can only lower confidence. */
-export async function coherenceCheck(
-  diffText: string,
-  pr: PrMeta | null,
-  commitMessage: string,
-  ask: typeof askJson = askJson,
-  available = llmAvailable(),
-  withheld: string | null = null,
-): Promise<Signal & { coherent: boolean | null }> {
-  const name = "Confidence: diff vs task (LLM)";
-  const unavailable = (note: string) => ({ name, value: "unavailable", source: "assumed" as const, evidence: [], note, coherent: null });
-  if (!available) return unavailable(NO_CREDENTIAL);
-  if (withheld) return unavailable(`diff not sent to the LLM: ${withheld}`);
-  const answer = await ask<{ coherent: boolean; mismatches: string[] }>(
-    "You check whether a code change does what its task and description say: nothing missing, nothing extra. " +
-      "List each concrete mismatch between the description and the diff.",
-    `Commit message:\n${commitMessage}\n\nPR title: ${pr?.title ?? "(none)"}\n\nPR description:\n${pr?.body ?? "(none)"}\n\nDiff:\n${diffText}`,
-    COHERENCE_SCHEMA,
-    "diff-vs-task coherence",
-  );
-  if (!answer) return unavailable("LLM call failed or was refused");
-  return {
-    name,
-    value: answer.coherent ? "coherent" : "mismatch",
-    source: "assumed",
-    evidence: [],
-    note: answer.mismatches.length ? answer.mismatches.join("; ") : "no mismatch named",
-    coherent: answer.coherent,
-  };
 }
