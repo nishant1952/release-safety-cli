@@ -22,7 +22,7 @@ test("PR 13: CI is green in the export's rollup, so all three gates pass", async
     ["secrets", "pass", "measured"],
     ["PII", "pass", "measured"],
     ["hardcoded environment values", "pass", "measured"],
-    ["required CI checks", "pass", "declared"],
+    ["required CI checks", "pass", "measured"],
   ]);
   const additive = gates[1].checks.find((c) => c.name === "additive API surface")!;
   expect(additive.evidence).toEqual([
@@ -67,6 +67,7 @@ test("trip paths: changed export signature, removed route, raw UPDATE, secret, r
     body: "",
     author: { login: "", is_bot: false },
     checks: [{ name: "build", conclusion: "FAILURE" }],
+    required: null,
     reviews: null,
   });
   expect(gates.map((g) => [g.status, g.route])).toEqual([
@@ -95,7 +96,7 @@ test("hardcoded URLs and IPs in docs, config and comments do not trip; in code t
   const d = synthetic(
     ["diff --git a/src/a.ts b/src/a.ts", "@@ -0,0 +1,2 @@", '+const api = "http://10.0.0.5:8080";', "+// see http://localhost:3000", ""].join("\n"),
   );
-  const g1 = runGates(d, { file: "", title: "", body: "", author: { login: "", is_bot: false }, checks: [{ name: "ci", conclusion: "SUCCESS" }], reviews: null })[0];
+  const g1 = runGates(d, { file: "", title: "", body: "", author: { login: "", is_bot: false }, checks: [{ name: "ci", conclusion: "SUCCESS" }], required: null, reviews: null })[0];
   expect(g1.checks.find((c) => c.name === "hardcoded environment values")!.evidence).toEqual(["src/a.ts:1"]);
   expect([g1.status, g1.route]).toEqual(["trip", "human"]);
 });
@@ -134,13 +135,58 @@ test("the WHERE lookahead stops at the next statement", () => {
   expect(/WHERE/.test(statementAt(multi, 0, 6))).toBe(true);
 });
 
-test("CI status comes from each PR export's rollup; every listed check counts as required", async () => {
+test("CI status comes from each PR export's rollup; without required-checks.json every listed check is assumed required", async () => {
   const ci = async (dir: string, range: string) =>
     runGates(loadDiff(REPO, range), await loadPr(new URL(`./fixtures/${dir}.json`, import.meta.url).pathname))[0].checks.find((c) => c.name === "required CI checks")!;
   expect((await ci("pr14", "9dfc79d0..71e8103d")).status).toBe("pass"); // two SUCCESS
   expect((await ci("pr4", "f26e6b00..fab0ae6a")).status).toBe("pass"); // NEUTRAL counts as green
-  const red = await ci("pr11", "206fa144..974d34ce"); // flag contract FAILURE
-  expect([red.status, red.note]).toEqual(["trip", "not green in the PR export's rollup: FireWeave — flag contract (FAILURE)"]);
+  const assumed = ". The export has no required-checks.json, so every rollup check is assumed required";
   const empty = await ci("pr9", "504f75e5..48a2a83b");
-  expect([empty.status, empty.note]).toEqual(["pass", "the PR export's rollup lists no checks"]);
+  expect([empty.status, empty.source, empty.note]).toEqual(["pass", "assumed", "the PR export's rollup lists no checks" + assumed]);
+});
+
+const prWith = (checks: { name: string; conclusion: string }[], required: string[] | null) => ({
+  file: "",
+  title: "",
+  body: "",
+  author: { login: "", is_bot: false },
+  checks,
+  required: required && { checks: required, source: "test" },
+  reviews: null,
+});
+const g1 = (pr: ReturnType<typeof prWith>) => runGates(synthetic(""), pr)[0];
+const ciOf = (pr: ReturnType<typeof prWith>) => g1(pr).checks.filter((c) => c.name.includes("CI")).map((c) => [c.name, c.status, c.source]);
+
+test("required CI checks are measured: red required blocks, absent or pending required routes to a human, red advisory only lowers confidence", () => {
+  const rollup = [
+    { name: "build", conclusion: "SUCCESS" },
+    { name: "lint", conclusion: "FAILURE" },
+    { name: "e2e", conclusion: "PENDING" },
+  ];
+  // A required check that is not green trips and blocks.
+  expect([g1(prWith(rollup, ["build", "lint"])).route, ciOf(prWith(rollup, ["build", "lint"]))]).toEqual(["block", [["required CI checks", "trip", "measured"]]]);
+  // Pending or absent required checks cannot be verified: a human, not a block. The red lint is advisory.
+  for (const req of [["build", "e2e"], ["build", "deploy"]])
+    expect([g1(prWith(rollup, req)).route, ciOf(prWith(rollup, req))]).toEqual([
+      "human",
+      [["required CI checks", "unverifiable", "measured"], ["advisory CI checks", "pass", "declared"]],
+    ]);
+  // No required checks configured: the gate cannot block on CI; the red check is listed.
+  const none = g1(prWith(rollup, []));
+  expect([none.route, ciOf(prWith(rollup, []))]).toEqual(["none", [["required CI checks", "pass", "measured"], ["advisory CI checks", "pass", "declared"]]]);
+  expect(none.checks.find((c) => c.name === "advisory CI checks")!.note).toStartWith("red advisory check, no required checks on the repo: lint (FAILURE)");
+  // No required-checks.json in the export: every rollup check is treated as required, provenance assumed.
+  expect([g1(prWith(rollup, null)).route, ciOf(prWith(rollup, null))]).toEqual(["block", [["required CI checks", "trip", "assumed"]]]);
+  // No rollup at all: unverifiable, as before.
+  expect(ciOf({ ...prWith([], []), checks: null as any })).toEqual([["required CI checks", "unverifiable", "assumed"]]);
+});
+
+test("PR 11: no required checks on the repo, so the red flag-contract check is advisory and the release is not blocked", async () => {
+  const pr = await loadPr(new URL("./fixtures/pr11.json", import.meta.url).pathname);
+  expect(pr!.required!.checks).toEqual([]);
+  const g = runGates(loadDiff(REPO, "206fa144..974d34ce"), pr)[0];
+  expect(g.route).not.toBe("block");
+  expect(g.checks.find((c) => c.name === "advisory CI checks")!.note).toStartWith(
+    "red advisory check, no required checks on the repo: FireWeave — flag contract (FAILURE)",
+  );
 });

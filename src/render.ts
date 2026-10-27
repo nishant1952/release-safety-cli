@@ -58,6 +58,7 @@ export function renderBrief(b: Brief, quote: (r: string) => string | null): stri
       L.push(`${i + 1}. ${r.text}`);
       if (r.prose) L.push(`   *${r.prose}* (LLM wording)`);
       if (r.evidence.length) L.push(...evidenceList(r.evidence, quote, "   "));
+      else if (r.basis) L.push(`   - no line to cite: this reason rests on ${r.basis}`);
       else L.push("   - no line to cite: this reason rests on something missing from the input or the repo");
     });
   else L.push("None recorded.");

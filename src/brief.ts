@@ -5,6 +5,8 @@ import type { GateResult, Signal } from "./types";
 export interface Reason {
   text: string;
   evidence: string[];
+  /** what the reason rests on when it has no file line to cite */
+  basis?: string;
   /** optional LLM wording of the reason; never changes the reason itself */
   prose?: string;
 }

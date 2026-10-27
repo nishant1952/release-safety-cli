@@ -52,6 +52,85 @@ export const CODE_FILE = /\.(ts|tsx|js|jsx|mjs|cjs|vue|svelte|html|py|go|rb|java
 const COMMENT_LINE = /^\s*(\/\/|#|\*|\/\*|<!--)/;
 const HARDCODED = "hardcoded environment values";
 
+export const ADVISORY_CI = "advisory CI checks";
+// GitHub counts a successful, neutral or skipped required check as passing.
+const GREEN = /^(SUCCESS|NEUTRAL|SKIPPED)$/;
+const PENDING = /^(PENDING|EXPECTED|QUEUED|IN_PROGRESS|WAITING|REQUESTED)$/;
+const listChecks = (cs: { name: string; conclusion: string }[]) => cs.map((c) => `${c.name} (${c.conclusion})`).join(", ");
+
+/** Red checks in the rollup that the measured required set does not name. Empty without a required set. */
+export function redAdvisory(pr: PrMeta | null): { name: string; conclusion: string }[] {
+  if (!pr?.checks || !pr.required) return [];
+  const required = new Set(pr.required.checks);
+  return pr.checks.filter((c) => !required.has(c.name) && !GREEN.test(c.conclusion) && !PENDING.test(c.conclusion));
+}
+
+/** The CI part of gate 1: required checks decide; red checks nothing requires are advisory. */
+function ciChecks(pr: PrMeta | null): GateCheck[] {
+  const NAME = "required CI checks";
+  if (!pr?.checks)
+    return [
+      {
+        name: NAME,
+        status: "unverifiable",
+        source: "assumed",
+        evidence: [],
+        note: pr ? "the PR export has no statusCheckRollup, so CI status is unknown" : "no PR export was found for this range, so CI status is unknown",
+      },
+    ];
+  const rollup = pr.checks;
+  if (!pr.required) {
+    // No required-check set in the export: every rollup check is treated as required, as before Round 3.
+    const notGreen = rollup.filter((c) => !GREEN.test(c.conclusion));
+    return [
+      {
+        name: NAME,
+        status: notGreen.length ? "trip" : "pass",
+        source: "assumed",
+        evidence: [],
+        note:
+          (notGreen.length
+            ? `not green in the PR export's rollup: ${listChecks(notGreen)}`
+            : rollup.length
+              ? `${rollup.length} checks in the PR export's rollup, all green or neutral`
+              : "the PR export's rollup lists no checks") + ". The export has no required-checks.json, so every rollup check is assumed required",
+      },
+    ];
+  }
+  const required = new Set(pr.required.checks);
+  const advisory = redAdvisory(pr);
+  const out: GateCheck[] = [];
+  if (!required.size)
+    out.push({ name: NAME, status: "pass", source: "measured", evidence: [], note: `no required checks configured on the base branch when the PR was exported (${pr.required.source}), so the gate cannot block on CI` });
+  else {
+    const runs = [...required].map((name) => ({ name, run: rollup.find((c) => c.name === name) }));
+    const failed = runs.filter((r) => r.run && !GREEN.test(r.run.conclusion) && !PENDING.test(r.run.conclusion));
+    const unknown = runs.filter((r) => !r.run || PENDING.test(r.run.conclusion));
+    out.push({
+      name: NAME,
+      status: failed.length ? "trip" : unknown.length ? "unverifiable" : "pass",
+      source: "measured",
+      evidence: [],
+      note: [
+        failed.length ? `required and not green: ${listChecks(failed.map((r) => r.run!))}` : "",
+        unknown.length ? `required but ${unknown.map((r) => `${r.name} ${r.run ? "is still pending" : "is absent from the rollup"}`).join(", ")}` : "",
+        !failed.length && !unknown.length ? `${required.size} required check(s), all green` : "",
+      ]
+        .filter(Boolean)
+        .join("; ") + ` (required set as configured when the PR was exported: ${pr.required.source})`,
+    });
+  }
+  if (advisory.length)
+    out.push({
+      name: ADVISORY_CI,
+      status: "pass",
+      source: "declared",
+      evidence: [],
+      note: `red advisory check${advisory.length > 1 ? "s" : ""}, ${required.size ? "not required on the repo" : "no required checks on the repo"}: ${listChecks(advisory)}. Not required, so it cannot block; each lowers confidence one notch`,
+    });
+  return out;
+}
+
 function tableStakes(diff: Diff, pr: PrMeta | null): GateResult {
   const lines = diff.added;
   const check = (name: string, scope: Line[], hit: (text: string) => boolean, scopeText: string): GateCheck => {
@@ -70,29 +149,7 @@ function tableStakes(diff: Diff, pr: PrMeta | null): GateResult {
     check("PII", lines, (t) => PII_PATTERNS.some((p) => p.test(t)), "added lines"),
     check(HARDCODED, codeLines, (t) => HARDCODED_ENV_PATTERNS.some((p) => p.test(t)), "added code lines (docs, config and comments skipped)"),
   ];
-  if (pr?.checks) {
-    // Every check in the rollup counts as required: the export does not say which branch protection requires.
-    const red = pr.checks.filter((c) => !/^(SUCCESS|NEUTRAL|SKIPPED)$/i.test(c.conclusion));
-    checks.push({
-      name: "required CI checks",
-      status: red.length ? "trip" : "pass",
-      source: "declared",
-      evidence: [],
-      note: red.length
-        ? `not green in the PR export's rollup: ${red.map((c) => `${c.name} (${c.conclusion})`).join(", ")}`
-        : pr.checks.length
-          ? `${pr.checks.length} checks in the PR export's rollup, all green or neutral`
-          : "the PR export's rollup lists no checks",
-    });
-  } else {
-    checks.push({
-      name: "required CI checks",
-      status: "unverifiable",
-      source: "assumed",
-      evidence: [],
-      note: pr ? "the PR export has no statusCheckRollup, so CI status is unknown" : "no PR export was found for this range, so CI status is unknown",
-    });
-  }
+  checks.push(...ciChecks(pr));
   const status = worst(checks.map((c) => c.status));
   // Secrets, PII and red CI block; a hardcoded value or an unverifiable check routes to a human.
   const blocks = checks.some((c) => c.status === "trip" && c.name !== HARDCODED);

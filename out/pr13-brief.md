@@ -53,7 +53,7 @@ Disagreements: none between sources.
 
 | Gate | Result | Route | Checks |
 |---|---|---|---|
-| 1. Table stakes | pass | none | secrets: pass (measured); PII: pass (measured); hardcoded environment values: pass (measured); required CI checks: pass (declared) |
+| 1. Table stakes | pass | none | secrets: pass (measured); PII: pass (measured); hardcoded environment values: pass (measured); required CI checks: pass (measured) |
 | 2. API contract | pass | none | breaking change to route, schema or public signature: pass (measured); additive API surface: pass (measured) |
 | 3. Destructive schema or data change | pass | none | destructive schema change or mutation of existing data: pass (measured) |
 

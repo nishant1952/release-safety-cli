@@ -9,6 +9,24 @@ bun install && bun run brief <repo-path> <base>..<head> [--out file] [--pr pr.js
 ```
 
 - `--pr` points at a `gh pr view --json` export; by default it is found by matching the range against `data/*/REFS.txt`. `data/` is gitignored and not shipped; without an export the brief says no PR export was found and gate 1's CI check is unverifiable.
+
+## Export a PR
+
+```sh
+bun run export <owner/repo> <pr-number> <repo-path>           # writes data/pr<N>/pr.json, REFS.txt, required-checks.json
+bun run export <owner/repo> <pr-number> --required-only       # adds required-checks.json to an existing export
+```
+
+It needs an authenticated `gh`.
+- `pr.json` is `gh pr view --json author,body,reviews,state,statusCheckRollup,title,url,baseRefName,baseRefOid,headRefOid`.
+- `REFS.txt` holds the range and the local repo path.
+- `required-checks.json` holds `{ "checks": [...], "source": "..." }`: the check names the base branch requires, read from `GET repos/{owner}/{repo}/branches/{base}/protection` (`required_status_checks`) and `GET repos/{owner}/{repo}/rules/branches/{base}` (rules of type `required_status_checks`). The protection endpoint needs admin rights, so when it is refused the script reads the branch summary `GET repos/{owner}/{repo}/branches/{base}`, which any reader can see. `source` records what each endpoint answered. The file is written only when at least one endpoint answered.
+
+Gate 1 reads CI as follows:
+- A required check that is not green blocks.
+- A required check that is pending, or absent from the rollup, routes to a human.
+- With no required checks configured, CI cannot block; red advisory checks are listed and each lowers confidence one notch.
+- Without `required-checks.json`, every rollup check is treated as required and tagged assumed.
 - With `ANTHROPIC_API_KEY` in the environment or `.env` (Bun loads it), three optional LLM uses run on the Anthropic API (model `claude-sonnet-5-5`, server-side refusal fallback): a failure-mode second opinion, a diff-vs-task coherence check, and two-sentence wording for reasons that already have evidence lines. They can only lower confidence or tighten the mode, never loosen it. Without a key the two reads show as unavailable and no wording is added. The diff is sent only in that case, and never when gate 1 finds a secret.
   - Every LLM call is appended as one JSON line to `logs/llm-calls.jsonl` (gitignored; `--llm-log` or `LLM_LOG` to change): purpose, model, endpoint, request id, the full system and user prompt (it contains the diff), the schema, the response text and stop reason, input/output/thinking/cache tokens, latency, outcome and error, and an estimated cost at Anthropic list prices. A one-line summary goes to stderr after the run; the brief itself is unchanged.
 

@@ -6,7 +6,7 @@ import { oneUnknown, unknownText } from "./unknown";
 import { addProse } from "./prose";
 import { makeQuoter } from "./render";
 import { diffText, loadDiff } from "./diff";
-import { INTERNAL_SIGNATURES, runGates } from "./gates";
+import { INTERNAL_SIGNATURES, redAdvisory, runGates } from "./gates";
 import { Git } from "./git";
 import { applyPolicy } from "./policy";
 import { findPrFiles, loadPr } from "./pr";
@@ -74,6 +74,8 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
   if (coherent === false) measuredWhy.push("LLM found mismatches between the diff and the task (can only lower confidence)");
   const notches = gates
     .flatMap((g) => g.checks.filter((c) => c.name === INTERNAL_SIGNATURES).map((c) => `gate ${g.gate}: ${c.evidence.length} export(s) removed or changed in modules internal to the repo (declared by package.json)`));
+  // Unit 5: each red check nothing requires lowers confidence one notch.
+  notches.push(...redAdvisory(pr).map((c) => `gate 1: red advisory check ${c.name} (${c.conclusion}), not required on the repo`));
   const policy = applyPolicy(extracted, conf.measuredLevel, disagreements, notches);
   const signals = policy.signals;
   const finalLevel = coherent === false && policy.level !== "low" ? "low" : policy.level;

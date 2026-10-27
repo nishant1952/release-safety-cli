@@ -1,6 +1,7 @@
 // W 3: gates first, then the damage x window grid, then the one-direction probability shift.
 // Batch rule is out of scope: one change.
 import type { Reason } from "./brief";
+import { ADVISORY_CI } from "./gates";
 import type { GateResult, Signal } from "./types";
 import type { Level } from "./signals/confidence";
 
@@ -67,6 +68,15 @@ export function decide(input: DecisionInput): Decision {
       evidence: failing.flatMap((c) => c.evidence),
     });
   }
+
+  // A red check nothing requires cannot route the release, but the brief says it is red.
+  for (const g of input.gates)
+    for (const c of g.checks.filter((c) => c.name === ADVISORY_CI))
+      reasons.push({
+        text: `Gate ${g.gate}: ${c.note.charAt(0).toUpperCase()}${c.note.slice(1)}.`,
+        evidence: c.evidence,
+        basis: "the PR export's check rollup and required-checks.json (declared and measured), not on a line of code",
+      });
 
   // 2. Damage (W 1b): path and reach are the primary damage signals.
   const path = get(signals, "Path");
