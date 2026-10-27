@@ -1,0 +1,9 @@
+# Never in an image: the local key, the gitignored exports and logs, build output, the repo's own history.
+.env
+.env.*
+data/
+logs/
+node_modules/
+apps/demo/dist/
+.git/
+.claude/
