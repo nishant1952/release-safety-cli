@@ -14,7 +14,8 @@ import { confidenceFacts, confidenceSignals } from "./signals/confidence";
 import { detectionDisagreements, detectionFacts, detectionSignal, perMode } from "./signals/detection";
 import { historyFacts, historySignal } from "./signals/history";
 import { failureModeFacts, failureModeSignal, llmDisagreements } from "./signals/failureMode";
-import { applyRuling, modelContract } from "./model";
+import { askJson, llmAvailable } from "./llm";
+import { applyRuling, citationContext, modelContract } from "./model";
 import { featureFlag, flagFacts } from "./signals/flag";
 import { pathFacts, pathSignal } from "./signals/path";
 import { reachFacts, reachSignal } from "./signals/reach";
@@ -25,6 +26,8 @@ export interface RunOptions {
   repo: string;
   range: string;
   prFile: string | null;
+  /** a stand-in for the model call (tests); when given, the model is treated as available */
+  ask?: typeof askJson;
 }
 
 export async function buildBrief(opts: RunOptions): Promise<Brief> {
@@ -53,8 +56,10 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
   const fullDiff = diffText(diff);
   // Secret or PII values on lines the PR did not add: redacted from the payload, listed, not a trip.
   const atBase = secretsAtBase(diff, contextLines(fullDiff));
+  const available = opts.ask ? true : llmAvailable();
   const contract = await modelContract(
-    fullDiff, rounded, pr, commitMessage, failure, quote, diff.base.slice(0, 7), undefined, undefined, secretHit ? "gate 1 found a secret in the diff" : null,
+    fullDiff, rounded, pr, commitMessage, failure, quote, citationContext(diff, paths, reach), diff.base.slice(0, 7), opts.ask, available,
+    secretHit ? "gate 1 found a secret in the diff" : null,
   );
   const { agrees: llmAgrees, ...failureLlm } = contract.failureMode;
   const { coherent, ...coherence } = contract.coherence;
@@ -64,8 +69,6 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
     ...detectionDisagreements(detection),
     ...conf.disagreements,
     ...llmDisagreements(llmAgrees, failure, failureLlm),
-    // A refused model proposal is a code-vs-model disagreement.
-    ...contract.ruling.refused,
     // Declared inputs that conflict: two PR exports for one range.
     ...(prFiles.length > 1 ? [`${prFiles.length} PR exports match this range (${prFiles.map((f) => f.split("/").slice(-2, -1)[0]).join(", ")}); the first is used`] : []),
   ];
@@ -107,10 +110,12 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
     mode: decision.mode,
     modeLine: modeLine(decision),
     plan,
-    reasons: await addProse(decision.reasons, makeQuoter(diff.repo, diff.base, diff.head), undefined, undefined, secretHit),
+    reasons: await addProse(decision.reasons, makeQuoter(diff.repo, diff.base, diff.head), opts.ask, available, secretHit),
     confidence: { level: finalLevel, why: [...measuredWhy, ...policy.why] },
     unknown,
-    disagreements,
+    // A refused model proposal is a code-vs-model disagreement, listed with the rule that refused it. It does not
+    // lower confidence: code kept the assumed value, so nothing the decision rests on changed.
+    disagreements: [...disagreements, ...contract.ruling.refused],
   };
 }
 

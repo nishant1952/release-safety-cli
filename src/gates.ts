@@ -438,6 +438,9 @@ function signature(text: string): string {
   return t.replace(/\s*\{\s*\}?\s*;?$/, "").replace(/\s+/g, " ");
 }
 
+/** A route or handler definition: a path comparison, a router call or a JSX route. */
+export const isRouteLine = (text: string) => routeOf(text) !== null;
+
 function routeOf(text: string): string | null {
   for (const p of API_ROUTE) {
     const m = text.match(p);

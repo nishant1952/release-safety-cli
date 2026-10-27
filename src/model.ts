@@ -1,14 +1,19 @@
 // The model contract (Round 3, Unit 6). One structured call. The model sees the diff and the assumed
 // signals only, never measured or declared signals, gate results or the mode. For each assumed signal
 // it says "no change" or proposes a value one step away on that signal's scale, citing the line it
-// rests on. Code accepts a proposal only when the cited line exists and the step is within one; an
-// accepted value is tagged "model (cited)". The same call also answers the failure-mode and
+// rests on. Code accepts a proposal only when the cited line exists, the step is within one, the line
+// is in the signal's citation domain, and it is not the evidence of a measured conclusion the proposal
+// contradicts (Round 4, Unit 2); an accepted value is tagged "model (cited)". The same call also answers the failure-mode and
 // diff-vs-task questions, which can only lower confidence or tighten the mode.
-import { withoutSensitiveFiles } from "./gates";
+import { ref, type Diff } from "./diff";
+import { nonCodeKind } from "./files";
+import { CODE_FILE, isRouteLine, withoutSensitiveFiles } from "./gates";
 import { askJson, llmAvailable, NO_CREDENTIAL } from "./llm";
 import POLICY from "./policy.json";
 import type { PrMeta } from "./pr";
 import type { FailureModeFacts } from "./signals/failureMode";
+import type { PathFacts } from "./signals/path";
+import type { ReachFacts } from "./signals/reach";
 import type { Signal } from "./types";
 
 const SCALES: Record<string, string[]> = POLICY.model.scales;
@@ -118,17 +123,90 @@ export interface Ruling {
   refused: string[];
 }
 
+/** What code knows about the change when it checks a citation. Built from measured facts by citationContext. */
+export interface CitationContext {
+  /** code files on the measured path: changed files whose import chain reaches an entry point, and every importer on it */
+  pathFiles: Set<string>;
+  /** entry point files */
+  entries: Set<string>;
+  /** handler definitions the changed code reaches */
+  handlers: Set<string>;
+  /** added and removed lines */
+  changed: Set<string>;
+}
+
+export function citationContext(diff: Diff, paths: PathFacts, reach: ReachFacts): CitationContext {
+  const pathFiles = new Set<string>();
+  for (const [file, chain] of paths.chains)
+    if (chain) for (const f of [file, ...chain.map((h) => h.file)]) pathFiles.add(f);
+  return {
+    pathFiles,
+    entries: new Set(paths.entries),
+    handlers: new Set(reach.handlers.map((h) => h.at)),
+    changed: new Set([...diff.added, ...diff.removed].map((l) => ref(l, diff.base))),
+  };
+}
+
+const isCode = (file: string) => CODE_FILE.test(file) && nonCodeKind(file) === null;
+const IMPORT_LINE = /^\s*(import\b|export\b.*\bfrom\s*["']|.*\brequire\s*\()/;
+// Time to revert is how fast a release is undone: only the files that build, ship or roll back say that. A deploy or
+// rollback file is config or a script by extension; source code named deploy* is not one.
+const isReleaseFile = (file: string) =>
+  ["workflow", "compose", "script"].includes(nonCodeKind(file) ?? "") || /(deploy|rollback)[^/]*\.(ya?ml|json|toml|ini|conf|cfg|sh|bash)$/i.test(file);
+
+type Cited = { ref: string; file: string; text: string };
+
+/** Where a citation for each signal must come from. A signal with no entry has no domain, so no citation fits it. */
+const DOMAINS: Record<string, { needs: string; fits: (c: Cited, ctx: CitationContext) => boolean }> = {
+  Reach: {
+    needs: "a code line on the measured path, or a route or handler definition",
+    fits: (c, ctx) => (isCode(c.file) && ctx.pathFiles.has(c.file)) || isRouteLine(c.text) || ctx.handlers.has(c.ref),
+  },
+  "Time to revert": {
+    needs: "a line in a workflow, deploy script, compose file or rollback config",
+    fits: (c) => isReleaseFile(c.file),
+  },
+  Path: {
+    needs: "an entry point, a route table line, or an import on the measured graph",
+    fits: (c, ctx) => ctx.entries.has(c.file) || isRouteLine(c.text) || (ctx.pathFiles.has(c.file) && IMPORT_LINE.test(c.text)),
+  },
+  "Failure mode": {
+    needs: "a line in the changed code",
+    fits: (c, ctx) => isCode(c.file) && ctx.changed.has(c.ref),
+  },
+};
+
+/**
+ * A measured conclusion a favourable proposal may not overturn with that conclusion's own evidence: while the
+ * measured signal holds such a value, its evidence lines cannot support moving these signals toward release.
+ */
+const RULES_OUT: { signal: string; holds: (v: string) => boolean; proposals: string[]; why: string }[] = [
+  {
+    signal: "Feature flag",
+    holds: (v) => v !== "full",
+    proposals: ["Reach", "Time to revert", "Path"],
+    why: "the flag does not cover the whole change, so its lines cannot show the change reaches fewer systems, is unreached, or is undone in one click",
+  },
+  {
+    signal: "Reversible or irreversible",
+    holds: (v) => v === "irreversible",
+    proposals: ["Time to revert"],
+    why: "an irreversible write is not undone by rolling back the code",
+  },
+];
+
 /** Code's check on each proposal. quote returns the text at a cited line, or null when it does not exist. */
-export function judge(proposals: Proposal[], signals: Signal[], quote: (ref: string) => string | null, base7?: string): Ruling {
+export function judge(proposals: Proposal[], signals: Signal[], quote: (ref: string) => string | null, ctx: CitationContext, base7?: string): Ruling {
   const accepted: Ruling["accepted"] = [];
   const refused: string[] = [];
   for (const p of proposals.filter((p) => p.change === "propose")) {
     const s = signals.find((x) => x.name === p.signal);
-    const refuse = (why: string) => refused.push(`model proposed ${p.signal} = "${p.value}" (cites ${p.cite || "nothing"}); refused: ${why}`);
-    if (!s) refuse("no such signal");
-    else if (s.source !== "assumed") refuse(`${s.name} is ${s.source}; the model may only fill assumed signals`);
-    else if (!SCALES[s.name]) refuse(`${s.name} has no scale the model may move on`);
-    else if (accepted.some((a) => a.signal === s.name)) refuse("a second proposal for the same signal");
+    const refuse = (...why: [string, string][]) =>
+      refused.push(`model proposed ${p.signal} = "${p.value}" (cites ${p.cite || "nothing"}); refused by ${why.map(([rule, w]) => `the ${rule} rule: ${w}`).join("; and by ")}`);
+    if (!s) refuse(["assumed signals only", "no such signal"]);
+    else if (s.source !== "assumed") refuse(["assumed signals only", `${s.name} is ${s.source}; the model may only fill assumed signals`]);
+    else if (!SCALES[s.name]) refuse(["scale", `${s.name} has no scale the model may move on`]);
+    else if (accepted.some((a) => a.signal === s.name)) refuse(["one proposal per signal", "a second proposal for the same signal"]);
     else {
       const scale = SCALES[s.name];
       const from = scale.indexOf(s.value);
@@ -136,11 +214,25 @@ export function judge(proposals: Proposal[], signals: Signal[], quote: (ref: str
       const cite = p.cite.trim();
       const sha = cite.match(/@([0-9a-f]+):\d+$/)?.[1];
       const text = cite && (!sha || !base7 || sha === base7) ? quote(cite) : null;
-      if (to === -1) refuse(`"${p.value}" is not on the scale ${scale.join(" < ")}`);
+      if (to === -1) refuse(["scale", `"${p.value}" is not on the scale ${scale.join(" < ")}`]);
       else if (to === from) continue;
-      else if (Math.abs(to - from) > 1) refuse(`${Math.abs(to - from)} steps from "${s.value}"; at most one is allowed`);
-      else if (!text?.trim()) refuse(cite ? `the cited line ${cite} is blank or does not exist in the diff or at the head revision` : "no line cited");
-      else accepted.push({ signal: s.name, from: s.value, to: p.value, cite, reasoning: p.reasoning.trim() });
+      else if (Math.abs(to - from) > 1) refuse(["one step", `${Math.abs(to - from)} steps from "${s.value}"; at most one is allowed`]);
+      else if (!text?.trim()) refuse(["citation exists", cite ? `the cited line ${cite} is blank or does not exist in the diff or at the head revision` : "no line cited"]);
+      else {
+        const c: Cited = { ref: cite, file: cite.replace(/(@[0-9a-f]+)?:\d+$/, ""), text };
+        const why: [string, string][] = [];
+        // Only a move toward release can contradict a measured conclusion; a move toward caution never loosens anything.
+        if (to > from)
+          for (const r of RULES_OUT.filter((r) => r.proposals.includes(s.name))) {
+            const m = signals.find((x) => x.name === r.signal && x.source === "measured" && r.holds(x.value) && x.evidence.includes(cite));
+            if (m) why.push(["measured evidence", `${cite} is evidence for ${m.name} = ${m.value} (measured), and ${r.why}`]);
+          }
+        const domain = DOMAINS[s.name];
+        if (!domain) why.push(["citation domain", `no citation domain is defined for ${s.name}`]);
+        else if (!domain.fits(c, ctx)) why.push(["citation domain", `${s.name} needs ${domain.needs}; ${cite} is not one${nonCodeKind(c.file) ? ` (${nonCodeKind(c.file)})` : ""}`]);
+        if (why.length) refuse(...why);
+        else accepted.push({ signal: s.name, from: s.value, to: p.value, cite, reasoning: p.reasoning.trim() });
+      }
     }
   }
   return { accepted, refused };
@@ -170,6 +262,7 @@ export async function modelContract(
   commitMessage: string,
   rules: FailureModeFacts,
   quote: (ref: string) => string | null,
+  ctx: CitationContext,
   base7: string,
   ask: typeof askJson = askJson,
   available = llmAvailable(),
@@ -189,7 +282,7 @@ export async function modelContract(
   const modes = [...new Set(answer.failure_modes.modes)].sort();
   const agrees = modes.join(",") === rules.modes.join(",");
   return {
-    ruling: judge(answer.proposals, signals, quote, base7),
+    ruling: judge(answer.proposals, signals, quote, ctx, base7),
     failureMode: {
       name: fmName,
       value: modes.join(", ") || "none",
