@@ -457,11 +457,15 @@ function apiContract(diff: Diff): GateResult {
   const unknown: { at: string; why: string }[] = [];
   const moves = moveIndex(diff);
   const reachable = publicModules(diff, diff.base);
+  // Whether an export's verdict was read from package.json; routes and schema lines are read from code.
+  let readManifests = false;
   /** A removed route is breaking unless it moved; a removed export also only when its module is public. */
   const broken = (l: Line, kind: Move["kind"]) => {
     const m = moves.find(l, kind);
     if (m) return void moved.push(m);
     const pub: Reachability = kind === "export" ? reachable(l.file) : { public: true, why: "" };
+    // An export whose manifest could not be read goes to "export reachability" (assumed), not this verdict.
+    if (kind === "export" && pub.public !== null) readManifests = true;
     const entry = { at: ref(l, diff.base), why: `${l.file}: ${pub.why}` };
     if (pub.public === true) breaking.push(entry.at);
     else if (pub.public === false) internal.push(entry);
@@ -510,9 +514,12 @@ function apiContract(diff: Diff): GateResult {
     {
       name: "breaking change to route, schema or public signature",
       status: breaking.length ? "trip" : "pass",
-      source: "measured",
+      // The verdict on a removed export rests on package.json (which modules are published), a declared input.
+      source: readManifests ? "declared" : "measured",
       evidence: [...new Set(breaking)],
-      note: breaking.length ? "removed or changed API surface" : "no route, schema or exported signature removed or changed",
+      note:
+        (breaking.length ? "removed or changed API surface" : "no route, schema or exported signature removed or changed") +
+        (readManifests ? "; whether a removed or changed export is public is read from package.json (declared)" : ""),
     },
   ];
   if (unknown.length)

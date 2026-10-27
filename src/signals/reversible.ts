@@ -2,7 +2,7 @@
 // leave external side effects that a redeploy cannot undo?" Extracted from the diff: "persisted
 // writes (the gate 3 detector), outbound side effects (payment, email, SMS, webhook, push),
 // queue publishes, external API clients". Persisted writes are gate 3's destructive hits.
-import { Node, SyntaxKind, type SourceFile } from "ts-morph";
+import { Node, SyntaxKind, type Identifier, type SourceFile } from "ts-morph";
 import { loadProject } from "../ast";
 import { ref, type Diff } from "../diff";
 import { CODE_FILE, dataWrites } from "../gates";
@@ -44,8 +44,8 @@ function staticText(n: Node): string | null {
 }
 
 /** One hop: an identifier's variable declaration whose initializer is a literal or template. */
-function resolveOneHop(id: Node): Target {
-  for (const d of id.getDefinitionNodes?.() ?? []) {
+function resolveOneHop(id: Identifier): Target {
+  for (const d of id.getDefinitionNodes()) {
     const init = Node.isVariableDeclaration(d) ? d.getInitializer() : undefined;
     const text = init ? staticText(init) : null;
     if (text !== null) return ofText(text);

@@ -5,13 +5,15 @@
   "scripts": {
     "brief": "bun run src/cli.ts",
     "unit": "bun run src/dev/unit.ts",
-    "export": "bun run src/export.ts"
+    "export": "bun run src/export.ts",
+    "test": "tsc --noEmit && bun test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",
     "ts-morph": "^28.0.0"
   },
   "devDependencies": {
-    "@types/bun": "^1.4.4"
+    "@types/bun": "^1.4.4",
+    "typescript": "7.0.2"
   }
 }

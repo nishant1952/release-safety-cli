@@ -9,8 +9,8 @@ test("PR 13: rules on touched paths give domain and infra", () => {
   expect(facts.perFile.map((p) => [p.path, p.mode, p.at])).toEqual([
     ["apps/api/src/infrastructure/observability/metrics-catalog.ts", "infra", "apps/api/src/infrastructure/observability/metrics-catalog.ts:127"],
     ["apps/web/src/App.tsx", "domain", "apps/web/src/App.tsx:1"],
-    ["apps/web/src/fireweave/fw-providers.ts", "infra", "apps/web/src/fireweave/fw-providers.ts:275"],
-    ["apps/web/src/fireweave/fw-tracker.ts", "infra", "apps/web/src/fireweave/fw-tracker.ts:19"],
+    ["apps/web/src/fireweave/fw-providers.ts", "domain", "apps/web/src/fireweave/fw-providers.ts:275"],
+    ["apps/web/src/fireweave/fw-tracker.ts", "domain", "apps/web/src/fireweave/fw-tracker.ts:19"],
     ["apps/web/src/styles.css", "cosmetic", "apps/web/src/styles.css:715"],
   ]);
   const s = failureModeSignal(facts);

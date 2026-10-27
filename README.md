@@ -27,21 +27,40 @@ Gate 1 reads CI as follows:
 - A required check that is pending, or absent from the rollup, routes to a human.
 - With no required checks configured, CI cannot block; red advisory checks are listed and each lowers confidence one notch.
 - Without `required-checks.json`, every rollup check is treated as required and tagged assumed.
-- With `ANTHROPIC_API_KEY` in the environment or `.env` (Bun loads it), two optional LLM uses run on the Anthropic API (model `claude-sonnet-5-5`, server-side refusal fallback).
-  - The **model contract** is one structured call.
-    - For each assumed signal with a scale in `src/policy.json`, the model answers "no change" or proposes a value one step away, citing the `file:line` it rests on.
-    - Code accepts a proposal only when the cited line exists and the step is within one. An accepted value is tagged `model (cited)`; a refused one is listed under Disagreements.
-    - The model never sees measured or declared signals, gate results or the mode.
-    - The same call answers the failure-mode second opinion and the diff-vs-task coherence check; those can only lower confidence or tighten the mode.
-  - **Reason wording** adds two sentences for reasons that already have evidence lines.
-  - Without a key, every assumed signal stays assumed, the two reads show as unavailable, and no wording is added. The diff is sent only in that case, and never when gate 1 finds a secret.
-  - Every LLM call is appended as one JSON line to `logs/llm-calls.jsonl` (gitignored; `--llm-log` or `LLM_LOG` to change): purpose, model, endpoint, request id, the full system and user prompt (it contains the diff), the schema, the response text and stop reason, input/output/thinking/cache tokens, latency, outcome and error, and an estimated cost at Anthropic list prices. A one-line summary goes to stderr after the run; the brief itself is unchanged.
+## The model (optional)
+
+With `ANTHROPIC_API_KEY` in the environment or `.env` (Bun loads it), two optional LLM uses run on the Anthropic API (model `claude-sonnet-5-5`, server-side refusal fallback). Without a key nothing is sent: every assumed signal stays assumed, the two model reads show as unavailable, and no wording is added.
+
+- The **model contract** is one structured call.
+  - For each assumed signal with a scale in `src/policy.json`, the model answers "no change" or proposes a value one step away, citing the `file:line` it rests on. The model never sees measured or declared signals, gate results or the mode.
+  - Code accepts a proposal only when all of these hold. Accepted values are tagged `model (cited)`.
+    - The signal is assumed and the value is within one step on its scale.
+    - The cited line exists.
+    - The line is in the signal's **citation domain**:
+      - Reach: a code line on the measured path, or a route or handler definition.
+      - Time to revert: a workflow, compose file, deploy or rollback script or config.
+      - Path: an entry point, a route line, or an import on the measured graph.
+      - Failure mode: a changed code line.
+    - The line is not the evidence of a measured conclusion that the proposal contradicts. For example, the flag read behind "flag partial" cannot show low reach or one-click undo.
+  - A refused proposal is listed under Disagreements with the rule that refused it. It does not lower confidence.
+  - A top reason that rests on a filled signal opens with the model's citation, its sentence and the old value, then the lines the old value rested on.
+  - The same call answers the failure-mode second opinion and the diff-vs-task coherence check, which can only lower confidence or tighten the mode.
+  - A coherence item that says the change adds, removes or includes credentials is kept only if the diff supports it. Otherwise it is listed as "model claim not supported by the diff".
+- **Reason wording** adds two sentences for reasons that already have evidence lines.
+- **Nothing secret leaves the process.**
+  - Gate 1's secret and PII scanners run over the whole payload of every call: diff lines of every kind, PR title and body, commit messages, quoted lines. Each value found is replaced with `[REDACTED:<kind>]`.
+  - Files named `.env*`, `secrets.*` or `credentials.*` are never sent.
+  - A secret on an added line trips gate 1, and then no call is made at all.
+  - A secret already in the repo (a context or removed line) is listed under Confidence as "Secrets present at base". It is not a gate trip.
+- Every LLM call is appended as one JSON line to `logs/llm-calls.jsonl` (gitignored; `--llm-log` or `LLM_LOG` to change).
+  - Each line records purpose, model, endpoint and request id; the system and user prompt as sent (after redaction) with the kinds redacted; the schema; the response text and stop reason; tokens; latency, outcome and error; and an estimated cost at Anthropic list prices.
+  - A one-line summary goes to stderr after the run. The brief itself is unchanged.
 
 The PR 13 brief:
 
 ```sh
 bun run brief /Users/nishant/fireweave-study/arcade 30ac194..c5da112a --out out/pr13.md
-bun test
+bun run test        # tsc --noEmit, then bun test
 ```
 
 ## What the brief contains
@@ -51,7 +70,7 @@ bun test
 3. **Top reasons**, each with `file:line` evidence quoted from the repo at the head commit.
 4. **Confidence**, with every reason it was lowered.
 5. **The one unknown**: the first assumed input that, flipped to its favourable value, changes the mode, or a statement that none does and what holds the call.
-6. **Disagreements** between sources (catalog vs code, PR description vs commit trailers, code vs LLM).
+6. **Disagreements** between sources (catalog vs code, PR description vs commit trailers, code vs LLM), including refused model proposals and unsupported model claims.
 7. **Gates** and a **provenance table**: every signal's value and whether it is measured, declared or assumed.
 
 Every rule traces to a sentence in the write-up; choices the write-up did not make are in [DECISIONS.md](DECISIONS.md). Code is in `src/` (`signals/` holds one extractor per signal), tests in `tests/`.

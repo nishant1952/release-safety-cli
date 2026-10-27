@@ -39,6 +39,8 @@ test("PR 1 and PR 7: removed exports from private workspace packages are interna
   for (const range of ["7eed1d0f..528c3084", "cdb77fe4..0c4e573a"]) {
     const g2 = runGates(loadDiff(REPO, range), null)[1];
     expect([range, g2.status]).toEqual([range, "pass"]);
+    // The verdict on those exports was read from package.json, so the breaking check is declared.
+    expect(g2.checks[0].source).toBe("declared");
     expect(g2.checks.some((c) => c.name === "internal signature changes")).toBe(true);
   }
 });
@@ -48,6 +50,10 @@ test("PR 9: the export is internal, but edits to the metrics catalog (a schema f
   expect(g2.status).toBe("trip");
   expect(g2.checks[0].evidence.every((e) => e.includes("metrics-catalog.ts"))).toBe(true);
   expect(g2.checks.find((c) => c.name === "internal signature changes")!.evidence).toEqual(["apps/api/src/infrastructure/observability/openobserve.ts@504f75e:245"]);
+});
+
+test("with no export removed or changed, the breaking check reads code only and stays measured (PR 13)", () => {
+  expect(runGates(loadDiff(REPO, "30ac194..c5da112a"), null)[1].checks[0].source).toBe("measured");
 });
 
 test("PR 5 is unchanged: it removes routes", () => {

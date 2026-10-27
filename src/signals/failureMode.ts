@@ -19,7 +19,7 @@ const RULES: { mode: Mode | "none"; test: RegExp }[] = [
   { mode: "security", test: /(^|\/)(auth|security|crypto|permissions?|acl|oauth|sessions?)(\/|\.|-|$)|password|cookies?\.|secret/i },
   {
     mode: "infra",
-    test: /(^|\/)(infrastructure|infra|observability|fireweave|\.github|docker|scripts|deploy|terraform|k8s|helm|config)(\/|$)|Dockerfile|compose[^/]*\.ya?ml$|(^|\/)package\.json$|bun\.lock$/i,
+    test: /(^|\/)(infrastructure|infra|observability|\.github|docker|scripts|deploy|terraform|k8s|helm|config)(\/|$)|Dockerfile|compose[^/]*\.ya?ml$|(^|\/)package\.json$|bun\.lock$/i,
   },
   { mode: "domain", test: /./ },
 ];

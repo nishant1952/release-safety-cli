@@ -12,6 +12,7 @@ test("non-code kinds by path", () => {
   const cases: [string, string | null][] = [
     ["README.md", "docs"],
     ["docs/notes.txt", "docs"],
+    ["docs/guide.mdx", "docs"],
     ["apps/web/src/styles.css", "stylesheet"],
     ["src/theme.scss", "stylesheet"],
     ["bun.lock", "lockfile"],

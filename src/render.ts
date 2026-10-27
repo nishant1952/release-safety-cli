@@ -1,7 +1,7 @@
 // Markdown brief. W 3: "They get the proposed plan and a short brief, not a score: the mode, the
 // top reasons, the confidence, and the one missing fact that would most change the call."
 // W 2: "Each signal is marked measured, declared or assumed, so the human knows what to distrust."
-import type { Brief } from "./brief";
+import type { Brief, Reason } from "./brief";
 import { Git } from "./git";
 
 const MAX_EVIDENCE = 4;

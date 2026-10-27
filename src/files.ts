@@ -5,7 +5,7 @@ export type NonCodeKind = "docs" | "stylesheet" | "lockfile" | "workflow" | "com
 
 const KINDS: { kind: NonCodeKind; test: RegExp }[] = [
   { kind: "editor config", test: /(^|\/)\.(cursor|claude|vscode)\// },
-  { kind: "docs", test: /\.(md|txt)$/i },
+  { kind: "docs", test: /\.(md|mdx|txt)$/i },
   { kind: "stylesheet", test: /\.(css|scss)$/i },
   { kind: "lockfile", test: /(^|\/)(package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.ya?ml|bun\.lockb?)$/ },
   { kind: "workflow", test: /^\.github\/workflows\/[^/]+\.ya?ml$|(^|\/)\.gitlab-ci\.ya?ml$/ },

@@ -25,7 +25,9 @@ Everything downstream consumes this structure. Nothing re-reads the diff.
 **`pr.ts`** looks for a PR export. It scans `data/*/REFS.txt` for a base and head that match the
 range and loads the `pr.json` beside it. That gives title, body, author, and optionally CI check
 results and review count. It is tagged declared because a person or tool wrote it, not the
-code. Absent is allowed and is treated as unknown, not as empty.
+code. Absent is allowed and is treated as unknown, not as empty. Beside it, `required-checks.json`
+names the checks the base branch requires (branch protection and repository rules). It is
+written by `bun run export <owner/repo> <pr> <repo-path>` (`export.ts`, which calls `gh`).
 
 ## Stage 2: gates
 
@@ -33,8 +35,10 @@ code. Absent is allowed and is treated as unknown, not as empty.
 caused it.
 
 - **Table stakes.** Regex lists over added lines: private key headers, AWS and GitHub token
-  shapes, JWTs, `password = "..."`, emails, SSNs, card numbers, http URLs, IP addresses. CI
-  status comes from the PR export if present, otherwise unverifiable.
+  shapes, JWTs, credential assignments quoted or bare (`password = "..."`, `KEY_PASSWORD=...`),
+  emails, SSNs, card numbers, http URLs, IP addresses. CI: a red required check blocks, a
+  pending or absent one is unverifiable, a red check nothing requires only lowers confidence.
+  The same secret and PII scanners also redact the model payload (see below).
 - **API contract.** Finds `export` declarations and route strings on removed lines and checks
   whether the same name or route reappears on added lines with the same signature. Removed and
   not re-added is breaking. Files named schema, catalog, openapi or swagger are stricter: any
@@ -122,15 +126,43 @@ the line. So the brief reads as prose because someone wrote the prose once, with
 the holes are filled from measurements. The honesty test in `tests/brief.test.ts` checks that
 no template describes the contents of something the run never read.
 
-The only model involvement, when `ANTHROPIC_API_KEY` is set, is three bounded calls in
-`llm.ts`: classify failure mode, judge diff against task, and reword a reason that already has
-evidence. Each returns JSON against a schema, is tagged assumed, and can only lower confidence
-or add one step toward caution. Without a key those three signals say "unavailable" and the
-rest of the brief is unchanged.
+## The model, when there is a key
+
+With `ANTHROPIC_API_KEY` set there are two kinds of call, both through `askJson` in `llm.ts`,
+both returning JSON against a schema. Without a key the brief is the one described above.
+
+**Redaction first.** `askJson` runs gate 1's secret and PII scanners (`sensitiveSpans` in
+`gates.ts`) over the system and user prompt and replaces each value with `[REDACTED:<kind>]`
+before anything is sent. The contract prompt also leaves out every file named `.env*`,
+`secrets.*` or `credentials.*`. A secret on an added line trips gate 1, and then no call is
+made. A secret already in the repo, on a context or removed line, is listed under Confidence
+as "Secrets present at base".
+
+**The model contract** (`model.ts`) is one call. The model sees the diff with line numbers, the
+PR text and the assumed signals that have a scale. For each one it may propose a value one
+step away, citing a line. `judge` accepts a proposal only when:
+- the line exists;
+- the line sits in the signal's citation domain (for Reach, a code line on the measured path
+  or a route or handler definition; for Time to revert, a release file; for Path, an entry
+  point, route or import on the graph);
+- the line is not the evidence of a measured conclusion the proposal contradicts (`RULES_OUT`:
+  a flag that does not cover the whole change cannot argue reach or undo).
+
+An accepted value is tagged `model (cited)`. A refusal is listed with its rule and does not
+lower confidence. `decide.ts` puts the model's citation, its sentence and the replaced value at
+the top of the reason that rests on it. The same call answers the failure-mode second opinion
+and the coherence check. Each coherence item that claims the change adds, removes or includes
+credentials is checked against the diff, and is dropped if the diff does not support it.
+Confidence is computed before any fill, so a model answer never raises it.
+
+**Reason wording** (`prose.ts`) adds two sentences beside a reason that already has evidence
+lines. It never changes the reason.
 
 ## Tests
 
 One file per unit under `tests/`, each pinning real PR 13 output: specific line numbers,
-specific values. `brief.test.ts` compares the full rendered brief to the committed
+specific values. `bun run test` typechecks (`tsc --noEmit`) and then runs them. Model tests
+inject a canned answer through `buildBrief`, and `payload.test.ts` checks the bytes sent to a
+local stand-in for the API. `brief.test.ts` compares the full rendered brief to the committed
 `out/pr13.md` byte for byte, so any rule change shows up as a golden-file diff you have
 to consciously accept.
