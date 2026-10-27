@@ -40,7 +40,7 @@ Gate 1 reads CI as follows:
 The PR 13 brief:
 
 ```sh
-bun run brief /Users/nishant/fireweave-study/arcade 30ac194..c5da112a --out out/pr13-brief.md
+bun run brief /Users/nishant/fireweave-study/arcade 30ac194..c5da112a --out out/pr13.md
 bun test
 ```
 

@@ -132,5 +132,5 @@ rest of the brief is unchanged.
 
 One file per unit under `tests/`, each pinning real PR 13 output: specific line numbers,
 specific values. `brief.test.ts` compares the full rendered brief to the committed
-`out/pr13-brief.md` byte for byte, so any rule change shows up as a golden-file diff you have
+`out/pr13.md` byte for byte, so any rule change shows up as a golden-file diff you have
 to consciously accept.

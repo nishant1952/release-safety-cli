@@ -9,8 +9,8 @@ const render = async () => {
   return renderBrief(b, makeQuoter(REPO, b.base, b.head));
 };
 
-test("out/pr13-brief.md is exactly what the tool renders for PR 13", async () => {
-  expect(await render()).toBe(await Bun.file(new URL("../out/pr13-brief.md", import.meta.url)).text());
+test("out/pr13.md is exactly what the tool renders for PR 13", async () => {
+  expect(await render()).toBe(await Bun.file(new URL("../out/pr13.md", import.meta.url)).text());
 }, 30_000);
 
 // W 2: "Each signal is marked measured, declared or assumed, so the human knows what to distrust."
