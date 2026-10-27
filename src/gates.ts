@@ -99,6 +99,90 @@ function tableStakes(diff: Diff, pr: PrMeta | null): GateResult {
   return { gate: 1, name: "Table stakes", status, route, checks };
 }
 
+// ── Moves: removed in one place, added verbatim in another ───────────────────
+// A statement that is removed and re-added (whitespace normalised, in any file) moved; it is not a
+// drop or a breaking change. The statement is the SQL statement from its keyword to its end, the
+// route line, or the export's signature.
+
+const SQL_KEYWORD = /\b(CREATE\s+TABLE|ALTER\s+TABLE|DROP\s+[A-Z]+|TRUNCATE|ADD\s+COLUMN|DELETE\s+FROM|UPDATE\s+[A-Za-z_"])/i;
+const norm = (t: string) => t.replace(/\s+/g, " ").trim();
+
+export interface Move {
+  kind: "SQL statement" | "route" | "export";
+  from: string;
+  to: string;
+}
+
+/** Whole-file lines at a revision, or (without a repo) the diff's own lines at their numbers. */
+function fileLines(diff: Diff, rev: string, path: string, own: Line[]): string[] {
+  const text = diff.repo ? new Git(diff.repo).show(rev, path) : null;
+  if (text !== null) return text.split("\n");
+  const lines: string[] = [];
+  for (const l of own) lines[l.line - 1] = l.text;
+  return Array.from(lines, (t) => t ?? "");
+}
+
+/** Keys a line can move under: its SQL statement, its route line, its export signature. */
+function moveKeys(l: Line, lines: () => string[]): { kind: Move["kind"]; key: string }[] {
+  const keys: { kind: Move["kind"]; key: string }[] = [];
+  const sql = l.text.match(SQL_KEYWORD);
+  if (sql) keys.push({ kind: "SQL statement", key: norm(statementAt(lines(), l.line - 1, sql.index ?? 0)) });
+  if (routeOf(l.text)) keys.push({ kind: "route", key: norm(l.text) });
+  if (EXPORT_DECL.test(l.text)) keys.push({ kind: "export", key: signature(l.text) });
+  return keys;
+}
+
+/** Finds, for a removed (or added) line, the same statement on the other side of the diff. */
+export function moveIndex(diff: Diff) {
+  const files = new Map<string, string[]>();
+  const linesOf = (rev: string, path: string, own: Line[]) => {
+    const k = `${rev}:${path}`;
+    if (!files.has(k)) files.set(k, fileLines(diff, rev, path, own));
+    return files.get(k)!;
+  };
+  const index = (side: "added" | "removed") => {
+    const map = new Map<string, Line>();
+    for (const f of diff.files) {
+      const own = side === "added" ? f.added : f.removed;
+      const path = side === "added" ? f.path : f.oldPath;
+      if (!path || !own.length) continue;
+      const lines = () => linesOf(side === "added" ? diff.head : diff.base, path, own);
+      for (const l of own) for (const k of moveKeys(l, lines)) if (!map.has(`${k.kind}\0${k.key}`)) map.set(`${k.kind}\0${k.key}`, l);
+    }
+    return map;
+  };
+  let added: Map<string, Line> | null = null;
+  let removed: Map<string, Line> | null = null;
+  const find = (l: Line, kind: Move["kind"]): Move | null => {
+    const other = l.side === "base" ? (added ??= index("added")) : (removed ??= index("removed"));
+    const f = diff.files.find((f) => (l.side === "base" ? f.oldPath : f.path) === l.file)!;
+    const own = l.side === "base" ? f.removed : f.added;
+    const lines = () => linesOf(l.side === "base" ? diff.base : diff.head, l.file, own);
+    const key = moveKeys(l, lines).find((k) => k.kind === kind);
+    const hit = key && other.get(`${kind}\0${key.key}`);
+    if (!hit) return null;
+    const [from, to] = l.side === "base" ? [l, hit] : [hit, l];
+    return { kind, from: ref(from, diff.base), to: ref(to) };
+  };
+  return { find };
+}
+
+/** "moved from a.ts to b.ts (2 routes)", one entry per pair of files. */
+export function moveText(moves: Move[]): string {
+  const groups = new Map<string, Move[]>();
+  for (const m of moves) {
+    const k = `${m.from.replace(/@[0-9a-f]+:\d+$|:\d+$/, "")}\0${m.to.replace(/:\d+$/, "")}`;
+    (groups.get(k) ?? groups.set(k, []).get(k)!).push(m);
+  }
+  return [...groups]
+    .map(([k, ms]) => {
+      const [from, to] = k.split("\0");
+      const kinds = [...new Set(ms.map((m) => m.kind))].map((kind) => `${ms.filter((m) => m.kind === kind).length} ${kind}(s)`);
+      return `moved from ${from} to ${to} (${kinds.join(", ")})`;
+    })
+    .join("; ");
+}
+
 // ── Gate 2: API contract ─────────────────────────────────────────────────────
 
 const SCHEMA_FILE = /(schema|catalog|openapi|swagger)[^/]*$|\.(proto|graphql|avsc)$/i;
@@ -133,6 +217,14 @@ function routeOf(text: string): string | null {
 function apiContract(diff: Diff): GateResult {
   const breaking: string[] = [];
   const additive: string[] = [];
+  const moved: Move[] = [];
+  const moves = moveIndex(diff);
+  /** A removed route or export is breaking unless it moved. */
+  const broken = (l: Line, kind: Move["kind"]) => {
+    const m = moves.find(l, kind);
+    if (m) moved.push(m);
+    else breaking.push(ref(l, diff.base));
+  };
   for (const f of diff.files) {
     const addedSigs = new Map<string, Line[]>();
     const addedRoutes = new Set<string>();
@@ -149,12 +241,12 @@ function apiContract(diff: Diff): GateResult {
       if (m) {
         removedNames.add(m[2]);
         const again = addedSigs.get(m[2]) ?? [];
-        if (!again.some((a) => signature(a.text) === signature(l.text))) breaking.push(ref(l, diff.base));
+        if (!again.some((a) => signature(a.text) === signature(l.text))) broken(l, "export");
       }
       const r = routeOf(l.text);
       if (r) {
         removedRoutes.add(r);
-        if (!addedRoutes.has(r)) breaking.push(ref(l, diff.base));
+        if (!addedRoutes.has(r)) broken(l, "route");
       }
     }
     for (const [name, ls] of addedSigs) if (!removedNames.has(name)) additive.push(...ls.map((l) => ref(l)));
@@ -169,6 +261,9 @@ function apiContract(diff: Diff): GateResult {
       additive.push(...(entryLines.length ? entryLines : f.added.filter((l) => l.text.trim())).map((l) => ref(l)));
     }
   }
+  // A moved export or route lands as an added line; it adds no surface.
+  const landed = new Set(moved.map((m) => m.to));
+  const surface = [...new Set(additive)].filter((r) => !landed.has(r));
   const checks: GateCheck[] = [
     {
       name: "breaking change to route, schema or public signature",
@@ -178,12 +273,13 @@ function apiContract(diff: Diff): GateResult {
       note: breaking.length ? "removed or changed API surface" : "no route, schema or exported signature removed or changed",
     },
   ];
-  if (additive.length)
+  if (moved.length) checks.push(movedCheck(moved, "routes and exports"));
+  if (surface.length)
     checks.push({
       name: "additive API surface",
       status: "pass",
       source: "measured",
-      evidence: [...new Set(additive)],
+      evidence: surface,
       note: "added routes, schema entries or exports only",
     });
   const status = worst(checks.map((c) => c.status));
@@ -225,6 +321,18 @@ export interface DataWrites {
   destructive: string[];
   additive: string[];
   migrations: string[];
+  /** destructive-looking statements that were removed in one place and added verbatim in another */
+  moved: Move[];
+}
+
+function movedCheck(moved: Move[], what: string): GateCheck {
+  return {
+    name: `moved ${what}`,
+    status: "pass",
+    source: "measured",
+    evidence: [...new Set(moved.flatMap((m) => [m.from, m.to]))],
+    note: `removed and re-added in the diff (whitespace normalised; SQL by whole statement, routes by their line, exports by signature, so a changed handler or body is not seen), so not a drop: ${moveText(moved)}`,
+  };
 }
 
 /** The gate 3 detector. The reversibility signal reuses its destructive hits as "persisted writes". */
@@ -232,6 +340,8 @@ export function dataWrites(diff: Diff): DataWrites {
   const git = diff.repo ? new Git(diff.repo) : null;
   const destructive: string[] = [];
   const additive: string[] = [];
+  const moved: Move[] = [];
+  const moves = moveIndex(diff);
   for (const f of diff.files) {
     const migration = MIGRATION_FILE.test(f.path);
     // Only code, SQL and migration files run; SQL quoted in docs or config does not.
@@ -247,17 +357,26 @@ export function dataWrites(diff: Diff): DataWrites {
         m !== null && !migration && /\bWHERE\b/i.test(statementAt(lines!, l.line - 1, m.index ?? 0));
       const row = ROW_WRITES.map((p) => l.text.match(p)).find((m) => m) ?? null;
       const bulk = l.text.match(ORM_BULK);
-      if (SCHEMA_DESTRUCTIVE.some((p) => p.test(l.text)) || (row && !scoped(row)) || (bulk && !scoped(bulk))) destructive.push(ref(l));
-      else if (ADDITIVE_DDL.test(l.text) || (migration && INSERT.test(l.text))) additive.push(ref(l));
+      if (SCHEMA_DESTRUCTIVE.some((p) => p.test(l.text)) || (row && !scoped(row)) || (bulk && !scoped(bulk))) {
+        // A statement moved from elsewhere already ran there; in a migration or SQL file it may run again under its new name.
+        const m = migration ? null : moves.find(l, "SQL statement");
+        if (m) moved.push(m);
+        else destructive.push(ref(l));
+      } else if (ADDITIVE_DDL.test(l.text) || (migration && INSERT.test(l.text))) additive.push(ref(l));
     }
     // Removing a table or column definition is a destructive schema change.
-    for (const l of f.removed) if (/\bCREATE\s+TABLE\b|\bADD\s+COLUMN\b/i.test(l.text)) destructive.push(ref(l, diff.base));
+    for (const l of f.removed)
+      if (/\bCREATE\s+TABLE\b|\bADD\s+COLUMN\b/i.test(l.text)) {
+        const m = moves.find(l, "SQL statement");
+        if (m) moved.push(m);
+        else destructive.push(ref(l, diff.base));
+      }
   }
-  return { destructive, additive, migrations: diff.files.filter((f) => MIGRATION_FILE.test(f.path)).map((f) => f.path) };
+  return { destructive, additive, migrations: diff.files.filter((f) => MIGRATION_FILE.test(f.path)).map((f) => f.path), moved };
 }
 
 function destructiveData(diff: Diff): GateResult {
-  const { destructive, additive, migrations } = dataWrites(diff);
+  const { destructive, additive, migrations, moved } = dataWrites(diff);
   const checks: GateCheck[] = [
     {
       name: "destructive schema change or mutation of existing data",
@@ -277,6 +396,7 @@ function destructiveData(diff: Diff): GateResult {
       evidence: additive,
       note: migrations.length ? `migrations touched: ${migrations.join(", ")}` : "additive DDL only",
     });
+  if (moved.length) checks.push(movedCheck(moved, "schema statements"));
   const status = worst(checks.map((c) => c.status));
   return { gate: 3, name: "Destructive schema or data change", status, route: routeFor(status), checks };
 }
