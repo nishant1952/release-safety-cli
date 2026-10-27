@@ -99,6 +99,26 @@ export function loadDiff(repo: string, range: string): Diff {
   };
 }
 
+/** Context lines of a diff with context (unchanged at base and head), cited by their head line. */
+export function contextLines(text: string): Line[] {
+  const out: Line[] = [];
+  let file = "";
+  let newLine = 0;
+  let inHunk = false;
+  for (const raw of text.split("\n")) {
+    if (raw.startsWith("diff --git ")) {
+      file = raw.match(/^diff --git a\/.+ b\/(.+)$/)?.[1] ?? "";
+      inHunk = false;
+    } else if (raw.startsWith("@@")) {
+      newLine = Number(raw.match(/\+(\d+)/)![1]);
+      inHunk = true;
+    } else if (!inHunk) continue;
+    else if (raw.startsWith("+")) newLine++;
+    else if (raw.startsWith(" ")) out.push({ file, line: newLine++, text: raw.slice(1), side: "head" });
+  }
+  return out;
+}
+
 /** The range's diff with normal context, for the optional LLM reads. */
 export function diffText(diff: Diff): string {
   return new Git(diff.repo).run(["diff", "--no-color", "--no-ext-diff", "--find-renames", diff.base, diff.head]);

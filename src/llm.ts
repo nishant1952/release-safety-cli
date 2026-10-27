@@ -3,6 +3,7 @@
 // coherence reads, which only lower confidence or tighten the mode; reason wording never changes a
 // decision. Measured and declared signals, gates and the mode are never the model's to change.
 import Anthropic from "@anthropic-ai/sdk";
+import { redact } from "./gates";
 import { costOf, logLlmCall, tokensOf, type LlmLogEntry } from "./llmlog";
 
 export const NO_CREDENTIAL = "no ANTHROPIC_API_KEY";
@@ -17,6 +18,11 @@ const EFFORT = "low" as const;
 /** One structured-output call, logged. Returns null when unavailable, refused, or on any API error. */
 export async function askJson<T>(system: string, user: string, schema: Record<string, unknown>, purpose = "llm"): Promise<T | null> {
   if (!llmAvailable()) return null;
+  // Nothing secret leaves the process: the gate 1 secret and PII scanners run over the whole payload.
+  const sys = redact(system);
+  const usr = redact(user);
+  system = sys.text;
+  user = usr.text;
   const client = new Anthropic();
   const started = performance.now();
   const entry: LlmLogEntry = {
@@ -27,7 +33,7 @@ export async function askJson<T>(system: string, user: string, schema: Record<st
     outcome: "ok",
     latency_ms: 0,
     request_id: null,
-    request: { max_tokens: MAX_TOKENS, effort: EFFORT, system, user, schema },
+    request: { max_tokens: MAX_TOKENS, effort: EFFORT, system, user, schema, redacted: [...sys.kinds, ...usr.kinds] },
     response: null,
     tokens: null,
     cost: null,

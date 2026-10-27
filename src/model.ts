@@ -4,6 +4,7 @@
 // rests on. Code accepts a proposal only when the cited line exists and the step is within one; an
 // accepted value is tagged "model (cited)". The same call also answers the failure-mode and
 // diff-vs-task questions, which can only lower confidence or tighten the mode.
+import { withoutSensitiveFiles } from "./gates";
 import { askJson, llmAvailable, NO_CREDENTIAL } from "./llm";
 import POLICY from "./policy.json";
 import type { PrMeta } from "./pr";
@@ -108,7 +109,7 @@ export function contractPrompt(diffText: string, signals: Signal[], pr: PrMeta |
   );
   return (
     `Assumed signals:\n${rows.join("\n")}\n\nCommit message:\n${commitMessage}\n\nPR title: ${pr?.title ?? "(none)"}\n\n` +
-    `PR description:\n${pr?.body ?? "(none)"}\n\nBase commit: ${base7}\n\nDiff (line numbers at left):\n${numberedDiff(diffText)}`
+    `PR description:\n${pr?.body ?? "(none)"}\n\nBase commit: ${base7}\n\nDiff (line numbers at left):\n${numberedDiff(withoutSensitiveFiles(diffText).text)}`
   );
 }
 

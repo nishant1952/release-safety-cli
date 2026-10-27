@@ -6,24 +6,30 @@ import { ref, type Diff, type Line } from "./diff";
 import { Git } from "./git";
 import { POLICY } from "./policy";
 import type { PrMeta } from "./pr";
-import type { GateCheck, GateResult, GateRoute, GateStatus } from "./types";
+import type { GateCheck, GateResult, GateRoute, GateStatus, Signal } from "./types";
 
 const worst = (statuses: GateStatus[]): GateStatus =>
   statuses.includes("trip") ? "trip" : statuses.includes("unverifiable") ? "unverifiable" : "pass";
 
 // ── Gate 1: table stakes ─────────────────────────────────────────────────────
 
-const SECRET_PATTERNS = [
-  /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
-  /\bAKIA[0-9A-Z]{16}\b/,
-  /\bgh[pousr]_[A-Za-z0-9]{36,}\b/,
-  /\bxox[baprs]-[A-Za-z0-9-]{10,}/,
-  /\bsk-[A-Za-z0-9_-]{20,}/,
-  /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/,
-  /[a-z][a-z0-9+.-]*:\/\/[^\s:@/]+:[^\s@/]+@/i,
+// Each pattern's `value` group is the part a redaction replaces; without one the whole match is.
+const SECRET_PATTERNS: { kind: string; test: RegExp }[] = [
+  { kind: "private key", test: /-----BEGIN [A-Z ]*PRIVATE KEY-----/g },
+  { kind: "AWS key", test: /\bAKIA[0-9A-Z]{16}\b/g },
+  { kind: "GitHub token", test: /\bgh[pousr]_[A-Za-z0-9]{36,}\b/g },
+  { kind: "Slack token", test: /\bxox[baprs]-[A-Za-z0-9-]{10,}/g },
+  { kind: "API key", test: /\bsk-[A-Za-z0-9_-]{20,}/g },
+  { kind: "JWT", test: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g },
+  { kind: "URL credentials", test: /[a-z][a-z0-9+.-]*:\/\/(?<value>[^\s:@/]+:[^\s@/]+)@/gi },
 ];
-// A credential-named key assigned a quoted value; the value must also look like a secret.
-const CREDENTIAL_ASSIGNMENT = /(?:secret|passw(?:or)?d|api[_-]?key|access[_-]?token|auth[_-]?token|private[_-]?key)["']?\s*[:=]\s*["']([^"'\s]{8,})["']/gi;
+// A credential-named key assigned a value, quoted or bare (`KEY_PASSWORD=...` in env files); the value
+// must also look like a secret. A bare value ends at whitespace, a comma or a semicolon, so a call
+// such as `password: hash(x)` is not a value.
+const CREDENTIAL_ASSIGNMENT =
+  /(?:secret|passw(?:or)?d|api[_-]?key|access[_-]?token|auth[_-]?token|private[_-]?key)["']?\s*[:=]\s*(?:["'](?<quoted>[^"'\s]{8,})["']|(?<bare>[^\s"'`,;(){}[\]<>]{8,})(?=$|[\s,;]))/gi;
+// A bare value that names another value: `$VAR`, `%VAR%`, or a property path such as `process.env.KEY!`.
+const REFERENCE = /^(\$\w+|%\w+%|[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)+[!?]?)$/;
 
 /** Not a placeholder, not plain words (e.g. "unknown_user"), and mixes at least two character classes. */
 export function looksLikeSecret(v: string): boolean {
@@ -33,14 +39,98 @@ export function looksLikeSecret(v: string): boolean {
   return classes >= 2;
 }
 
-const isSecretLine = (text: string) =>
-  SECRET_PATTERNS.some((p) => p.test(text)) || [...text.matchAll(CREDENTIAL_ASSIGNMENT)].some((m) => looksLikeSecret(m[1]));
-
-const PII_PATTERNS = [
-  /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/,
-  /\b\d{3}-\d{2}-\d{4}\b/,
-  /\b(?:\d{4}[ -]){3}\d{4}\b/,
+const PII_PATTERNS: { kind: string; test: RegExp }[] = [
+  { kind: "email", test: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g },
+  { kind: "SSN", test: /\b\d{3}-\d{2}-\d{4}\b/g },
+  { kind: "card number", test: /\b(?:\d{4}[ -]){3}\d{4}\b/g },
 ];
+
+export interface Sensitive {
+  scanner: "secret" | "PII";
+  kind: string;
+  start: number;
+  end: number;
+}
+
+/** Every secret and PII value in one line: the gate 1 scanners, with the span a redaction replaces. */
+export function sensitiveSpans(text: string): Sensitive[] {
+  const out: Sensitive[] = [];
+  const span = (scanner: Sensitive["scanner"], kind: string, m: RegExpMatchArray, value?: string) => {
+    const start = value === undefined ? m.index! : m.index! + m[0].indexOf(value);
+    out.push({ scanner, kind, start, end: start + (value ?? m[0]).length });
+  };
+  for (const p of SECRET_PATTERNS) for (const m of text.matchAll(p.test)) span("secret", p.kind, m, m.groups?.value);
+  for (const m of text.matchAll(CREDENTIAL_ASSIGNMENT)) {
+    const value = m.groups!.quoted ?? m.groups!.bare;
+    if (looksLikeSecret(value) && !(m.groups!.bare && REFERENCE.test(value))) span("secret", "credential", m, value);
+  }
+  for (const p of PII_PATTERNS) for (const m of text.matchAll(p.test)) span("PII", p.kind, m);
+  return out;
+}
+
+export const isSecretLine = (text: string) => sensitiveSpans(text).some((s) => s.scanner === "secret");
+const isPiiLine = (text: string) => sensitiveSpans(text).some((s) => s.scanner === "PII");
+
+/** Files never sent to the model: env files and files named secrets or credentials. */
+export const SENSITIVE_FILE = /(^|\/)(\.env[^/]*|(secrets?|credentials?)(\.[^/]*)?)$/i;
+
+const KEY_END = /-----END [A-Z ]*PRIVATE KEY-----/;
+
+/** Replaces each secret or PII value with [REDACTED:<kind>], line by line; a private key block is redacted to its END line. */
+export function redact(text: string): { text: string; kinds: string[] } {
+  const kinds: string[] = [];
+  let inKey = false;
+  const lines = text.split("\n").map((line) => {
+    if (inKey) {
+      if (KEY_END.test(line)) inKey = false;
+      return line.replace(/[A-Za-z0-9+/=]{16,}/g, "[REDACTED:private key]");
+    }
+    // Later spans first, so earlier offsets stay valid; an overlapping span is already covered.
+    let out = line;
+    let floor = Infinity;
+    for (const s of sensitiveSpans(line).sort((a, b) => b.start - a.start)) {
+      if (s.end > floor) continue;
+      out = `${out.slice(0, s.start)}[REDACTED:${s.kind}]${out.slice(s.end)}`;
+      floor = s.start;
+      kinds.push(s.kind);
+      if (s.kind === "private key" && !KEY_END.test(line)) inKey = true;
+    }
+    return out;
+  });
+  return { text: lines.join("\n"), kinds };
+}
+
+/** The diff text without the sections of files that are never sent to the model. */
+export function withoutSensitiveFiles(diffText: string): { text: string; dropped: string[] } {
+  const dropped: string[] = [];
+  const sections = diffText.split(/(?=^diff --git )/m).filter((s) => {
+    const path = s.match(/^diff --git a\/(.+?) b\/(.+)$/m);
+    if (!path || !(SENSITIVE_FILE.test(path[1]) || SENSITIVE_FILE.test(path[2]))) return true;
+    dropped.push(path[2]);
+    return false;
+  });
+  return { text: sections.join(""), dropped };
+}
+
+/**
+ * Secret and PII values already in the repo: on the diff's context and removed lines, which the PR did not add.
+ * They are not a gate trip; they are redacted from the model payload and listed under Confidence.
+ */
+export function secretsAtBase(diff: Diff, context: Line[]): Signal | null {
+  const hits = [...context, ...diff.removed]
+    .map((l) => ({ l, kinds: [...new Set(sensitiveSpans(l.text).map((s) => s.kind))] }))
+    .filter((h) => h.kinds.length);
+  if (!hits.length) return null;
+  const refs = hits.map((h) => ref(h.l, diff.base));
+  return {
+    name: SECRETS_AT_BASE,
+    value: "observed",
+    source: "measured",
+    evidence: refs,
+    note: `${hits.map((h, i) => `${refs[i]} (${h.kinds.join(", ")})`).join(", ")}: present in the repo before this change, not added by it. Redacted from the model payload; files matching .env* or named secrets or credentials are not sent at all. Not a gate trip, does not lower confidence`,
+  };
+}
+export const SECRETS_AT_BASE = "Secrets present at base";
 
 const HARDCODED_ENV_PATTERNS = [
   /\bhttps?:\/\/[A-Za-z0-9.-]+(:\d+)?/,
@@ -146,7 +236,7 @@ function tableStakes(diff: Diff, pr: PrMeta | null): GateResult {
   const codeLines = lines.filter((l) => CODE_FILE.test(l.file) && !COMMENT_LINE.test(l.text));
   const checks: GateCheck[] = [
     check("secrets", lines, isSecretLine, "added lines"),
-    check("PII", lines, (t) => PII_PATTERNS.some((p) => p.test(t)), "added lines"),
+    check("PII", lines, isPiiLine, "added lines"),
     check(HARDCODED, codeLines, (t) => HARDCODED_ENV_PATTERNS.some((p) => p.test(t)), "added code lines (docs, config and comments skipped)"),
   ];
   checks.push(...ciChecks(pr));

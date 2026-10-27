@@ -57,7 +57,8 @@ export interface LlmLogEntry {
   outcome: "ok" | "refusal" | "api_error" | "bad_json";
   latency_ms: number;
   request_id: string | null;
-  request: { max_tokens: number; effort: string; system: string; user: string; schema: Record<string, unknown> };
+  /** as sent, after redaction; `redacted` names the kind of each value replaced */
+  request: { max_tokens: number; effort: string; system: string; user: string; schema: Record<string, unknown>; redacted: string[] };
   response: { id: string; model: string; stop_reason: string | null; text: string | null } | null;
   tokens: Tokens | null;
   cost: { usd: number; basis: string } | null;

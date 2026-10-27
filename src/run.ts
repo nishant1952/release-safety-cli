@@ -5,8 +5,8 @@ import { buildPlan } from "./plan";
 import { oneUnknown, unknownText } from "./unknown";
 import { addProse } from "./prose";
 import { makeQuoter } from "./render";
-import { diffText, loadDiff } from "./diff";
-import { INTERNAL_SIGNATURES, redAdvisory, runGates } from "./gates";
+import { contextLines, diffText, loadDiff } from "./diff";
+import { INTERNAL_SIGNATURES, redAdvisory, runGates, secretsAtBase } from "./gates";
 import { Git } from "./git";
 import { applyPolicy } from "./policy";
 import { findPrFiles, loadPr } from "./pr";
@@ -50,12 +50,15 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
   // The model sees the assumed values after the missing-data policy has rounded them (W 2), as the brief shows them.
   const rounded = applyPolicy([...ruleSignals.early, ...ruleSignals.late], conf.measuredLevel, []).signals;
   const quote = makeQuoter(diff.repo, diff.base, diff.head);
+  const fullDiff = diffText(diff);
+  // Secret or PII values on lines the PR did not add: redacted from the payload, listed, not a trip.
+  const atBase = secretsAtBase(diff, contextLines(fullDiff));
   const contract = await modelContract(
-    diffText(diff), rounded, pr, commitMessage, failure, quote, diff.base.slice(0, 7), undefined, undefined, secretHit ? "gate 1 found a secret in the diff" : null,
+    fullDiff, rounded, pr, commitMessage, failure, quote, diff.base.slice(0, 7), undefined, undefined, secretHit ? "gate 1 found a secret in the diff" : null,
   );
   const { agrees: llmAgrees, ...failureLlm } = contract.failureMode;
   const { coherent, ...coherence } = contract.coherence;
-  const extracted = [...ruleSignals.early, failureLlm, ...ruleSignals.late, coherence];
+  const extracted = [...ruleSignals.early, failureLlm, ...ruleSignals.late, coherence, ...(atBase ? [atBase] : [])];
   // W 2: "Measured beats declared" - the catalog (declared) is checked against the code (measured).
   const disagreements: string[] = [
     ...detectionDisagreements(detection),
@@ -67,6 +70,7 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
     ...(prFiles.length > 1 ? [`${prFiles.length} PR exports match this range (${prFiles.map((f) => f.split("/").slice(-2, -1)[0]).join(", ")}); the first is used`] : []),
   ];
   const measuredWhy = [...conf.why];
+  if (atBase) measuredWhy.push(`${atBase.name}: ${atBase.value} (${atBase.source}), ${atBase.note}`);
   // The LLM may only lower confidence; a mismatch counts like a measured negative but never moves the mode.
   if (coherent === false) measuredWhy.push("LLM found mismatches between the diff and the task (can only lower confidence)");
   const notches = gates
