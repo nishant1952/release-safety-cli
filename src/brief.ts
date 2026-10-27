@@ -9,6 +9,18 @@ export interface Reason {
   basis?: string;
   /** optional LLM wording of the reason; never changes the reason itself */
   prose?: string;
+  /** model (cited) signals the reason rests on: shown first, before the reason's own evidence */
+  model?: ModelEvidence[];
+}
+
+export interface ModelEvidence {
+  signal: string;
+  cite: string;
+  reasoning: string;
+  /** the assumed value the model replaced */
+  was: string;
+  /** the lines the replaced assumed value rested on, each labelled */
+  prior: { ref: string; label: string }[];
 }
 
 export interface Brief {

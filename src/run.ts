@@ -15,7 +15,7 @@ import { detectionDisagreements, detectionFacts, detectionSignal, perMode } from
 import { historyFacts, historySignal } from "./signals/history";
 import { failureModeFacts, failureModeSignal, llmDisagreements } from "./signals/failureMode";
 import { askJson, llmAvailable } from "./llm";
-import { applyRuling, citationContext, modelContract } from "./model";
+import { applyRuling, citationContext, modelContract, relabelFilled } from "./model";
 import { featureFlag, flagFacts } from "./signals/flag";
 import { pathFacts, pathSignal } from "./signals/path";
 import { reachFacts, reachSignal } from "./signals/reach";
@@ -111,7 +111,7 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
     modeLine: modeLine(decision),
     plan,
     reasons: await addProse(decision.reasons, makeQuoter(diff.repo, diff.base, diff.head), opts.ask, available, secretHit),
-    confidence: { level: finalLevel, why: [...measuredWhy, ...policy.why] },
+    confidence: { level: finalLevel, why: [...measuredWhy, ...relabelFilled(policy.why, contract.ruling)] },
     unknown,
     // A refused model proposal is a code-vs-model disagreement, listed with the rule that refused it. It does not
     // lower confidence: code kept the assumed value, so nothing the decision rests on changed.

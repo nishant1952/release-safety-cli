@@ -243,8 +243,28 @@ export function applyRuling(signals: Signal[], ruling: Ruling): Signal[] {
   return signals.map((s) => {
     const a = ruling.accepted.find((x) => x.signal === s.name);
     return a
-      ? { ...s, value: a.to, source: "model (cited)" as const, evidence: [a.cite], note: `model (cited): ${a.reasoning} Was "${a.from}" (assumed): ${s.note}` }
+      ? {
+          ...s,
+          value: a.to,
+          source: "model (cited)" as const,
+          evidence: [a.cite],
+          note: `model (cited): ${a.reasoning} Was "${a.from}" (assumed): ${s.note}`,
+          model: { reasoning: a.reasoning, was: { value: s.value, evidence: s.evidence } },
+        }
       : s;
+  });
+}
+
+/**
+ * Confidence lines name a signal's value as it was when confidence was computed, before the fill. For a signal the
+ * model filled, the line says so instead of calling the value assumed.
+ */
+export function relabelFilled(why: string[], ruling: Ruling): string[] {
+  return why.map((w) => {
+    const a = ruling.accepted.find((x) => w.startsWith(`${x.signal}: ${x.from} (assumed)`));
+    return a
+      ? `${a.signal}: filled by the model (cited ${a.cite}) from "${a.from}" to "${a.to}"; confidence is computed before a fill, so it still counts as missing data here (W 2)`
+      : w;
   });
 }
 

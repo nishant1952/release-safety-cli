@@ -1,6 +1,7 @@
 // W 3: gates first, then the damage x window grid, then the one-direction probability shift.
 // Batch rule is out of scope: one change.
-import type { Reason } from "./brief";
+import type { ModelEvidence, Reason } from "./brief";
+import { nonCodeKind } from "./files";
 import { ADVISORY_CI } from "./gates";
 import type { GateResult, Signal } from "./types";
 import type { Level } from "./signals/confidence";
@@ -39,6 +40,27 @@ const get = (signals: Signal[], name: string) => {
   return s;
 };
 const FAST_REVERT = ["one-click rollback", "measured pipeline under 15 minutes"];
+
+// A proposal that nothing is reached is contradicted by the lines that show something is; any other fill supersedes them.
+const CONTRADICTED: Record<string, string> = { Reach: "none", Path: "unreached" };
+
+/** The model's citation and sentence for each filled signal a reason rests on, and the lines the old value rested on. */
+export function modelEvidence(used: Signal[]): ModelEvidence[] | undefined {
+  const out = used
+    .filter((s) => s.source === "model (cited)" && s.model)
+    .map((s) => ({
+      signal: s.name,
+      cite: s.evidence[0],
+      reasoning: s.model!.reasoning,
+      was: s.model!.was.value,
+      prior: s.model!.was.evidence.map((ref) => {
+        // A line read from code is measured; one read from a workflow or other config file is declared.
+        const kind = nonCodeKind(ref.replace(/(@[0-9a-f]+)?:\d+$/, "")) ? "declared" : "measured";
+        return { ref, label: CONTRADICTED[s.name] === s.value ? `${kind}, contradicts the proposal` : `${kind}, superseded by the model's citation` };
+      }),
+    }));
+  return out.length ? out : undefined;
+}
 
 // W 3 grid: "Low damage | Auto | Staged", "High damage | Staged | Human".
 const GRID: Record<"low" | "high", Record<"short" | "long", Mode>> = {
@@ -88,6 +110,7 @@ export function decide(input: DecisionInput): Decision {
         ? `High damage: the path is live (${path.source}) and the reach is high (${reach.source}). ${reach.note}.`
         : `Low damage: ${path.value !== "live" ? `the path is ${path.value} (${path.source})` : `the reach is ${reach.value} (${reach.source})`}.`,
     evidence: [...path.evidence.slice(-3), ...reach.evidence.filter((e) => e.startsWith("apps/api/"))],
+    model: modelEvidence(damage === "high" ? [path, reach] : [path.value !== "live" ? path : reach]),
   });
 
   // 3. Window (W 1c): "how fast we see it break plus how fast we get back".
@@ -105,6 +128,8 @@ export function decide(input: DecisionInput): Decision {
   reasons.push({
     text: w.window === "short" ? "Short window: reversible, fast undo and a detector for every failure mode." : `Long window: ${why.join("; ")}.`,
     evidence: [...revert.evidence, ...detection.evidence.slice(0, 3)],
+    // Time to revert decides undo only when no flag covers the whole change.
+    model: modelEvidence([...(flag.value === "full" ? [] : [revert]), detection]),
   });
 
   const gridMode = GRID[damage][w.window];

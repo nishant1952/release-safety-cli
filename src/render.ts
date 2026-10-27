@@ -25,12 +25,26 @@ export function makeQuoter(repo: string, base: string, head: string) {
 
 const cell = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ");
 
+function evidenceLine(r: string, quote: (r: string) => string | null, indent: string, label = ""): string {
+  const text = quote(r);
+  return `${indent}- \`${r}\`${text ? ` \`${text.replace(/`/g, "'")}\`` : ""}${label ? ` (${label})` : ""}`;
+}
+
 function evidenceList(refs: string[], quote: (r: string) => string | null, indent: string): string[] {
-  const out = refs.slice(0, MAX_EVIDENCE).map((r) => {
-    const text = quote(r);
-    return `${indent}- \`${r}\`${text ? ` \`${text.replace(/`/g, "'")}\`` : ""}`;
-  });
+  const out = refs.slice(0, MAX_EVIDENCE).map((r) => evidenceLine(r, quote, indent));
   if (refs.length > MAX_EVIDENCE) out.push(`${indent}- and ${refs.length - MAX_EVIDENCE} more`);
+  return out;
+}
+
+/** A model (cited) signal under a reason: its citation first, then its sentence, then the lines the old value rested on. */
+function modelLines(r: Reason, quote: (r: string) => string | null, indent: string): string[] {
+  const out: string[] = [];
+  for (const m of r.model ?? []) {
+    out.push(evidenceLine(m.cite, quote, indent, `the model's citation for ${m.signal}, which was ${m.was} (assumed)`));
+    out.push(`${indent}  Model's reasoning: ${m.reasoning}`);
+    out.push(...m.prior.slice(0, MAX_EVIDENCE).map((p) => evidenceLine(p.ref, quote, `${indent}  `, p.label)));
+    if (m.prior.length > MAX_EVIDENCE) out.push(`${indent}  - and ${m.prior.length - MAX_EVIDENCE} more`);
+  }
   return out;
 }
 
@@ -57,9 +71,13 @@ export function renderBrief(b: Brief, quote: (r: string) => string | null): stri
     b.reasons.forEach((r, i) => {
       L.push(`${i + 1}. ${r.text}`);
       if (r.prose) L.push(`   *${r.prose}* (LLM wording)`);
-      if (r.evidence.length) L.push(...evidenceList(r.evidence, quote, "   "));
-      else if (r.basis) L.push(`   - no line to cite: this reason rests on ${r.basis}`);
-      else L.push("   - no line to cite: this reason rests on something missing from the input or the repo");
+      L.push(...modelLines(r, quote, "   "));
+      const shown = new Set((r.model ?? []).flatMap((m) => [m.cite, ...m.prior.map((p) => p.ref)]));
+      const rest = r.evidence.filter((e) => !shown.has(e));
+      if (rest.length) L.push(...evidenceList(rest, quote, "   "));
+      // With a model citation shown above, the reason has a line, so "no line to cite" would be false.
+      else if (!r.model?.length)
+        L.push(`   - no line to cite: this reason rests on ${r.basis ?? "something missing from the input or the repo"}`);
     });
   else L.push("None recorded.");
   L.push("");

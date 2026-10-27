@@ -9,6 +9,8 @@ export interface Signal<T = string> {
   /** file:line references (head side), or path@base:line for removed lines */
   evidence: string[];
   note: string;
+  /** set when the model filled this signal: its one sentence, and the assumed value and evidence it replaced */
+  model?: { reasoning: string; was: { value: string; evidence: string[] } };
 }
 
 export type GateStatus = "pass" | "trip" | "unverifiable";
