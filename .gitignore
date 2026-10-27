@@ -3,3 +3,4 @@ out/*.tmp
 .env
 data/
 logs/
+apps/demo/dist/
