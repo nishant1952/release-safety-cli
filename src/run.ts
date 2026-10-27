@@ -16,7 +16,8 @@ import { confidenceFacts, confidenceSignals, type Level } from "./signals/confid
 import { detectionDisagreements, detectionFacts, detectionSignal, perMode, type ModeResult } from "./signals/detection";
 import { historyFacts, historySignal } from "./signals/history";
 import { failureModeFacts, failureModeSignal, llmDisagreements, type FailureModeFacts } from "./signals/failureMode";
-import { askJson, llmAvailable } from "./llm";
+import { askJson, askWithKey, llmAvailable, type CallProgress } from "./llm";
+import { applyOverrides, type Overrides } from "./overrides";
 import { applyRuling, citationContext, modelContract, relabelFilled, type CitationContext } from "./model";
 import { featureFlag, flagFacts, type FlagFacts, type LineClass } from "./signals/flag";
 import { pathFacts, pathSignal } from "./signals/path";
@@ -31,6 +32,8 @@ export interface RunOptions {
   prFile: string | null;
   /** a stand-in for the model call (tests); when given, the model is treated as available */
   ask?: typeof askJson;
+  /** owner values and switches (--overrides) */
+  overrides?: Overrides;
 }
 
 /** CitationContext with its sets as arrays, so it survives JSON. */
@@ -84,6 +87,8 @@ export interface DecideOptions {
   ask?: typeof askJson;
   /** quotes an evidence line; defaults to git at the measured range */
   quote?: (ref: string) => string | null;
+  /** each model call made with modelKey, when it starts and when it ends */
+  progress?: (p: CallProgress) => void;
 }
 
 export async function buildBrief(opts: RunOptions): Promise<Brief> {
@@ -91,7 +96,7 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
   // The PR export is a declared input; it may be absent for a range.
   const prFiles = opts.prFile ? [opts.prFile] : findPrFiles(diff.base, diff.head);
   const pr = await loadPr(prFiles[0] ?? null);
-  return (await decide(measure(opts.repo, opts.range, pr, prFiles), { ask: opts.ask })).brief;
+  return (await decide(measure(opts.repo, opts.range, pr, prFiles), opts.overrides, undefined, { ask: opts.ask })).brief;
 }
 
 /** The expensive part: git reads and ts-morph. Never depends on the model or on anything a person enters. */
@@ -121,7 +126,7 @@ export function measure(repo: string, range: string, pr: PrMeta | null, prFiles:
     pr,
     prFiles,
     gates,
-    early: [reversibility(diff), featureFlag(diff, flags), pathSignal(paths), reachSignal(reach), failureModeSignal(failure)],
+    early: [reversibility(diff), featureFlag(flags), pathSignal(paths), reachSignal(reach), failureModeSignal(failure)],
     late: [detectionSignal(detection), revertSignal(revertFacts(diff)), historySignal(historyFacts(diff)), ...conf.signals],
     flag: { ...flags, lines: [...flags.lines] },
     confidence: { measuredLevel: conf.measuredLevel, why: conf.why, disagreements: conf.disagreements },
@@ -139,9 +144,14 @@ export function measure(repo: string, range: string, pr: PrMeta | null, prFiles:
   };
 }
 
-/** The model contract, the missing-data policy, the grid, the one unknown, the plan and the markdown. */
-export async function decide(m: Measured, opts: DecideOptions = {}): Promise<Decided> {
-  const { early, late, pr, gates, failure, secretHit } = m;
+/**
+ * Owner overrides, then the model contract, the missing-data policy, the grid, the one unknown, the plan and the
+ * markdown. modelKey is used for the model calls in place of ANTHROPIC_API_KEY.
+ */
+export async function decide(m: Measured, overrides: Overrides = {}, modelKey?: string, opts: DecideOptions = {}): Promise<Decided> {
+  const { failure, secretHit } = m;
+  // The owner's values replace assumed ones before the model is asked, so the model sees only what is still assumed.
+  const { early, late, pr, gates, atBase, disagreements: ownerDisagreements } = applyOverrides(m, overrides);
   // The model sees the assumed values after the missing-data policy has rounded them (W 2), as the brief shows them.
   const rounded = applyPolicy([...early, ...late], m.confidence.measuredLevel, []).signals;
   const quote = opts.quote ?? makeQuoter(m.repo, m.base, m.head);
@@ -152,14 +162,12 @@ export async function decide(m: Measured, opts: DecideOptions = {}): Promise<Dec
     handlers: new Set(m.citation.handlers),
     changed: new Set(m.citation.changed),
   };
-  const available = opts.ask ? true : llmAvailable();
-  const contract = await modelContract(
-    m.diffText, rounded, pr, m.commitMessage, failure, quote, ctx, m.base.slice(0, 7), opts.ask, available,
-    secretHit ? "gate 1 found a secret in the diff" : null,
-  );
+  const ask = opts.ask ?? (modelKey ? askWithKey(modelKey, opts.progress) : undefined);
+  const available = ask ? true : llmAvailable();
+  const withheld = secretHit ? "gate 1 found a secret in the diff" : overrides.model === false ? "the model is switched off" : null;
+  const contract = await modelContract(m.diffText, rounded, pr, m.commitMessage, failure, quote, ctx, m.base.slice(0, 7), ask, available, withheld);
   const { agrees: llmAgrees, ...failureLlm } = contract.failureMode;
   const { coherent, ...coherence } = contract.coherence;
-  const atBase = m.atBase;
   const extracted = [...early, failureLlm, ...late, coherence, ...(atBase ? [atBase] : [])];
   // W 2: "Measured beats declared" - the catalog (declared) is checked against the code (measured).
   const disagreements: string[] = [
@@ -168,6 +176,7 @@ export async function decide(m: Measured, opts: DecideOptions = {}): Promise<Dec
     ...llmDisagreements(llmAgrees, failure, failureLlm),
     // Declared inputs that conflict: two PR exports for one range.
     ...(m.prFiles.length > 1 ? [`${m.prFiles.length} PR exports match this range (${m.prFiles.map((f) => f.split("/").slice(-2, -1)[0]).join(", ")}); the first is used`] : []),
+    ...ownerDisagreements,
   ];
   const measuredWhy = [...m.confidence.why];
   if (atBase) measuredWhy.push(`${atBase.name}: ${atBase.value} (${atBase.source}), ${atBase.note}`);
@@ -199,7 +208,7 @@ export async function decide(m: Measured, opts: DecideOptions = {}): Promise<Dec
     mode: decision.mode,
     modeLine: modeLine(decision),
     plan,
-    reasons: await addProse(decision.reasons, quote, opts.ask, available, secretHit),
+    reasons: await addProse(decision.reasons, quote, ask, available, withheld !== null),
     confidence: { level: finalLevel, why: [...measuredWhy, ...relabelFilled(policy.why, contract.ruling)] },
     unknown,
     // A refused model proposal is a code-vs-model disagreement, listed with the rule that refused it. It does not

@@ -156,12 +156,13 @@ export function redAdvisory(pr: PrMeta | null): { name: string; conclusion: stri
 }
 
 /** The CI part of gate 1: required checks decide; red checks nothing requires are advisory. */
+const REQUIRED_CI = "required CI checks";
+
 function ciChecks(pr: PrMeta | null): GateCheck[] {
-  const NAME = "required CI checks";
   if (!pr?.checks)
     return [
       {
-        name: NAME,
+        name: REQUIRED_CI,
         status: "unverifiable",
         source: "assumed",
         evidence: [],
@@ -174,7 +175,7 @@ function ciChecks(pr: PrMeta | null): GateCheck[] {
     const notGreen = rollup.filter((c) => !GREEN.test(c.conclusion));
     return [
       {
-        name: NAME,
+        name: REQUIRED_CI,
         status: notGreen.length ? "trip" : "pass",
         source: "assumed",
         evidence: [],
@@ -191,13 +192,13 @@ function ciChecks(pr: PrMeta | null): GateCheck[] {
   const advisory = redAdvisory(pr);
   const out: GateCheck[] = [];
   if (!required.size)
-    out.push({ name: NAME, status: "pass", source: "measured", evidence: [], note: `no required checks configured on the base branch when the PR was exported (${pr.required.source}), so the gate cannot block on CI` });
+    out.push({ name: REQUIRED_CI, status: "pass", source: "measured", evidence: [], note: `no required checks configured on the base branch when the PR was exported (${pr.required.source}), so the gate cannot block on CI` });
   else {
     const runs = [...required].map((name) => ({ name, run: rollup.find((c) => c.name === name) }));
     const failed = runs.filter((r) => r.run && !GREEN.test(r.run.conclusion) && !PENDING.test(r.run.conclusion));
     const unknown = runs.filter((r) => !r.run || PENDING.test(r.run.conclusion));
     out.push({
-      name: NAME,
+      name: REQUIRED_CI,
       status: failed.length ? "trip" : unknown.length ? "unverifiable" : "pass",
       source: "measured",
       evidence: [],
@@ -239,12 +240,20 @@ function tableStakes(diff: Diff, pr: PrMeta | null): GateResult {
     check("PII", lines, isPiiLine, "added lines"),
     check(HARDCODED, codeLines, (t) => HARDCODED_ENV_PATTERNS.some((p) => p.test(t)), "added code lines (docs, config and comments skipped)"),
   ];
-  checks.push(...ciChecks(pr));
+  return gateOne([...checks, ...ciChecks(pr)]);
+}
+
+function gateOne(checks: GateCheck[]): GateResult {
   const status = worst(checks.map((c) => c.status));
   // Secrets, PII and red CI block; a hardcoded value or an unverifiable check routes to a human.
   const blocks = checks.some((c) => c.status === "trip" && c.name !== HARDCODED);
   const route: GateRoute = blocks ? "block" : status === "pass" ? "none" : "human";
   return { gate: 1, name: "Table stakes", status, route, checks };
+}
+
+/** Gate 1 with its CI checks read again from a PR export, the diff checks kept (the demo's owner switches). */
+export function withCiChecks(gate1: GateResult, pr: PrMeta | null): GateResult {
+  return gateOne([...gate1.checks.filter((c) => c.name !== REQUIRED_CI && c.name !== ADVISORY_CI), ...ciChecks(pr)]);
 }
 
 // ── Moves: removed in one place, added verbatim in another ───────────────────

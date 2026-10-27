@@ -44,7 +44,7 @@ test("PR 13: inside vs outside the flag's branch", () => {
 });
 
 test("PR 13: signal is partial, measured", () => {
-  const s = featureFlag(diff, facts);
+  const s = featureFlag(facts);
   expect(s.value).toBe("partial");
   expect(s.source).toBe("measured");
   expect(s.note).toStartWith(
@@ -73,7 +73,7 @@ test("a module-level component, its constant, import and type, used only under t
     ["BadgeProps", "src/Badge.tsx:1", "inside"],
     ["Badge", "src/Badge.tsx:3", "inside"],
   ]);
-  const s = featureFlag(d, f);
+  const s = featureFlag(f);
   expect(s.value).toBe("full");
   expect([...f.lines].filter(([, c]) => c === "outside")).toEqual([]);
 });
@@ -85,5 +85,5 @@ test("a declaration that runs a call when the module loads stays outside, flag o
   const f = flagFacts(d);
   expect(f.lines.get("src/App.tsx:4")).toBe("outside"); // const BANNER_TEXT = String(Date.now());
   expect(f.lines.get("src/App.tsx:7")).toBe("inside"); // Banner's body: only rendered under the flag
-  expect(featureFlag(d, f).value).toBe("partial");
+  expect(featureFlag(f).value).toBe("partial");
 });

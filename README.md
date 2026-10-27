@@ -5,9 +5,10 @@ A prototype of the release-safety model in [writeup.md](writeup.md). Given a rep
 ## Run
 
 ```sh
-bun install && bun run brief <repo-path> <base>..<head> [--out file] [--pr pr.json] [--llm-log file]
+bun install && bun run brief <repo-path> <base>..<head> [--out file] [--pr pr.json] [--llm-log file] [--overrides json]
 ```
 
+- `--overrides '<json>'` applies the release owner's values and switches before the decision: `{"signals": {"Reach": "low"}, "revertMinutes": 5, "advisoryAsRequired": true, "stylesheetsCovered": true, "model": false}`, every field optional. An owner value replaces an assumed or declared signal, tagged `declared by owner`; for a measured signal it is listed as a disagreement and the measured value stands. See DECISIONS.md, Demo Unit 2.
 - `--pr` points at a `gh pr view --json` export; by default it is found by matching the range against `data/*/REFS.txt`. `data/` is gitignored and not shipped; without an export the brief says no PR export was found and gate 1's CI check is unverifiable.
 
 ## Export a PR

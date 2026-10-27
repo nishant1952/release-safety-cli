@@ -1,6 +1,7 @@
 // Section 2: "Each signal is marked measured, declared or assumed, so the human knows what to distrust."
 // Round 3: an assumed value the model replaced, one step on its scale, citing a line that code checked exists.
-export type Source = "measured" | "declared" | "assumed" | "model (cited)";
+// Demo: a value the release owner entered in place of an assumed or declared one (src/overrides.ts).
+export type Source = "measured" | "declared" | "assumed" | "model (cited)" | "declared by owner";
 
 export interface Signal<T = string> {
   name: string;
