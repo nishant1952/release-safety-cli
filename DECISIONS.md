@@ -187,3 +187,15 @@ Standing decisions from the owner, not reopened here: the model may fill assumed
 - The typecheck error at src/signals/reversible.ts:48 is fixed: `resolveOneHop` takes an `Identifier`, which has `getDefinitionNodes`; both callers already checked `Node.isIdentifier`. A missing `Reason` type import in src/render.ts (from Round 4, Unit 3), which only the typecheck caught, is fixed too.
 - `bun run test` runs `tsc --noEmit` and then `bun test`. TypeScript is a pinned dev dependency (7.0.2), so the check does not depend on whatever version `bun x` fetches.
 - README and HOW-IT-WORKS describe the export command and required-checks.json, the model contract with its citation domains and measured-evidence rule, coherence claim checks, and secret redaction.
+
+## Demo: a page that re-runs the decision (apps/demo)
+
+Source: the demo brief. The CLI rules are unchanged except where that brief says.
+
+### Unit 1: measure and decide
+- `buildBrief` is now `decide(measure(repo, range, pr, prFiles))` (src/run.ts). `measure` does every git read and every ts-morph pass: the diff, the PR export as loaded, the gates, the rule signals, the flag's line classes, the confidence facts, the detectors per failure mode, the failure-mode facts the model's answer is compared with, the commit messages and the diff text the model is shown, the citation context, the owner and whether CODEOWNERS exists. `decide` runs the model contract, the missing-data policy, the grid, the one unknown, the plan, reason wording and the markdown.
+- `Measured` is plain JSON: the flag's line classes are kept as `[ref, class]` entries and the citation context's sets as arrays; decide rebuilds them. tests/measured.test.ts writes the PR 13 Measured to JSON, reads it back, checks it is equal, and checks decide on it renders out/pr13.md byte for byte.
+- decide still reads git, but only to quote evidence lines (the renderer, the model's citation check and reason wording all quote). It takes an optional quoter; the demo passes one over its baked clone.
+- `measure` takes the loaded export and the list of exports that matched the range, because the "N PR exports match this range" disagreement (pr17 and pr18) is decided from that list.
+- decide returns `{ brief, markdown, cell }`, where cell is the grid's damage, window, grid mode, gate mode, and whether the probability shift or the model's coherence step applied. The Brief type is unchanged.
+- Effect: none. All 21 out/prN.md regenerate byte for byte without a key.
