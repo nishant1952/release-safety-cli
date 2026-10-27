@@ -228,6 +228,7 @@ Source: the demo brief. The CLI rules are unchanged except where that brief says
 - The server deletes ANTHROPIC_API_KEY from its environment when it loads (Bun reads .env from the working directory), so the model runs only with a key from the request, and only when the overrides do not switch it off. Calls made with that key report progress instead of writing logs/llm-calls.jsonl, so nothing the viewer sends reaches the disk.
 - Request bodies are checked field by field (known override names, string values of at most 200 characters, booleans, a non-negative number of minutes); anything else is a 400. An unknown signal name comes back as an error event from decide.
 - Every line quoted from the repo onto the screen goes through gate 1's `redact` (the quoter the server hands decide). The CLI's briefs are unchanged; the baseline still renders out/prN.md byte for byte, because none of them quotes a sensitive line.
+- Redaction covers lines quoted from the repo, as the demo brief asks. Text the CLI's brief writes itself is shown as the CLI writes it, so the git author names and emails in the plan's Paged row and the confidence notes appear on the page, as they do in out/prN.md.
 - The event stream sends a comment every 5 seconds, and the idle timeout is 120 seconds, so a slow model call does not drop the connection.
 
 ### Unit 5: the page

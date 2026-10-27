@@ -66,6 +66,8 @@ test("measured beats declared: an owner value for a measured signal is a disagre
 test("an owner value outside a decision signal's values is refused, so it cannot fall through the grid as favourable", async () => {
   expect(decide(pr13, { signals: { Reach: "banana" } })).rejects.toThrow('"banana" is not a value of Reach; it must be one of: high, low, none');
   expect(decide(pr13, { signals: { "Time to revert": "instant" } })).rejects.toThrow("a measured pipeline is set with revertMinutes");
+  // An empty value means no override.
+  expect((await decide(pr13, { signals: { Reach: " " } })).brief.signals.find((s) => s.name === "Reach")!.source).toBe("assumed");
   // A probability signal only lowers confidence, so its value is free text.
   expect((await decide(pr13, { signals: { History: "two reverts last month" } })).brief.signals.find((s) => s.name === "History")!.source).toBe("declared by owner");
 }, 30_000);

@@ -91,7 +91,7 @@ export function applyOverrides(m: Measured, o: Overrides = {}): Applied {
 
   const values = { ...o.signals };
   for (const [name, v] of Object.entries(values))
-    if (VALUES[name] && !VALUES[name].includes(v.trim()))
+    if (VALUES[name] && v.trim() && !VALUES[name].includes(v.trim()))
       throw new Error(`"${v}" is not a value of ${name}; it must be one of: ${VALUES[name].join(", ")}${name === "Time to revert" ? " (a measured pipeline is set with revertMinutes)" : ""}`);
   const why: Record<string, string> = {};
   if (o.revertMinutes !== undefined && o.revertMinutes !== null) {
