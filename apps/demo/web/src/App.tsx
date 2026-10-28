@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { listPrs, runPr, type Asks, type Overrides, type PrSummary, type Progress, type RunResult } from "./api";
 import { Verdict } from "./BriefView";
 import { Markdown } from "./Markdown";
-import { Section, Src } from "./parts";
+import { Caution, Section, Src } from "./parts";
 import { onError, onModel, onResult, onStage, RunChecklist, startTimeline, type Timeline } from "./Timeline";
 
 interface Panel {
@@ -16,6 +16,8 @@ interface Panel {
   advisoryAsRequired: boolean;
   stylesheetsCovered: boolean;
   revertMinutes: string;
+  /** the owner's confidence level in place of the measured one; "" for none */
+  confidence: string;
 }
 
 export interface Run {
@@ -32,13 +34,13 @@ interface Session {
   viewing: "latest" | "previous";
 }
 
-const EMPTY: Panel = { values: {}, model: false, advisoryAsRequired: false, stylesheetsCovered: false, revertMinutes: "" };
+const EMPTY: Panel = { values: {}, model: false, advisoryAsRequired: false, stylesheetsCovered: false, revertMinutes: "", confidence: "" };
 const NEW_SESSION: Session = { panel: EMPTY, latest: null, previous: null, viewing: "latest" };
 
 export function overridesOf(panel: Panel, asks: Asks | null): Overrides {
   const o: Overrides = {};
   const signals: Record<string, string> = {};
-  for (const a of asks?.signals ?? []) {
+  for (const a of [...(asks?.signals ?? []), ...(asks?.measured ?? [])]) {
     const v = panel.values[a.name]?.trim();
     if (v && v !== a.value) signals[a.name] = v;
   }
@@ -47,6 +49,7 @@ export function overridesOf(panel: Panel, asks: Asks | null): Overrides {
   if (panel.advisoryAsRequired && asks?.advisory.length) o.advisoryAsRequired = true;
   if (panel.stylesheetsCovered && asks?.stylesheets) o.stylesheetsCovered = true;
   if (panel.revertMinutes.trim() !== "" && asks?.revertMinutes) o.revertMinutes = Number(panel.revertMinutes);
+  if (panel.confidence && asks && panel.confidence !== asks.confidence) o.confidence = panel.confidence as Overrides["confidence"];
   return o;
 }
 
@@ -344,6 +347,54 @@ function OwnerPanel({ asks, latest, panel, setPanel, modelKey, setModelKey, runn
           </span>
         </label>
       )}
+
+      <div className="measured">
+        <div className="measured-title">
+          <Caution title="Changing these replaces a measurement" /> Measured from the repo
+        </div>
+        <p className="panel-intro">
+          Read from the code, not guessed. A value you set here replaces the measurement and is tagged declared by owner with ⚠: the verdict then rests on
+          your word, not the repo.
+        </p>
+      </div>
+      {[
+        ...asks.measured.map((a) => ({ ...a, now: current.get(a.name)?.value, chosen: panel.values[a.name] ?? "", set: (v: string) => setPanel({ values: { ...panel.values, [a.name]: v } }) })),
+        {
+          name: "Confidence",
+          value: asks.confidence,
+          source: "measured",
+          note: "From test coverage and author familiarity. Low moves the mode one step toward caution.",
+          choices: ["high", "medium", "low"],
+          now: latest.brief.confidence?.measuredLevel,
+          chosen: panel.confidence,
+          set: (v: string) => setPanel({ confidence: v }),
+        },
+      ].map((a) => (
+        <div className="ask" key={a.name}>
+          <div className="ask-top">
+            <span className="ask-name" title={a.note}>
+              {a.name}
+            </span>
+            <Src source={a.source} />
+          </div>
+          <div className="ask-now">
+            Measured: <span>{a.value}</span>
+            {a.now !== undefined && a.now !== a.value && (
+              <>
+                {" "}
+                · now: <span>{a.now}</span> <Caution />
+              </>
+            )}
+          </div>
+          <div className="choices" role="group" aria-label={a.name}>
+            {a.choices.map((c) => (
+              <button key={c} className={a.chosen === c ? "choice on" : "choice"} aria-pressed={a.chosen === c} onClick={() => a.set(a.chosen === c ? "" : c)}>
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
 
       <div className="model">
         <div className="model-title">

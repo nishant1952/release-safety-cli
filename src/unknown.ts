@@ -69,7 +69,8 @@ export interface Unknown {
   holding: { what: string; mode: Mode }[];
 }
 
-export function oneUnknown(input: DecisionInput, assumedProbability: string[]): Unknown {
+/** confidenceSource: where the confidence level came from, "measured" unless the owner declared it. */
+export function oneUnknown(input: DecisionInput, assumedProbability: string[], confidenceSource = "measured"): Unknown {
   const base = decide(input).mode;
   const flips = [...gateFlips(input.gates), ...signalFlips(input.signals)];
   let first: Unknown["first"] = null;
@@ -91,7 +92,7 @@ export function oneUnknown(input: DecisionInput, assumedProbability: string[]): 
       apply: (i: DecisionInput) => ({ ...i, signals: i.signals.map((x) => (x.name === s.name ? { ...x, value: FAVOURABLE[s.name] } : x)) }),
     }));
   if (input.measuredConfidence !== "high")
-    known.push({ what: `confidence ${input.measuredConfidence} (measured)`, apply: (i) => ({ ...i, measuredConfidence: "high" }) });
+    known.push({ what: `confidence ${input.measuredConfidence} (${confidenceSource})`, apply: (i) => ({ ...i, measuredConfidence: "high" }) });
   const holding = known
     .map((k) => ({ what: k.what, mode: decide(k.apply(all)).mode }))
     .filter((k) => k.mode !== allFavourable);

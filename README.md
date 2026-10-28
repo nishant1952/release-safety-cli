@@ -10,7 +10,7 @@ bun install && bun run brief <repo-path> <base>..<head> [--full] [--out file] [-
 
 - The brief has two layouts, both rendered from the same brief data. The **short** layout is the default: the mode, the plan, the top reasons with one cited line each, what would move the mode, one table of signals, the gates and the changed files, in under half the words of the full layout. `--full` writes the **full** layout: every section with full evidence lists and full paths. `--out` writes either one.
 - The short layout never hides anything unfavourable. A gate that does not pass shows its full table and evidence lines. Disagreements, refused model proposals, secrets present at base and owner overrides appear in full when there are any, and are left out when there are none.
-- `--overrides '<json>'` applies the release owner's values and switches before the decision: `{"signals": {"Reach": "low"}, "revertMinutes": 5, "advisoryAsRequired": true, "stylesheetsCovered": true, "model": false}`, every field optional. An owner value replaces an assumed or declared signal, tagged `declared by owner`; for a measured signal it is listed as a disagreement and the measured value stands. See DECISIONS.md, Demo Unit 2.
+- `--overrides '<json>'` applies the release owner's values and switches before the decision: `{"signals": {"Reach": "low"}, "revertMinutes": 5, "advisoryAsRequired": true, "stylesheetsCovered": true, "model": false, "confidence": "high"}`, every field optional. An owner value replaces the signal and is tagged `declared by owner`. When it replaces a measured or declared value (not an assumed one), the brief marks it ⚠, and a measured one is also listed as a disagreement. `confidence` replaces the measured confidence level. See DECISIONS.md, Demo Unit 2 and Round 6.
 - `--pr` points at a `gh pr view --json` export; by default it is found by matching the range against `data/*/REFS.txt`. `data/` is gitignored and not shipped; without an export the brief says no PR export was found and gate 1's CI check is unverifiable.
 
 ## Export a PR
@@ -100,9 +100,11 @@ docker build -f apps/demo/Dockerfile -t release-brief-demo . && docker run -p 30
 - **Owner panel.** It asks only for what that PR's run could not find:
   - the signals that came out assumed, such as Reach, Detection, Time to revert (with a measured pipeline time in minutes) or History;
   - the CI switch, when the PR has red checks the base branch does not require;
-  - the stylesheet switch, when stylesheet lines are outside the flag.
+  - the stylesheet switch, when stylesheet lines are outside the flag;
+  - under "Measured from the repo", with a caution, the measured and declared values the grid reads (reversibility, flag, path, reach, detection, time to revert) and the measured confidence. A value set there replaces the measurement, and the verdict and brief mark it ⚠.
 
   Re-run reuses the measurement kept in server memory and only redoes the decision, in well under a second. With a model key, the page shows a progress line per call.
+- **How the mode was reached.** Under the grid cell, the verdict shows each step from the cell to the mode, coloured by mode, with what took it: low confidence, the model's task check, or a gate (Staged → low confidence → Human). A step that rests on an owner value over a measured or declared one carries ⚠.
 - **Brief layout.** The brief shows the short layout by default. The toggle beside its heading switches to the full one (the CLI's `--full`) and stays set across PRs and runs. Both come from the same run.
 - **What moved.** After a re-run, the page compares mode, grid cell, gates, reasons and provenance rows with the run before it. Only the latest run and the one before it are kept.
 - **Nothing a viewer enters is kept.** The key is held in the page's memory and sent only with a run that has the model on. The server writes no call log, and every line it quotes from the repo goes through the CLI's secret redaction.

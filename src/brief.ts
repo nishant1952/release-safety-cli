@@ -1,6 +1,7 @@
 // The data a brief is rendered from. W 3: "the mode, the top reasons, the confidence, and the
 // one missing fact that would most change the call". Fields are filled as units run.
 import type { Decision } from "./decide";
+import type { Contested } from "./overrides";
 import type { PlanRow } from "./plan";
 import type { ModeResult } from "./signals/detection";
 import type { GateResult, Signal } from "./types";
@@ -53,6 +54,8 @@ export interface Brief {
   detectors?: ModeResult[];
   /** owner switches that took effect (src/overrides.ts) */
   switches?: string[];
+  /** owner values that replaced a measured or declared one, confidence included: shown with a caution */
+  contested?: Contested[];
   /** model proposals accepted and refused by code */
   proposals?: { accepted: number; refused: number };
 }

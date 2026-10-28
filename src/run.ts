@@ -169,9 +169,9 @@ export function measure(
 export async function decide(m: Measured, overrides: Overrides = {}, modelKey?: string, opts: DecideOptions = {}): Promise<Decided> {
   const { failure, secretHit } = m;
   // The owner's values replace assumed ones before the model is asked, so the model sees only what is still assumed.
-  const { early, late, pr, gates, atBase, disagreements: ownerDisagreements, switches } = applyOverrides(m, overrides);
+  const { early, late, pr, gates, atBase, disagreements: ownerDisagreements, switches, contested, measuredLevel } = applyOverrides(m, overrides);
   // The model sees the assumed values after the missing-data policy has rounded them (W 2), as the brief shows them.
-  const rounded = applyPolicy([...early, ...late], m.confidence.measuredLevel, []).signals;
+  const rounded = applyPolicy([...early, ...late], measuredLevel, []).signals;
   const quote = opts.quote ?? makeQuoter(m.repo, m.base, m.head);
   const ctx: CitationContext = {
     ...m.citation,
@@ -205,14 +205,14 @@ export async function decide(m: Measured, overrides: Overrides = {}, modelKey?: 
   // Unit 5: each red check nothing requires lowers confidence one notch.
   notches.push(...redAdvisory(pr).map((c) => `gate 1: red advisory check ${c.name} (${c.conclusion}), not required on the repo`));
   // Confidence is computed before accepted proposals are applied, so a model answer can only lower it.
-  const policy = applyPolicy(extracted, m.confidence.measuredLevel, disagreements, notches);
+  const policy = applyPolicy(extracted, measuredLevel, disagreements, notches);
   const signals = applyRuling(policy.signals, contract.ruling);
   const finalLevel = coherent === false && policy.level !== "low" ? "low" : policy.level;
 
-  const decisionInput = { gates, signals, measuredConfidence: m.confidence.measuredLevel, coherent };
+  const decisionInput = { gates, signals, measuredConfidence: measuredLevel, coherent };
   const decision = grid(decisionInput);
   const assumedProbability = signals.filter((s) => s.source === "assumed" && policy.why.some((w) => w.startsWith(`${s.name}:`))).map((s) => s.name);
-  const moves = oneUnknown(decisionInput, assumedProbability);
+  const moves = oneUnknown(decisionInput, assumedProbability, contested.some((c) => c.name === "Confidence") ? "declared by owner" : "measured");
   const unknown = unknownText(moves);
   const plan = buildPlan({ decision, signals, detectors: m.detectors, flagKey: m.flag.flags[0]?.key ?? null, owner: m.owner, codeowners: m.codeowners });
 
@@ -232,7 +232,7 @@ export async function decide(m: Measured, overrides: Overrides = {}, modelKey?: 
     confidence: {
       level: finalLevel,
       why: [...measuredWhy, ...relabelFilled(policy.why, contract.ruling)],
-      measuredLevel: m.confidence.measuredLevel,
+      measuredLevel,
       measured: m.confidence.why,
     },
     unknown,
@@ -244,6 +244,7 @@ export async function decide(m: Measured, overrides: Overrides = {}, modelKey?: 
     moves,
     detectors: m.detectors,
     switches,
+    contested,
     proposals: { accepted: contract.ruling.accepted.length, refused: contract.ruling.refused.length },
   };
   return { brief, markdown: renderShort(brief, quote), fullMarkdown: renderFull(brief, quote), cell: { damage, window, gridMode, gateMode, shifted, llmStep } };

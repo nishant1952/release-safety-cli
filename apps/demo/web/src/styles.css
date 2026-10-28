@@ -120,6 +120,14 @@ code { font: 12.5px/1.4 var(--mono); background: var(--track); padding: 1px 5px;
 .mode-human, .mode-block { --mode: var(--hot); }
 .mode-word { color: var(--mode, var(--ink)); }
 .verdict-cell { font-size: 20px; margin-top: 22px; animation: up 0.5s ease 0.35s both; }
+.trail { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-top: 12px; font-size: 20px; animation: up 0.5s ease 0.45s both; }
+.trail-step { display: inline-flex; align-items: baseline; gap: 10px; }
+.trail-mode { color: var(--mode, var(--ink)); font-weight: 700; }
+.trail-why { font-size: 13px; color: var(--ink2); }
+.caution { color: var(--ambink); font-weight: 700; margin-left: 4px; cursor: help; }
+.measured { padding-top: 16px; border-top: 1px solid var(--hair); display: flex; flex-direction: column; gap: 6px; }
+.measured-title { font-weight: 700; display: flex; align-items: baseline; gap: 2px; }
+.measured-title .caution { margin: 0 4px 0 0; }
 .grid { flex: none; display: grid; grid-template-columns: auto 96px 96px; font-size: 12px; animation: up 0.5s ease 0.3s both; }
 .grid-col { padding: 0 8px 6px; color: var(--ink2); }
 .grid-row { padding-right: 12px; display: flex; align-items: center; justify-content: flex-end; color: var(--ink2); height: 64px; }

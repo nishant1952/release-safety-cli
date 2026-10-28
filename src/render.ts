@@ -167,6 +167,9 @@ const FAMILIARITY = "Confidence: familiarity";
 const LLM_READS = ["Failure mode (LLM second opinion)", "Confidence: diff vs task (LLM)"];
 const AT_BASE = "Secrets present at base";
 const OWNER = "declared by owner";
+/** Marks an owner value that replaced a measured or declared one: the result rests on the owner's word. */
+const CAUTION = "⚠";
+const contestedBy = (b: Brief, name: string) => (b.contested ?? []).find((c) => c.name === name);
 
 /** The clause of a signal's note the evidence cell shows: the first, unless a later one carries the value. */
 const CLAUSE: Record<string, RegExp> = {
@@ -212,9 +215,9 @@ function clause(s: Signal): string {
 }
 
 /** "high (assumed: no catalog tier covers it)" */
-function valued(s: Signal): string {
+function valued(s: Signal, b: Brief): string {
   const why = s.source === "assumed" ? ASSUMED_WHY[s.name] : undefined;
-  return `${s.value} (${s.source}${why ? `: ${why}` : ""})`;
+  return `${s.value} (${s.source}${why ? `: ${why}` : ""}${contestedBy(b, s.name) ? ` ${CAUTION}` : ""})`;
 }
 
 /** Paths unique by their shortest tail: two `index.ts` keep a parent directory each. */
@@ -300,8 +303,8 @@ function shortReason(r: Reason, b: Brief): { label: string; text: string } {
   const reach = get("Reach");
   if (/^(High|Low) damage/.test(r.text) && path && reach)
     return r.text.startsWith("High")
-      ? { label: "High damage", text: `Path ${valued(path)}, reach ${valued(reach)}.` }
-      : { label: "Low damage", text: path.value !== "live" ? `Path ${valued(path)}.` : `Reach ${valued(reach)}.` };
+      ? { label: "High damage", text: `Path ${valued(path, b)}, reach ${valued(reach, b)}.` }
+      : { label: "Low damage", text: path.value !== "live" ? `Path ${valued(path, b)}.` : `Reach ${valued(reach, b)}.` };
   const flag = get("Feature flag");
   const revert = get("Time to revert");
   const detection = get("Detection apparatus");
@@ -310,13 +313,14 @@ function shortReason(r: Reason, b: Brief): { label: string; text: string } {
     const undo: string[] = [];
     if (get("Reversible or irreversible")?.value !== "reversible") undo.push("the change is irreversible");
     if (!b.cell.undoFast)
-      undo.push(flag.value === "partial" ? `flag partial, so undo for the edits outside it is ${valued(revert)}` : `no flag, so undo is ${valued(revert)}`);
+      undo.push(flag.value === "partial" ? `flag partial, so undo for the edits outside it is ${valued(revert, b)}` : `no flag, so undo is ${valued(revert, b)}`);
     const blind = (b.detectors ?? []).filter((d) => !d.detectors.length).map((d) => `${NO_DETECTOR[d.mode]} for ${d.mode}`);
-    const detect = b.cell.detectFast ? "" : `Detection ${valued(detection)}${blind.length ? `: ${blind.join("; ")}` : ""}.`;
+    const detect = b.cell.detectFast ? "" : `Detection ${valued(detection, b)}${blind.length ? `: ${blind.join("; ")}` : ""}.`;
     return { label: "Long window", text: [undo.length ? `${cap(undo.join("; "))}.` : "", detect].filter(Boolean).join(" ") };
   }
   if (r.text.startsWith("Probability") && b.cell) {
-    const facts = lowering(b.confidence?.measured ?? []).map(noSpecRefs);
+    const owner = contestedBy(b, "Confidence");
+    const facts = owner ? [`declared by the owner ${CAUTION} over the measured ${owner.was}`] : lowering(b.confidence?.measured ?? []).map(noSpecRefs);
     const moved = b.cell.shifted ? `It moves the mode from ${b.cell.gridMode} to the next step toward caution.` : "The mode is already Human, so it moves no further.";
     return { label: "Low confidence", text: `${facts.length ? `${cap(facts.join("; "))}. ` : ""}${moved}` };
   }
@@ -335,7 +339,7 @@ function whatWouldMove(b: Brief): string {
       : `No assumed input changes the mode alone; all of them together would make it ${u.allFavourable}.`;
   const lead = u.first || u.allFavourable !== u.base ? `With every assumed input favourable (${u.allFavourable}), the` : "The";
   const known = u.holding.length
-    ? `${lead} known input${u.holding.length > 1 ? "s" : ""} that would move it: ${u.holding.map((h) => `${h.what}, to ${h.mode}`).join("; ")}.`
+    ? `${lead} known input${u.holding.length > 1 ? "s" : ""} that would move it: ${u.holding.map((h) => `${h.what}${/declared by owner\)$/.test(h.what) ? ` ${CAUTION}` : ""}, to ${h.mode}`).join("; ")}.`
     : "No single known input moves it either.";
   return [first, known, b.cell?.flagAdvice ?? ""].filter(Boolean).join(" ");
 }
@@ -352,7 +356,7 @@ function signalRows(b: Brief): string[] {
         : s.name === AT_BASE
           ? "present before this change, not added by it; listed in full below"
           : clause(s);
-    rows.push(`| ${SHORT_NAME[s.name] ?? s.name} | ${cell(s.value)} | ${s.source} | ${cite}${ev} |`);
+    rows.push(`| ${SHORT_NAME[s.name] ?? s.name} | ${cell(s.value)} | ${s.source}${contestedBy(b, s.name) ? ` ${CAUTION}` : ""} | ${cite}${ev} |`);
   }
   const reads = LLM_READS.map(get).filter((s): s is Signal => !!s);
   if (reads.length) {
@@ -407,13 +411,16 @@ export function renderShort(b: Brief, quote: (r: string) => string | null): stri
   // Lowered confidence is unfavourable, so its causes show even when they did not move the mode: measured facts
   // (when no low-confidence reason already lists them), then whatever took it below the measured level.
   const c = b.confidence;
+  const ownerLevel = contestedBy(b, "Confidence");
   if (c?.measuredLevel) {
+    // With the level declared by the owner, the measured facts are not what set it.
     const causes = [
-      ...(b.reasons.some((r) => r.text.startsWith("Probability")) ? [] : lowering(c.measured ?? []).map(noSpecRefs)),
+      ...(ownerLevel || b.reasons.some((r) => r.text.startsWith("Probability")) ? [] : lowering(c.measured ?? []).map(noSpecRefs)),
       ...(c.level !== c.measuredLevel ? loweredBy(b) : []),
     ];
-    if (causes.length)
-      L.push("", `Confidence ${c.level}${c.level !== c.measuredLevel ? `, ${c.measuredLevel} from measured facts` : ""}. Lowered by: ${causes.join("; ")}.`);
+    const base = ownerLevel ? `${c.measuredLevel} declared by the owner ${CAUTION} (measured ${ownerLevel.was})` : `${c.measuredLevel} from measured facts`;
+    if (causes.length) L.push("", `Confidence ${c.level}${c.level !== c.measuredLevel ? `, ${base}` : ""}. Lowered by: ${causes.join("; ")}.`);
+    else if (ownerLevel) L.push("", `Confidence ${c.level}: ${base}.`);
   }
   L.push("");
 
@@ -425,8 +432,16 @@ export function renderShort(b: Brief, quote: (r: string) => string | null): stri
   // Every switch the owner turned on and every value they declared in place of a measured or assumed one.
   const owned = [
     ...(b.switches ?? []).map((w) => `- ${cap(w)}.`),
-    ...b.signals.filter((s) => s.source === OWNER).map((s) => `- ${s.name} = ${s.value}: ${s.note}`),
-    ...b.gates.flatMap((g) => g.checks.filter((c) => c.source === OWNER).map((c) => `- Gate ${g.gate}, ${c.name}: ${c.status}. ${c.note}`)),
+    ...(contestedBy(b, "Confidence") ? [`- ${CAUTION} Confidence = ${contestedBy(b, "Confidence")!.value}: declared by the owner over the measured ${contestedBy(b, "Confidence")!.was}.`] : []),
+    ...b.signals
+      .filter((s) => s.source === OWNER)
+      .map((s) => {
+        const c = contestedBy(b, s.name);
+        return `- ${c ? `${CAUTION} ` : ""}${s.name} = ${s.value}${c ? ` (over the ${c.wasSource} "${c.was}")` : ""}: ${s.note}`;
+      }),
+    ...b.gates.flatMap((g) =>
+      g.checks.filter((c) => c.source === OWNER).map((c) => `- ${contestedBy(b, `Gate ${g.gate}, ${c.name}`) ? `${CAUTION} ` : ""}Gate ${g.gate}, ${c.name}: ${c.status}. ${c.note}`),
+    ),
   ];
   if (owned.length) {
     L.push("## Owner overrides");

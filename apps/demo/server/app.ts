@@ -48,6 +48,10 @@ export interface Asks {
   advisory: string[];
   /** added stylesheet lines outside the flag, when they are part of what keeps it partial */
   stylesheets: number;
+  /** measured or declared values the decision reads: the owner may replace them, and the brief then carries a caution */
+  measured: { name: string; value: string; source: string; note: string; choices: string[] }[];
+  /** the measured confidence level (test coverage and familiarity) */
+  confidence: string;
 }
 
 /** One model call, as the page shows it: never the prompt, never the key. */
@@ -68,6 +72,10 @@ export function asksOf(m: Measured): Asks {
     revertMinutes: rounded.some((s) => s.name === "Time to revert" && s.source === "assumed"),
     advisory: redAdvisory(m.pr).map((c) => `${c.name} (${c.conclusion})`),
     stylesheets: flag.value === "partial" ? cssOutside : 0,
+    measured: rounded
+      .filter((s) => (s.source === "measured" || s.source === "declared") && VALUES[s.name])
+      .map((s) => ({ name: s.name, value: s.value, source: s.source, note: s.note, choices: VALUES[s.name] })),
+    confidence: m.confidence.measuredLevel,
   };
 }
 
@@ -110,7 +118,7 @@ export function parseOverrides(x: unknown): Overrides {
   const o = x as Record<string, unknown>;
   const out: Overrides = {};
   for (const k of Object.keys(o))
-    if (!["signals", "model", "advisoryAsRequired", "stylesheetsCovered", "revertMinutes"].includes(k)) throw new BadRequest(`unknown override "${k}"`);
+    if (!["signals", "model", "advisoryAsRequired", "stylesheetsCovered", "revertMinutes", "confidence"].includes(k)) throw new BadRequest(`unknown override "${k}"`);
   if (o.signals !== undefined) {
     if (typeof o.signals !== "object" || o.signals === null || Array.isArray(o.signals)) throw new BadRequest("signals must be an object");
     const signals: Record<string, string> = {};
@@ -128,6 +136,10 @@ export function parseOverrides(x: unknown): Overrides {
   if (o.revertMinutes !== undefined && o.revertMinutes !== null) {
     if (typeof o.revertMinutes !== "number" || !Number.isFinite(o.revertMinutes) || o.revertMinutes < 0) throw new BadRequest("revertMinutes must be a number of minutes");
     out.revertMinutes = o.revertMinutes;
+  }
+  if (o.confidence !== undefined) {
+    if (o.confidence !== "high" && o.confidence !== "medium" && o.confidence !== "low") throw new BadRequest("confidence must be high, medium or low");
+    out.confidence = o.confidence;
   }
   return out;
 }

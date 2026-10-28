@@ -181,9 +181,11 @@ the model contract, the policy, the grid, the one unknown and the plan, and rend
 reads git only to quote evidence lines. The CLI composes the two. The demo bakes `measure` once per PR
 and calls only `decide` at runtime.
 
-**Overrides.** An owner value replaces an assumed or declared signal and is tagged `declared by owner`,
-before the model is asked, so the model sees only what is still assumed. A measured signal keeps its
-value and the owner's value becomes a disagreement (W 2, "measured beats declared"). There are four
+**Overrides.** An owner value replaces the signal and is tagged `declared by owner`, before the model
+is asked, so the model sees only what is still assumed. One that replaces a measured or declared value
+is contested: the brief carries it in `contested` and marks it ⚠, and one over a measured value is also
+a disagreement (W 2, "measured beats declared", relaxed for the demo in Round 6). `confidence` replaces
+the measured confidence level the probability step reads. There are four
 switches. `model: false` sends nothing. `advisoryAsRequired` recomputes gate 1's CI checks with every
 rollup check required. `stylesheetsCovered` recomputes the flag with stylesheet lines inside it.
 `revertMinutes` sets Time to revert to a measured pipeline, fast under 15 minutes.

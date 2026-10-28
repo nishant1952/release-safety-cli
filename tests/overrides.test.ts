@@ -54,13 +54,25 @@ test("PR 11: advisory checks treated as required trip gate 1: Human -> Block", a
   expect(brief.confidence!.why.some((w) => w.startsWith("gate 1: red advisory check"))).toBe(false);
 }, 30_000);
 
-test("measured beats declared: an owner value for a measured signal is a disagreement, and the measured value stands", async () => {
-  const base = await decide(pr13);
-  const { brief } = await decide(pr13, { signals: { "Detection apparatus": "fast" } });
+test("an owner value for a measured signal replaces it, with a caution and a disagreement (Round 6)", async () => {
+  const { brief, markdown } = await decide(pr13, { signals: { "Detection apparatus": "fast" } });
   const det = brief.signals.find((s) => s.name === "Detection apparatus")!;
-  expect([det.value, det.source]).toEqual(["slow", "measured"]);
-  expect(brief.disagreements).toContain('the owner declares Detection apparatus = "fast", but it is measured as "slow"; measured beats declared, so the measured value stands');
-  expect(brief.mode).toBe(base.brief.mode);
+  expect([det.value, det.source]).toEqual(["fast", "declared by owner"]);
+  expect(brief.contested).toEqual([{ name: "Detection apparatus", value: "fast", was: "slow", wasSource: "measured" }]);
+  expect(brief.disagreements).toContain('the owner declares Detection apparatus = "fast" over the measured "slow"; the decision uses the owner\'s value');
+  expect(markdown).toContain("| Detection | fast | declared by owner ⚠ |");
+  expect(markdown).toContain('- ⚠ Detection apparatus = fast (over the measured "slow"): declared by the owner; was "slow" (measured)');
+}, 30_000);
+
+test("PR 13: confidence high as owner removes the probability step: Reach low then gives Staged", async () => {
+  const { brief, cell, markdown } = await decide(pr13, { signals: { Reach: "low" }, confidence: "high" });
+  expect([cell.gridMode, cell.shifted, brief.mode]).toEqual(["Staged", false, "Staged"]);
+  expect(brief.contested).toContainEqual({ name: "Confidence", value: "high", was: "low", wasSource: "measured" });
+  expect(brief.disagreements).toContain("the owner declares confidence high over the measured low; the decision uses the owner's value");
+  expect(markdown).toContain("- ⚠ Confidence = high: declared by the owner over the measured low.");
+  expect(markdown).toContain("high declared by the owner ⚠ (measured low)");
+  // Assumed Reach is not contested: only a measured or declared value carries the caution.
+  expect(brief.contested!.map((c) => c.name)).toEqual(["Confidence"]);
 }, 30_000);
 
 test("an owner value outside a decision signal's values is refused, so it cannot fall through the grid as favourable", async () => {
@@ -134,3 +146,10 @@ test("the CLI takes the same object with --overrides", () => {
   );
   expect(proc.stdout.toString().split("\n").find((l) => l.startsWith("**Mode:"))).toBe("**Mode: Auto.** Low damage × short window. Confidence low.");
 }, 60_000);
+
+test("an owner confidence level is never called measured, in either layout's one unknown", async () => {
+  const { brief, markdown, fullMarkdown } = await decide(pr4, { confidence: "low" });
+  expect(brief.moves!.holding.map((h) => h.what)).toContain("confidence low (declared by owner)");
+  expect(markdown).toContain("confidence low (declared by owner) ⚠, to");
+  for (const md of [markdown, fullMarkdown]) expect(md).not.toMatch(/confidence low \(measured\)/);
+}, 30_000);

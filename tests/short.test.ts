@@ -78,4 +78,6 @@ test("low confidence is said to move the mode one step, even when a gate takes i
   expect(line).toContain("low confidence moves it one step from Staged, and gate 1 routes it to Block.");
   expect(line).not.toMatch(/moves it from \w+ to Block/);
   expect(short).toContain("- The owner treats every check in the PR export's rollup as required by gate 1.");
+  // The switch retags a measured check, so it carries the caution.
+  expect(short).toMatch(/\n- ⚠ Gate 1, required CI checks: /);
 }, 60_000);
