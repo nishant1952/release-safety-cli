@@ -95,7 +95,7 @@ bun run demo          # builds the page and serves it with the API on http://loc
 docker build -f apps/demo/Dockerfile -t release-brief-demo . && docker run -p 3000:3000 release-brief-demo
 ```
 
-- **Stored inputs only.** `apps/demo/fixtures` holds the bare clone and the PR exports, and nothing computed from them. Nothing is fetched or cloned at runtime and no GitHub token is used. Only the model is called, and only with a key typed into the page.
+- **Stored inputs only.** `apps/demo/fixtures` holds the bare clone and the PR exports, and nothing computed from them. Nothing is fetched or cloned at runtime and no GitHub token is used. Only the model is called, and only when a viewer ticks "Use the LLM" and gives the right password.
 - **Next.** The server measures the PR (diff, gates, flag, path, reach, detection, confidence, revert and history) in a worker and streams each stage to the page. It then decides the brief. A PR takes about 0.4 to 5 seconds on its first run.
 - **Owner panel.** It asks only for what that PR's run could not find:
   - the signals that came out assumed, such as Reach, Detection, Time to revert (with a measured pipeline time in minutes) or History;
@@ -103,9 +103,10 @@ docker build -f apps/demo/Dockerfile -t release-brief-demo . && docker run -p 30
   - the stylesheet switch, when stylesheet lines are outside the flag;
   - under "Measured from the repo", with a caution, the measured and declared values the grid reads (reversibility, flag, path, reach, detection, time to revert) and the measured confidence. A value set there replaces the measurement, and the verdict and brief mark it ⚠.
 
-  Re-run reuses the measurement kept in server memory and only redoes the decision, in well under a second. With a model key, the page shows a progress line per call.
+  Re-run reuses the measurement kept in server memory and only redoes the decision, in well under a second. With the model on, the page shows a progress line per call.
 - **How the mode was reached.** Under the grid cell, the verdict shows each step from the cell to the mode, coloured by mode, with what took it: low confidence, the model's task check, or a gate (Staged → low confidence → Human). A step that rests on an owner value over a measured or declared one carries ⚠. The grid marks the same path: the chosen cell filled, each later mode's cell outlined with its reason, joined by arrows; Block, which has no cell, gets a box under the grid.
 - **Look.** Each section is a card with its own accent: the run in blue, the verdict tinted in its mode's colour, the brief in ink. Decision values are coloured by what they mean for the release (green good, amber in between, red bad: fast or slow, high or low confidence, low or high reach), in the panel, the verdict and the brief's Signals table. The owner panel keeps Re-run pinned at its top, then groups your answers (amber), the switches (blue), "Measured from the repo" (light red, collapsed until opened, and open when a measured value is already replaced) and the model. Notes and ⚠ explain themselves on hover or keyboard focus at once.
 - **Brief layout.** The brief shows the short layout by default. The toggle beside its heading switches to the full one (the CLI's `--full`) and stays set across PRs and runs. Both come from the same run.
 - **One run kept.** Each PR keeps only its latest run; a re-run replaces it.
-- **Nothing a viewer enters is kept.** The key is held in the page's memory and sent only with a run that has the model on. The server writes no call log, and every line it quotes from the repo goes through the CLI's secret redaction.
+- **The model is behind a password.** The server holds the key (`ANTHROPIC_API_KEY`) and the password (`DEMO_MODEL_PASSWORD`), both from its environment or `.env`. The page has a "Use the LLM" checkbox and, once ticked, a password field. The password is sent only with a run that has the model on; the server compares it (in constant time), answers 401 if it is wrong and 503 if no key or password is set, and never sends the key or the password back.
+- **Nothing a viewer enters is kept.** The password is held in the page's memory only. The server writes no call log, and every line it quotes from the repo goes through the CLI's secret redaction.

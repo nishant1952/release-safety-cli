@@ -1,8 +1,9 @@
 # The release brief demo. Build from the repo root:
 #   docker build -f apps/demo/Dockerfile -t release-brief-demo .
 #   docker run -p 3000:3000 release-brief-demo
-# The image bakes its inputs at build time (bun run demo:bake) and needs no environment beyond PORT at run time.
-# The model key, when a viewer wants the model, comes from the page.
+# The image bakes its inputs at build time (bun run demo:bake). For the model, pass the key and the password a viewer
+# must give at run time; without them the model is off:
+#   docker run -p 3000:3000 -e ANTHROPIC_API_KEY=... -e DEMO_MODEL_PASSWORD=... release-brief-demo
 FROM oven/bun:1.3.1
 
 # measure() and the evidence quotes read the repo through git.

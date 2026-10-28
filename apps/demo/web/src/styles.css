@@ -237,12 +237,12 @@ th { color: var(--ink2); font-weight: 400; border-bottom: 1px solid var(--rule);
 .ask-now span.tone-ok { color: var(--ok); }
 .ask-now span.tone-mid { color: var(--ambink); }
 .ask-now span.tone-bad { color: var(--hot); }
-.choice.tone-ok { border-color: color-mix(in oklch, var(--ok) 55%, transparent); }
-.choice.tone-mid { border-color: color-mix(in oklch, var(--ambink) 55%, transparent); }
-.choice.tone-bad { border-color: color-mix(in oklch, var(--hot) 55%, transparent); }
-.choice.tone-ok.on { background: var(--ok); border-color: var(--ok); color: var(--onink); }
-.choice.tone-mid.on { background: var(--ambink); border-color: var(--ambink); color: var(--onink); }
-.choice.tone-bad.on { background: var(--hot); border-color: var(--hot); color: var(--onink); }
+/* A value button is plain ink until chosen; only the chosen one takes its tone, as a fill. */
+.choice.tone-ok, .choice.tone-mid, .choice.tone-bad { color: var(--ink); border-color: var(--ink2); font-weight: 400; }
+.choice.tone-ok:hover, .choice.tone-mid:hover, .choice.tone-bad:hover { border-color: var(--ink); }
+.choice.tone-ok.on { background: var(--ok); border-color: var(--ok); color: var(--onink); font-weight: 700; }
+.choice.tone-mid.on { background: var(--ambink); border-color: var(--ambink); color: var(--onink); font-weight: 700; }
+.choice.tone-bad.on { background: var(--hot); border-color: var(--hot); color: var(--onink); font-weight: 700; }
 
 /* Tooltips that show at once on hover or focus */
 .tip { position: relative; outline-offset: 1px; }

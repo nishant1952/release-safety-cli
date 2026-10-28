@@ -12,20 +12,20 @@ async function json<T>(res: Response): Promise<T> {
 export const listPrs = () => fetch("/api/prs").then((r) => json<PrSummary[]>(r));
 
 /**
- * Runs a PR on the server: measured on its first run, then decided with the overrides. The key goes in the body of
- * this one request and is not kept by the server.
+ * Runs a PR on the server: measured on its first run, then decided with the overrides. With the model on, the
+ * password goes in the body of this one request; the server checks it and uses its own key, which the page never sees.
  */
 export async function runPr(
   n: number,
   overrides: Overrides,
-  modelKey: string | null,
+  password: string | null,
   onStage: (stage: string, ms: number) => void,
   onProgress: (p: Progress) => void,
 ): Promise<RunResult> {
   const res = await fetch(`/api/prs/${n}/run`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ overrides, modelKey }),
+    body: JSON.stringify({ overrides, password }),
   });
   if (!res.ok || !res.body) return json<RunResult>(res);
   const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();

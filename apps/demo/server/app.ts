@@ -1,7 +1,7 @@
 // The demo's API. A PR is measured on the server when a viewer asks for it, from the stored bare clone and PR
 // exports only: nothing is fetched or cloned, and nothing computed earlier is read. The measurement is kept in
-// memory so a re-run with the owner's inputs only redoes the decision. Nothing a viewer sends is kept; the
-// model key in a run request is used for that run's calls and dropped with the request.
+// memory so a re-run with the owner's inputs only redoes the decision. Nothing a viewer sends is kept. The model
+// key and the model password are the server's own, from its environment: neither is ever sent to the page.
 import type { Brief } from "../../../src/brief";
 import { nonCodeKind } from "../../../src/files";
 import { redact, redAdvisory } from "../../../src/gates";
@@ -10,10 +10,21 @@ import { VALUES, type Overrides } from "../../../src/overrides";
 import { applyPolicy } from "../../../src/policy";
 import { makeQuoter } from "../../../src/render";
 import { decide, type Decided, type Measured } from "../../../src/run";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { listExports, PR_NUMBERS } from "./fixtures";
 
-// Bun loads .env from the working directory. The demo never uses a key it was not handed by the page.
+// Bun loads .env from the working directory. The key and the password are read once here and taken out of the
+// environment, so the CLI code the server runs never picks the key up by itself: only a run with the password gets it.
+const ENV_KEY = process.env.ANTHROPIC_API_KEY?.trim() || null;
+const ENV_PASSWORD = process.env.DEMO_MODEL_PASSWORD || null;
 delete process.env.ANTHROPIC_API_KEY;
+delete process.env.DEMO_MODEL_PASSWORD;
+
+/** Compares digests, so the time taken says nothing about how much of the password was right. */
+function samePassword(given: string, expected: string): boolean {
+  const digest = (s: string) => createHash("sha256").update(s).digest();
+  return timingSafeEqual(digest(given), digest(expected));
+}
 
 export interface RunResult {
   brief: Brief;
@@ -89,7 +100,7 @@ export function redactingQuoter(m: Measured) {
 }
 
 export async function run(m: Measured, overrides: Overrides, modelKey: string | null, progress?: (p: Progress) => void, measureMs: number | null = null): Promise<RunResult> {
-  // Without a key from the page the model is off, whatever the panel says: the environment's key was deleted above.
+  // Without the server's key (handed over only with the right password) the model is off, whatever the panel says.
   const useModel = Boolean(modelKey) && overrides.model !== false;
   const onCall = (p: CallProgress) =>
     progress?.(
@@ -209,7 +220,13 @@ function measureInWorker(n: number, onStage: (stage: string, ms: number) => void
   });
 }
 
-export function createApp(): App {
+/** The server's model key and the password a viewer must give to use it; both default to the environment's. */
+export interface ModelAccess {
+  key: string | null;
+  password: string | null;
+}
+
+export function createApp(access: ModelAccess = { key: ENV_KEY, password: ENV_PASSWORD }): App {
   const prs = listExports();
   // Measurements made in this process, by PR. A request that finds one in flight waits for it.
   const measured = new Map<number, Promise<Measured>>();
@@ -223,12 +240,17 @@ export function createApp(): App {
     if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const n = Number(match[1]);
     let overrides: Overrides;
-    let modelKey: string | null;
+    let modelKey: string | null = null;
     try {
-      const body = (await req.json()) as { overrides?: unknown; modelKey?: unknown };
+      const body = (await req.json()) as { overrides?: unknown; password?: unknown };
       overrides = parseOverrides(body.overrides);
-      if (body.modelKey !== undefined && body.modelKey !== null && typeof body.modelKey !== "string") throw new BadRequest("modelKey must be a string");
-      modelKey = (body.modelKey as string | undefined)?.trim() || null;
+      if (body.password !== undefined && body.password !== null && typeof body.password !== "string") throw new BadRequest("password must be a string");
+      // The password is checked only when the model is asked for. It is never echoed, logged or kept.
+      if (overrides.model === true) {
+        if (!access.key || !access.password) return Response.json({ error: "the model is not set up on this server" }, { status: 503 });
+        if (typeof body.password !== "string" || !samePassword(body.password, access.password)) return Response.json({ error: "wrong password for the model" }, { status: 401 });
+        modelKey = access.key;
+      }
     } catch (error) {
       return Response.json({ error: error instanceof BadRequest ? error.message : "the body must be JSON" }, { status: 400 });
     }

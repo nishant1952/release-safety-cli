@@ -1,7 +1,7 @@
 // Pick a PR, run it: the server measures it from the stored repo and export and decides the brief, stage by stage,
 // ticked off as each one ends. The page shows the verdict and the brief as the CLI writes it. The owner panel then asks only for what the measurement could not find; Re-run redoes
 // the decision with those answers. Everything a viewer enters lives in this component's state and is gone on
-// reload; the model key is sent with a run and kept nowhere else.
+// reload; the model password is sent with a run that uses the model and kept nowhere else.
 import { useEffect, useMemo, useState } from "react";
 import { listPrs, runPr, type Asks, type Overrides, type PrSummary, type Progress, type RunResult } from "./api";
 import { Verdict } from "./BriefView";
@@ -63,7 +63,7 @@ export function App() {
   const [picked, setPicked] = useState<number | null>(null);
   const [active, setActive] = useState<number | null>(null);
   const [sessions, setSessions] = useState<Record<number, Session>>({});
-  const [modelKey, setModelKey] = useState("");
+  const [password, setPassword] = useState("");
   const [running, setRunning] = useState(false);
   const [timeline, setTimeline] = useState<Timeline | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +91,6 @@ export function App() {
 
   async function go(n: number, overrides: Overrides) {
     if (running) return;
-    const key = overrides.model && modelKey.trim() ? modelKey.trim() : null;
     setActive(n);
     setRunning(true);
     // A PR run before in this page was measured then; the server reuses that measurement unless it restarted.
@@ -101,7 +100,7 @@ export function App() {
       const result = await runPr(
         n,
         overrides,
-        key,
+        overrides.model ? password : null,
         (stage) => setTimeline((t) => t && onStage(t, stage)),
         (p) => setTimeline((t) => t && onModel(t, p.purpose, p.phase === "start" ? null : { detail: progressDetail(p), failed: p.outcome !== "ok" })),
       );
@@ -214,8 +213,8 @@ export function App() {
             latest={session.latest.result}
             panel={session.panel}
             setPanel={(p) => update(active, { panel: { ...session.panel, ...p } })}
-            modelKey={modelKey}
-            setModelKey={setModelKey}
+            password={password}
+            setPassword={setPassword}
             running={running}
             onRun={() => go(active, overridesOf(session.panel, asks))}
             onReset={() => update(active, { panel: EMPTY })}
@@ -238,8 +237,8 @@ interface PanelProps {
   latest: RunResult;
   panel: Panel;
   setPanel: (p: Partial<Panel>) => void;
-  modelKey: string;
-  setModelKey: (k: string) => void;
+  password: string;
+  setPassword: (p: string) => void;
   running: boolean;
   onRun: () => void;
   onReset: () => void;
@@ -258,9 +257,8 @@ function Choices({ name, choices, chosen, onPick }: { name: string; choices: str
   );
 }
 
-function OwnerPanel({ asks, latest, panel, setPanel, modelKey, setModelKey, running, onRun, onReset }: PanelProps) {
+function OwnerPanel({ asks, latest, panel, setPanel, password, setPassword, running, onRun, onReset }: PanelProps) {
   const current = useMemo(() => new Map(latest.brief.signals.map((s) => [s.name, s])), [latest]);
-  const hasKey = modelKey.trim() !== "";
   // Only signals with a fixed set of values are asked for; the others (History) only lower confidence.
   const answerable = asks.signals.filter((a) => a.choices);
   const nothing = !answerable.length && !asks.advisory.length && !asks.stylesheets;
@@ -417,14 +415,18 @@ function OwnerPanel({ asks, latest, panel, setPanel, modelKey, setModelKey, runn
         <div className="group-title">
           Model <span className="summary-hint">optional</span>
         </div>
-        <label className="ask-now" htmlFor="model-key">
-          Key, kept in this page's memory only
+        <label className="switch plain">
+          <input type="checkbox" checked={panel.model} onChange={(e) => setPanel({ model: e.target.checked })} />
+          <span>Use the LLM</span>
         </label>
-        <input id="model-key" className="field key" type="password" autoComplete="off" placeholder="sk-ant-…" value={modelKey} onChange={(e) => setModelKey(e.target.value)} />
-        <label className={hasKey ? "switch plain" : "switch plain disabled"}>
-          <input type="checkbox" disabled={!hasKey} checked={panel.model && hasKey} onChange={(e) => setPanel({ model: e.target.checked })} />
-          <span>Model on</span>
-        </label>
+        {panel.model && (
+          <>
+            <label className="ask-now" htmlFor="model-password">
+              Password, checked by the server and kept in this page's memory only
+            </label>
+            <input id="model-password" className="field key" type="password" autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </>
+        )}
       </div>
     </aside>
   );

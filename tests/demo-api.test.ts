@@ -1,6 +1,7 @@
 // Demo: the API. A PR is measured on the server the first time it is run (in a worker, streaming each stage),
-// from the stored clone and exports; later runs reuse that measurement and only redo the decision. With a key
-// from the request the model calls stream progress as server-sent events. Nothing is fetched except the model.
+// from the stored clone and exports; later runs reuse that measurement and only redo the decision. With the right
+// password the server's key is used and the model calls stream progress as server-sent events. Nothing is fetched
+// except the model.
 import { afterAll, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -10,10 +11,14 @@ import { measurePr } from "../apps/demo/server/fixtures";
 import { resetLlmLog, setLlmLogPath } from "../src/llmlog";
 import "./fixture";
 
-const app = createApp();
+const app = createApp({ key: null, password: null });
+// A server with a model key and a password, as its environment would give them.
+const modelApp = createApp({ key: "sk-server-only", password: "pw-server-only" });
 const get = (path: string) => app.fetch(new Request(`http://demo${path}`));
-const post = (path: string, body: unknown) =>
-  app.fetch(new Request(`http://demo${path}`, { method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" } }));
+const request = (path: string, body: unknown) =>
+  new Request(`http://demo${path}`, { method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" } });
+const post = (path: string, body: unknown) => app.fetch(request(path, body));
+const postModel = (path: string, body: unknown) => modelApp.fetch(request(path, body));
 
 /** The events of a text/event-stream body, in order. */
 async function events(res: Response): Promise<{ event: string; data: any }[]> {
@@ -79,7 +84,7 @@ test("quoted lines are redacted: PR 1's .env.example password at base never reac
   expect(line).toBe("OPENOBSERVE_PASSWORD=[REDACTED:credential]");
 }, 30_000);
 
-// The model, with a key from the request, against a local stand-in for the API.
+// The model, with the server's key, against a local stand-in for the API.
 const logFile = join(tmpdir(), `demo-api-test-${process.pid}.jsonl`);
 const seenKeys: string[] = [];
 const ANSWER = {
@@ -107,8 +112,8 @@ afterAll(() => {
   resetLlmLog();
 });
 
-test("with a key: a progress event per call, the key used and never echoed, nothing logged to disk", async () => {
-  const res = await post("/api/prs/13/run", { overrides: { model: true }, modelKey: "sk-page-only" });
+test("with the password: a progress event per call, the server's key used, neither echoed, nothing logged to disk", async () => {
+  const res = await postModel("/api/prs/13/run", { overrides: { model: true }, password: "pw-server-only" });
   const ev = await events(res.clone());
   const progress = ev.filter((e) => e.event === "progress").map((e) => `${e.data.purpose}:${e.data.phase}`);
   expect(progress.slice(0, 2)).toEqual(["model contract:start", "model contract:end"]);
@@ -118,14 +123,26 @@ test("with a key: a progress event per call, the key used and never echoed, noth
   // The canned proposal cites a line on the measured path, so code accepts it and the grid moves.
   const reach = r.brief.signals.find((s) => s.name === "Reach")!;
   expect([reach.value, reach.source, r.cell.damage]).toEqual(["low", "model (cited)", "low"]);
-  expect(seenKeys.every((k) => k.includes("sk-page-only"))).toBe(true);
-  expect((await res.text()).includes("sk-page-only")).toBe(false);
+  expect(seenKeys.every((k) => k.includes("sk-server-only"))).toBe(true);
+  const text = await res.text();
+  expect([text.includes("sk-server-only"), text.includes("pw-server-only")]).toEqual([false, false]);
   expect(existsSync(logFile)).toBe(false);
 }, 30_000);
 
-test("model switched off with a key: no call is made, and the brief says it is switched off", async () => {
+test("the model without the right password, or on a server with no key, is refused before anything runs", async () => {
   const before = seenKeys.length;
-  const r = await resultOf(await post("/api/prs/13/run", { overrides: { model: false }, modelKey: "sk-page-only" }));
+  for (const password of [undefined, "", "wrong", "pw-server-onl"]) {
+    const res = await postModel("/api/prs/13/run", { overrides: { model: true }, password });
+    expect([res.status, await res.json()]).toEqual([401, { error: "wrong password for the model" }]);
+  }
+  const res = await post("/api/prs/13/run", { overrides: { model: true }, password: "pw-server-only" });
+  expect([res.status, await res.json()]).toEqual([503, { error: "the model is not set up on this server" }]);
+  expect((await postModel("/api/prs/13/run", { overrides: { model: true }, password: 5 })).status).toBe(400);
+  expect(seenKeys.length).toBe(before);
+});
+
+test("model not asked for: no call is made and the password is not checked", async () => {
+  const before = seenKeys.length;
+  const r = await resultOf(await postModel("/api/prs/13/run", { overrides: {}, password: "wrong" }));
   expect([r.model, seenKeys.length]).toEqual([false, before]);
-  expect(r.brief.signals.find((s) => s.name === "Confidence: diff vs task (LLM)")!.note).toBe("diff not sent to the LLM: the model is switched off");
 });
