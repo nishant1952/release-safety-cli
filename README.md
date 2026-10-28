@@ -103,5 +103,6 @@ docker build -f apps/demo/Dockerfile -t release-brief-demo . && docker run -p 30
   - the stylesheet switch, when stylesheet lines are outside the flag.
 
   Re-run reuses the measurement kept in server memory and only redoes the decision, in well under a second. With a model key, the page shows a progress line per call.
+- **Brief layout.** The brief shows the short layout by default. The toggle beside its heading switches to the full one (the CLI's `--full`) and stays set across PRs and runs. Both come from the same run.
 - **What moved.** After a re-run, the page compares mode, grid cell, gates, reasons and provenance rows with the run before it. Only the latest run and the one before it are kept.
 - **Nothing a viewer enters is kept.** The key is held in the page's memory and sent only with a run that has the model on. The server writes no call log, and every line it quotes from the repo goes through the CLI's secret redaction.

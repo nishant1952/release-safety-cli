@@ -6,7 +6,7 @@ import { decide as grid, modeLine, type Decision } from "./decide";
 import { buildPlan } from "./plan";
 import { oneUnknown, unknownText } from "./unknown";
 import { addProse } from "./prose";
-import { makeQuoter, renderShort } from "./render";
+import { makeQuoter, renderFull, renderShort } from "./render";
 import { contextLines, diffText, loadDiff } from "./diff";
 import { INTERNAL_SIGNATURES, redAdvisory, runGates, secretsAtBase } from "./gates";
 import { Git } from "./git";
@@ -75,10 +75,13 @@ export interface Measured {
   codeowners: boolean;
 }
 
-/** The brief, its markdown, and the grid cell it came from. */
+/** The brief, its markdown in both layouts, and the grid cell it came from. */
 export interface Decided {
   brief: Brief;
+  /** the short layout, the default */
   markdown: string;
+  /** the full layout (the CLI's --full) */
+  fullMarkdown: string;
   cell: Pick<Decision, "damage" | "window" | "gridMode" | "gateMode" | "shifted" | "llmStep">;
 }
 
@@ -243,7 +246,7 @@ export async function decide(m: Measured, overrides: Overrides = {}, modelKey?: 
     switches,
     proposals: { accepted: contract.ruling.accepted.length, refused: contract.ruling.refused.length },
   };
-  return { brief, markdown: renderShort(brief, quote), cell: { damage, window, gridMode, gateMode, shifted, llmStep } };
+  return { brief, markdown: renderShort(brief, quote), fullMarkdown: renderFull(brief, quote), cell: { damage, window, gridMode, gateMode, shifted, llmStep } };
 }
 
 /** The earlier author who touched the most of the changed files; ties break by name. */

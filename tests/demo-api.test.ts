@@ -39,6 +39,7 @@ test("first run of PR 13 measures it on the server, stage by stage, and renders 
   ]);
   const r = ev.find((e) => e.event === "result")!.data as RunResult;
   expect(r.markdown).toBe(readFileSync(new URL("../out/pr13.md", import.meta.url), "utf8"));
+  expect(r.fullMarkdown).toBe(readFileSync(new URL("../out/pr13-full.md", import.meta.url), "utf8"));
   expect(r.measureMs).toBeGreaterThan(0);
   // The panel asks only for what was assumed: Reach, Time to revert (with minutes), History.
   expect(r.asks.signals.map((s) => [s.name, s.value])).toEqual([

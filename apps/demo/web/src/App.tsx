@@ -68,6 +68,8 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   // Light unless the viewer switches; the system setting is not followed.
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  // The brief's layout: short by default, the full one (the CLI's --full) on request. Kept across PRs and runs.
+  const [verbose, setVerbose] = useState(false);
 
   useEffect(() => {
     listPrs()
@@ -191,8 +193,23 @@ export function App() {
                 )}
                 <Verdict r={r} />
               </Section>
-              <Section n={3} title="Brief" aside={<span className="sec-aside">As the CLI writes it for this run.</span>} delay={0.3}>
-                <Markdown text={r.markdown} />
+              <Section
+                n={3}
+                title="Brief"
+                aside={
+                  <span className="sec-aside brief-toggle">
+                    <span className="muted">As the CLI writes it for this run:</span>
+                    <button className={verbose ? "textbtn" : "textbtn on"} aria-pressed={!verbose} onClick={() => setVerbose(false)}>
+                      short
+                    </button>
+                    <button className={verbose ? "textbtn on" : "textbtn"} aria-pressed={verbose} onClick={() => setVerbose(true)}>
+                      full (verbose)
+                    </button>
+                  </span>
+                }
+                delay={0.3}
+              >
+                <Markdown text={verbose ? r.fullMarkdown : r.markdown} />
               </Section>
             </div>
           )}

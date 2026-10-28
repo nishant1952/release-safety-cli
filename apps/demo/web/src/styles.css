@@ -110,6 +110,7 @@ code { font: 12.5px/1.4 var(--mono); background: var(--track); padding: 1px 5px;
 
 /* 02 Verdict */
 .views { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; margin-top: -6px; }
+.brief-toggle { display: inline-flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
 .verdict { display: flex; flex-wrap: wrap; gap: 32px 56px; align-items: flex-end; padding: 18px 0 32px; }
 .verdict-main { flex: 1 1 320px; min-width: 0; }
 .verdict-kicker { font-size: 14px; color: var(--ink2); margin-bottom: 6px; }

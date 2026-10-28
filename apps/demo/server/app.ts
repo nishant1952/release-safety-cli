@@ -18,6 +18,7 @@ delete process.env.ANTHROPIC_API_KEY;
 export interface RunResult {
   brief: Brief;
   markdown: string;
+  fullMarkdown: string;
   cell: Decided["cell"];
   overrides: Overrides;
   /** whether the model was called */
