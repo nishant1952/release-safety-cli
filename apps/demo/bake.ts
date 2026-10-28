@@ -27,7 +27,7 @@ if (!existsSync(REPO)) {
 } else console.log(`${REPO} exists, not cloned again`);
 
 // 2. The exports. data/ is gitignored, so on a machine without it the committed copies are used.
-// PR 13's pr.json and REFS.txt were moved to tests/fixtures (DECISIONS.md, Inputs); its range is in PROMPT.md.
+// PR 13's pr.json and REFS.txt were moved to tests/fixtures (DECISIONS.md, Inputs); its range is PR13_REFS below.
 const PR13_REFS = "base: 30ac194  head: c5da112a  repo: /Users/nishant/fireweave-study/arcade\n";
 for (const n of PR_NUMBERS) {
   const dest = join(PRS, `pr${n}`);
