@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { listPrs, runPr, type Asks, type Overrides, type PrSummary, type Progress, type RunResult } from "./api";
 import { Verdict } from "./BriefView";
 import { Markdown } from "./Markdown";
-import { Caution, Section, Src } from "./parts";
+import { Caution, Section, Src, Tip, toneOf } from "./parts";
 import { onError, onModel, onResult, onStage, RunChecklist, startTimeline, type Timeline } from "./Timeline";
 
 interface Panel {
@@ -160,7 +160,7 @@ export function App() {
               {error}
             </div>
           )}
-          <section>
+          <section className="card sec-run">
             <RunChecklist t={timeline} running={running} />
             {!running && picked !== active && (
               <div className="run-cta">
@@ -176,6 +176,7 @@ export function App() {
               <Section
                 n={2}
                 title="Verdict"
+                className={`sec-verdict mode-${(r.brief.mode ?? "").toLowerCase()}`}
                 aside={
                   <span className="sec-aside mono">
                     #{active} · run {shownRun.id} · {shownRun.at} · {r.measureMs === null ? "measurement reused" : `measured ${r.measureMs.toLocaleString("en-US")} ms`} · decided{" "}
@@ -199,6 +200,7 @@ export function App() {
               <Section
                 n={3}
                 title="Brief"
+                className="sec-brief"
                 aside={
                   <span className="sec-aside brief-toggle">
                     <span className="muted">As the CLI writes it for this run:</span>
@@ -220,6 +222,7 @@ export function App() {
 
         {active !== null && asks && session.latest ? (
           <OwnerPanel
+            key={active}
             asks={asks}
             latest={session.latest.result}
             panel={session.panel}
@@ -255,6 +258,19 @@ interface PanelProps {
   onReset: () => void;
 }
 
+/** One value choice: its buttons coloured by what each value means for the release. */
+function Choices({ name, choices, chosen, onPick }: { name: string; choices: string[]; chosen: string; onPick: (v: string) => void }) {
+  return (
+    <div className="choices" role="group" aria-label={name}>
+      {choices.map((c) => (
+        <button key={c} className={`choice ${toneOf(name, c)}${chosen === c ? " on" : ""}`} aria-pressed={chosen === c} onClick={() => onPick(chosen === c ? "" : c)}>
+          {c}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function OwnerPanel({ asks, latest, panel, setPanel, modelKey, setModelKey, running, onRun, onReset }: PanelProps) {
   const current = useMemo(() => new Map(latest.brief.signals.map((s) => [s.name, s])), [latest]);
   const hasKey = modelKey.trim() !== "";
@@ -263,142 +279,156 @@ function OwnerPanel({ asks, latest, panel, setPanel, modelKey, setModelKey, runn
   const nothing = !answerable.length && !asks.advisory.length && !asks.stylesheets;
   // The answers differ from the ones the latest run used.
   const dirty = JSON.stringify(overridesOf(panel, asks)) !== JSON.stringify(latest.overrides);
+  const measured = [
+    ...asks.measured.map((a) => ({ ...a, now: current.get(a.name)?.value, chosen: panel.values[a.name] ?? "", set: (v: string) => setPanel({ values: { ...panel.values, [a.name]: v } }) })),
+    {
+      name: "Confidence",
+      value: asks.confidence,
+      source: "measured",
+      note: "From test coverage and author familiarity. Low moves the mode one step toward caution.",
+      choices: ["high", "medium", "low"],
+      now: latest.brief.confidence?.measuredLevel,
+      chosen: panel.confidence,
+      set: (v: string) => setPanel({ confidence: v }),
+    },
+  ];
+  // Collapsed until opened; open from the start when a measured value is already replaced, here or in the run shown.
+  const touched = measured.some((a) => a.chosen) || Boolean(latest.brief.contested?.length);
+  const [open, setOpen] = useState(touched);
   return (
     <aside className="panel" aria-label="Owner panel">
-      <div>
+      <div className="panel-top">
         <div className="panel-title">Owner panel</div>
-        <p className="panel-intro">
-          Only what the analysis could not find for this PR. Each value you enter is declared by the owner and replaces the assumed one; Re-run redoes the
-          decision on the server.
-        </p>
+        <div className="actions">
+          <button className="btn" onClick={onRun} disabled={running}>
+            {running ? "Running…" : "Re-run"}
+          </button>
+          <button className="textbtn" onClick={onReset} disabled={running}>
+            Clear answers
+          </button>
+        </div>
+        {dirty && !running && (
+          <div className="dirty" role="status">
+            <i />
+            Answers changed. Re-run to redo the decision.
+          </div>
+        )}
       </div>
-      {nothing && <p className="panel-intro">Everything the decision needs was measured or declared for this PR.</p>}
 
-      {answerable.map((a) => {
-        const now = current.get(a.name);
-        const chosen = panel.values[a.name] ?? "";
-        const minutes = a.name === "Time to revert" && asks.revertMinutes;
-        return (
+      <div className="group group-answers">
+        <div className="group-title">Your answers</div>
+        <p className="panel-intro">What the analysis could not find for this PR. Each value you pick is declared by the owner and replaces the assumed one.</p>
+        {nothing && <p className="panel-intro">Everything the decision needs was measured or declared for this PR.</p>}
+        {answerable.map((a) => {
+          const now = current.get(a.name);
+          const chosen = panel.values[a.name] ?? "";
+          const minutes = a.name === "Time to revert" && asks.revertMinutes;
+          return (
+            <div className="ask" key={a.name}>
+              <div className="ask-top">
+                <Tip tip={a.note} className="ask-name">
+                  {a.name}
+                </Tip>
+                {now && <Src source={now.source} />}
+              </div>
+              <div className="ask-now">
+                Now: <span className={toneOf(a.name, now?.value)}>{now?.value}</span>
+              </div>
+              <Choices
+                name={a.name}
+                choices={a.choices!}
+                chosen={chosen}
+                onPick={(v) => setPanel({ values: { ...panel.values, [a.name]: v }, ...(minutes ? { revertMinutes: "" } : {}) })}
+              />
+              {minutes && (
+                <label className="minutes">
+                  or measured pipeline
+                  <input
+                    className="field"
+                    type="number"
+                    min={0}
+                    placeholder="—"
+                    value={panel.revertMinutes}
+                    onChange={(e) => setPanel({ revertMinutes: e.target.value, values: { ...panel.values, [a.name]: "" } })}
+                    aria-label="revert minutes"
+                  />
+                  min
+                </label>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {(asks.advisory.length > 0 || asks.stylesheets > 0) && (
+        <div className="group group-switches">
+          <div className="group-title">Switches</div>
+          {asks.advisory.length > 0 && (
+            <label className="switch">
+              <input type="checkbox" checked={panel.advisoryAsRequired} onChange={(e) => setPanel({ advisoryAsRequired: e.target.checked })} />
+              <span>
+                <b>
+                  Treat the failing CI {asks.advisory.length === 1 ? "check" : "checks"} {asks.advisory.join(", ")} as required
+                </b>
+                <span className="switch-note">
+                  The base branch does not require {asks.advisory.length === 1 ? "it" : "them"}, so the failure is not counted now. Tick this if the release should not
+                  ship while {asks.advisory.length === 1 ? "it fails" : "they fail"}: gate 1 then counts {asks.advisory.length === 1 ? "it" : "them"}, and a failing
+                  required check blocks the release.
+                </span>
+              </span>
+            </label>
+          )}
+          {asks.stylesheets > 0 && (
+            <label className="switch">
+              <input type="checkbox" checked={panel.stylesheetsCovered} onChange={(e) => setPanel({ stylesheetsCovered: e.target.checked })} />
+              <span>
+                <b>Count the {asks.stylesheets} new CSS lines as behind the feature flag</b>
+                <span className="switch-note">
+                  CSS cannot check a flag, so these lines are counted as outside it, one reason the flag reads partial. Tick this if they only style what the
+                  flag shows: with the flag off they have no effect.
+                </span>
+              </span>
+            </label>
+          )}
+        </div>
+      )}
+
+      <details className="group group-measured" open={open} onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}>
+        <summary className="group-title">
+          <span>
+            <Caution title="Changing these replaces a measurement" /> Measured from the repo
+          </span>
+          <span className="summary-hint">{open ? "hide" : `show ${measured.length}`}</span>
+        </summary>
+        <p className="panel-intro">
+          Read from the code, not guessed, so normally left alone. A value you set here replaces the measurement and is tagged declared by owner with ⚠: the
+          verdict then rests on your word, not the repo.
+        </p>
+        {measured.map((a) => (
           <div className="ask" key={a.name}>
             <div className="ask-top">
-              <span className="ask-name" title={a.note}>
+              <Tip tip={a.note} className="ask-name">
                 {a.name}
-              </span>
-              {now && <Src source={now.source} />}
+              </Tip>
+              <Src source={a.source} />
             </div>
             <div className="ask-now">
-              Now: <span>{now?.value}</span>
+              Measured: <span className={toneOf(a.name, a.value)}>{a.value}</span>
+              {a.now !== undefined && a.now !== a.value && (
+                <>
+                  {" "}
+                  · now: <span className={toneOf(a.name, a.now)}>{a.now}</span> <Caution />
+                </>
+              )}
             </div>
-            <div className="choices" role="group" aria-label={a.name}>
-              {a.choices!.map((c) => (
-                <button
-                  key={c}
-                  className={chosen === c ? "choice on" : "choice"}
-                  aria-pressed={chosen === c}
-                  onClick={() => setPanel({ values: { ...panel.values, [a.name]: chosen === c ? "" : c }, ...(minutes ? { revertMinutes: "" } : {}) })}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-            {minutes && (
-              <label className="minutes">
-                or measured pipeline
-                <input
-                  className="field"
-                  type="number"
-                  min={0}
-                  placeholder="—"
-                  value={panel.revertMinutes}
-                  onChange={(e) => setPanel({ revertMinutes: e.target.value, values: { ...panel.values, [a.name]: "" } })}
-                  aria-label="revert minutes"
-                />
-                min
-              </label>
-            )}
+            <Choices name={a.name} choices={a.choices} chosen={a.chosen} onPick={a.set} />
           </div>
-        );
-      })}
+        ))}
+      </details>
 
-      {asks.advisory.length > 0 && (
-        <label className="switch">
-          <input type="checkbox" checked={panel.advisoryAsRequired} onChange={(e) => setPanel({ advisoryAsRequired: e.target.checked })} />
-          <span>
-            <b>
-              Treat the failing CI {asks.advisory.length === 1 ? "check" : "checks"} {asks.advisory.join(", ")} as required
-            </b>
-            <span className="switch-note">
-              The base branch does not require {asks.advisory.length === 1 ? "it" : "them"}, so the failure is not counted now. Tick this if the release should not ship
-              while {asks.advisory.length === 1 ? "it fails" : "they fail"}: gate 1 then counts {asks.advisory.length === 1 ? "it" : "them"}, and a failing required check blocks the
-              release.
-            </span>
-          </span>
-        </label>
-      )}
-      {asks.stylesheets > 0 && (
-        <label className="switch">
-          <input type="checkbox" checked={panel.stylesheetsCovered} onChange={(e) => setPanel({ stylesheetsCovered: e.target.checked })} />
-          <span>
-            <b>Count the {asks.stylesheets} new CSS lines as behind the feature flag</b>
-            <span className="switch-note">
-              CSS cannot check a flag, so these lines are counted as outside it, one reason the flag reads partial. Tick this if they only style what the
-              flag shows: with the flag off they have no effect.
-            </span>
-          </span>
-        </label>
-      )}
-
-      <div className="measured">
-        <div className="measured-title">
-          <Caution title="Changing these replaces a measurement" /> Measured from the repo
-        </div>
-        <p className="panel-intro">
-          Read from the code, not guessed. A value you set here replaces the measurement and is tagged declared by owner with ⚠: the verdict then rests on
-          your word, not the repo.
-        </p>
-      </div>
-      {[
-        ...asks.measured.map((a) => ({ ...a, now: current.get(a.name)?.value, chosen: panel.values[a.name] ?? "", set: (v: string) => setPanel({ values: { ...panel.values, [a.name]: v } }) })),
-        {
-          name: "Confidence",
-          value: asks.confidence,
-          source: "measured",
-          note: "From test coverage and author familiarity. Low moves the mode one step toward caution.",
-          choices: ["high", "medium", "low"],
-          now: latest.brief.confidence?.measuredLevel,
-          chosen: panel.confidence,
-          set: (v: string) => setPanel({ confidence: v }),
-        },
-      ].map((a) => (
-        <div className="ask" key={a.name}>
-          <div className="ask-top">
-            <span className="ask-name" title={a.note}>
-              {a.name}
-            </span>
-            <Src source={a.source} />
-          </div>
-          <div className="ask-now">
-            Measured: <span>{a.value}</span>
-            {a.now !== undefined && a.now !== a.value && (
-              <>
-                {" "}
-                · now: <span>{a.now}</span> <Caution />
-              </>
-            )}
-          </div>
-          <div className="choices" role="group" aria-label={a.name}>
-            {a.choices.map((c) => (
-              <button key={c} className={a.chosen === c ? "choice on" : "choice"} aria-pressed={a.chosen === c} onClick={() => a.set(a.chosen === c ? "" : c)}>
-                {c}
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      <div className="model">
-        <div className="model-title">
-          Model <span>(optional)</span>
+      <div className="group group-model">
+        <div className="group-title">
+          Model <span className="summary-hint">optional</span>
         </div>
         <label className="ask-now" htmlFor="model-key">
           Key, kept in this page's memory only
@@ -409,21 +439,6 @@ function OwnerPanel({ asks, latest, panel, setPanel, modelKey, setModelKey, runn
           <span>Model on</span>
         </label>
       </div>
-
-      <div className="actions">
-        <button className="btn" onClick={onRun} disabled={running}>
-          {running ? "Running…" : "Re-run"}
-        </button>
-        <button className="textbtn" onClick={onReset} disabled={running}>
-          Clear answers
-        </button>
-      </div>
-      {dirty && !running && (
-        <div className="dirty" role="status">
-          <i />
-          Answers changed. Re-run to redo the decision.
-        </div>
-      )}
     </aside>
   );
 }

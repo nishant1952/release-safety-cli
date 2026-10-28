@@ -1,6 +1,7 @@
 // The brief's markdown as React elements: the subset src/render.ts writes (headings, paragraphs, pipe tables,
 // nested lists, `code`, **bold**, *italic*). No HTML is passed through, so quoted repo lines render as text.
 import type { ReactNode } from "react";
+import { toneOf } from "./parts";
 
 type Block =
   | { kind: "heading"; level: number; text: string }
@@ -110,7 +111,14 @@ function render(blocks: Block[]): ReactNode[] {
               </thead>
               <tbody>
                 {b.rows.map((r, j) => (
-                  <tr key={j}>{r.map((c, l) => <td key={l}>{inline(c)}</td>)}</tr>
+                  <tr key={j}>
+                    {r.map((c, l) => (
+                      // In a signals table, the value is coloured by what it means for the release.
+                      <td key={l} className={l === 1 && b.head[0] === "Signal" ? toneOf(r[0], c) || undefined : undefined}>
+                        {inline(c)}
+                      </td>
+                    ))}
+                  </tr>
                 ))}
               </tbody>
             </table>
