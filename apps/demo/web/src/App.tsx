@@ -1,11 +1,13 @@
-// Pick a PR, click Next: the server measures it from the stored repo and export and decides the brief, stage by
-// stage. The owner panel then asks only for what the measurement could not find; Re-run redoes the decision with
-// those answers. Everything a viewer enters lives in this component's state and is gone on reload; the model key
-// is sent with a run and kept nowhere else.
+// Pick a PR, run it: the server measures it from the stored repo and export and decides the brief, stage by stage,
+// ticked off as each one ends. The page shows the verdict and the brief as the CLI writes it. The owner panel then asks only for what the measurement could not find; Re-run redoes
+// the decision with those answers. Everything a viewer enters lives in this component's state and is gone on
+// reload; the model key is sent with a run and kept nowhere else.
 import { useEffect, useMemo, useState } from "react";
 import { listPrs, runPr, type Asks, type Overrides, type PrSummary, type Progress, type RunResult } from "./api";
-import { DiffView } from "./DiffView";
+import { Verdict } from "./BriefView";
 import { Markdown } from "./Markdown";
+import { Section, Src } from "./parts";
+import { onError, onModel, onResult, onStage, RunChecklist, startTimeline, type Timeline } from "./Timeline";
 
 interface Panel {
   /** signal name -> value as typed; a value equal to the measured one is not sent */
@@ -48,13 +50,11 @@ export function overridesOf(panel: Panel, asks: Asks | null): Overrides {
   return o;
 }
 
-const cellLine = (r: RunResult) => `${r.cell.damage} damage × ${r.cell.window} window = ${r.cell.gridMode}`;
-
-function progressLine(p: Progress): string {
-  if (p.phase === "start") return `model, ${p.purpose}: calling…`;
+/** A model call's outcome, as its row in the run shows it: never the prompt, never the key. */
+function progressDetail(p: Extract<Progress, { phase: "end" }>): string {
   const cost = p.usd === null ? "" : `, est. $${p.usd.toFixed(4)}`;
   const tokens = p.tokens === null ? "" : `, ${p.tokens.toLocaleString("en-US")} tokens`;
-  return `model, ${p.purpose}: ${p.outcome} in ${(p.latency_ms / 1000).toFixed(1)} s${tokens}${cost}${p.error ? ` (${p.error})` : ""}`;
+  return `${p.outcome} in ${(p.latency_ms / 1000).toFixed(1)} s${tokens}${cost}${p.error ? ` (${p.error})` : ""}`;
 }
 
 export function App() {
@@ -64,14 +64,22 @@ export function App() {
   const [sessions, setSessions] = useState<Record<number, Session>>({});
   const [modelKey, setModelKey] = useState("");
   const [running, setRunning] = useState(false);
-  const [steps, setSteps] = useState<string[]>([]);
+  const [timeline, setTimeline] = useState<Timeline | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Light unless the viewer switches; the system setting is not followed.
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
     listPrs()
       .then(setPrs)
       .catch((e) => setError(String(e.message ?? e)));
   }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    setTheme(next);
+  };
 
   const session = active === null ? NEW_SESSION : (sessions[active] ?? NEW_SESSION);
   const shownRun = session.viewing === "previous" && session.previous ? session.previous : session.latest;
@@ -83,80 +91,114 @@ export function App() {
     const key = overrides.model && modelKey.trim() ? modelKey.trim() : null;
     setActive(n);
     setRunning(true);
-    setSteps(["sent to the server"]);
+    // A PR run before in this page was measured then; the server reuses that measurement unless it restarted.
+    setTimeline(startTimeline(Boolean(sessions[n]?.latest)));
     setError(null);
     try {
       const result = await runPr(
         n,
         overrides,
         key,
-        (stage, ms) =>
-          setSteps((l) => [
-            ...l,
-            stage === "measurement in memory reused" ? "measurement from the first run reused" : stage.startsWith("waiting") ? stage : `measured: ${stage} (${ms} ms)`,
-          ]),
-        (p) => setSteps((l) => [...l, progressLine(p)]),
+        (stage) => setTimeline((t) => t && onStage(t, stage)),
+        (p) => setTimeline((t) => t && onModel(t, p.purpose, p.phase === "start" ? null : { detail: progressDetail(p), failed: p.outcome !== "ok" })),
       );
+      setTimeline((t) => t && onResult(t, result.ms));
       setSessions((all) => {
         const s = all[n] ?? NEW_SESSION;
         const id = (s.latest?.id ?? 0) + 1;
         return { ...all, [n]: { ...s, previous: s.latest, latest: { id, at: new Date().toLocaleTimeString(), result }, viewing: "latest" } };
       });
-      setSteps((l) => [...l, `decided in ${result.ms} ms`]);
     } catch (e) {
-      setError((e as Error).message);
+      const message = (e as Error).message;
+      setTimeline((t) => t && onError(t, message));
+      setError(message);
     } finally {
       setRunning(false);
     }
   }
 
-  const next = () => {
+  const runPicked = () => {
     if (picked === null) return;
     const s = sessions[picked] ?? NEW_SESSION;
     go(picked, overridesOf(s.panel, s.latest?.result.asks ?? null));
   };
+  const pickedRan = picked !== null && Boolean(sessions[picked]?.latest);
+
+  const r = shownRun?.result;
 
   return (
-    <div className="page">
+    <>
       <header className="topbar">
         <h1>Release brief</h1>
-        <select value={picked ?? ""} onChange={(e) => setPicked(e.target.value ? Number(e.target.value) : null)} aria-label="Pull request" disabled={running}>
-          <option value="">Choose one of the 21 arcade PRs…</option>
-          {prs.map((p) => (
-            <option key={p.n} value={p.n}>
-              #{p.n} — {p.title}
-            </option>
-          ))}
-        </select>
-        <button className="primary" onClick={next} disabled={picked === null || running}>
-          {running && active === picked ? "Running…" : "Next"}
+        <div className="picker">
+          <select value={picked ?? ""} onChange={(e) => setPicked(e.target.value ? Number(e.target.value) : null)} aria-label="Pull request" disabled={running}>
+            <option value="">Choose one of the {prs.length || 21} arcade PRs…</option>
+            {prs.map((p) => (
+              <option key={p.n} value={p.n}>
+                #{p.n} — {p.title}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button className="btn" onClick={runPicked} disabled={picked === null || running}>
+          {running ? "Running…" : pickedRan ? "Run again" : "Run brief"}
         </button>
-        <span className="muted small">Runs on the server from the stored repo and PR export. Nothing is precomputed.</span>
+        <button className="textbtn theme" onClick={toggleTheme}>
+          {theme === "dark" ? "Light mode" : "Dark mode"}
+        </button>
       </header>
+
       <div className="layout">
         <main className="brief">
-          {error && <div className="error">{error}</div>}
-          {(running || steps.length > 0) && <Steps steps={steps} running={running} />}
-          {active === null && !running && <p className="muted placeholder">Choose a PR above and click Next to run its brief.</p>}
-          {shownRun && (
-            <div className={running ? "dim" : ""}>
-              {session.previous && (
-                <div className="viewing">
-                  <button className={session.viewing === "latest" ? "tab active" : "tab"} onClick={() => update(active!, { viewing: "latest" })}>
-                    Latest run ({session.latest!.at})
-                  </button>
-                  <button className={session.viewing === "previous" ? "tab active" : "tab"} onClick={() => update(active!, { viewing: "previous" })}>
-                    Run before it ({session.previous.at})
-                  </button>
-                </div>
-              )}
-              <HeaderCard run={shownRun} />
-              {session.viewing === "latest" && session.previous && <DiffView before={session.previous.result} after={session.latest!.result} />}
-              <Markdown text={shownRun.result.markdown} />
+          {error && (
+            <div className="error" role="alert">
+              {error}
+            </div>
+          )}
+          <section>
+            <RunChecklist t={timeline} running={running} />
+            {!running && picked !== active && (
+              <div className="run-cta">
+                <span>
+                  {picked === null ? "Choose a PR above. " : ""}Each stage is ticked as the server finishes it. The verdict appears when the last one lands.
+                </span>
+              </div>
+            )}
+          </section>
+
+          {shownRun && r && (
+            <div className={running ? "sections dim" : "sections"} key={`${active}-${shownRun.id}-${session.viewing}`}>
+              <Section
+                n={2}
+                title="Verdict"
+                aside={
+                  <span className="sec-aside mono">
+                    #{active} · run {shownRun.id} · {shownRun.at} · {r.measureMs === null ? "measurement reused" : `measured ${r.measureMs.toLocaleString("en-US")} ms`} · decided{" "}
+                    {r.ms} ms · model {r.model ? "on" : "off"}
+                  </span>
+                }
+              >
+                {session.previous && (
+                  <div className="views">
+                    <span className="muted">Showing</span>
+                    <button className={session.viewing === "latest" ? "textbtn on" : "textbtn"} onClick={() => update(active!, { viewing: "latest" })}>
+                      latest run, {session.latest!.at}
+                    </button>
+                    <button className={session.viewing === "previous" ? "textbtn on" : "textbtn"} onClick={() => update(active!, { viewing: "previous" })}>
+                      the run before it, {session.previous.at}
+                    </button>
+                  </div>
+                )}
+                <Verdict r={r} />
+              </Section>
+              <Section n={3} title="Brief" aside={<span className="sec-aside">As the CLI writes it for this run.</span>} delay={0.3}>
+                <Markdown text={r.markdown} />
+              </Section>
             </div>
           )}
         </main>
-        {active !== null && asks && session.latest && (
+
+        {active !== null && asks && session.latest ? (
           <OwnerPanel
             asks={asks}
             latest={session.latest.result}
@@ -168,60 +210,16 @@ export function App() {
             onRun={() => go(active, overridesOf(session.panel, asks))}
             onReset={() => update(active, { panel: EMPTY })}
           />
+        ) : (
+          <aside className="panel">
+            <div>
+              <div className="panel-title">Owner panel</div>
+              <p className="panel-intro">After a run, this lists only what the analysis could not find for that PR, for the release owner to answer.</p>
+            </div>
+          </aside>
         )}
       </div>
-    </div>
-  );
-}
-
-function Steps({ steps, running }: { steps: string[]; running: boolean }) {
-  return (
-    <section className="card steps">
-      <h2>{running ? "Running on the server…" : "Last run"}</h2>
-      <ol>
-        {steps.map((s, i) => (
-          <li key={i}>
-            <span className="tick">✓</span> {s}
-          </li>
-        ))}
-        {running && <li className="muted">…</li>}
-      </ol>
-    </section>
-  );
-}
-
-function HeaderCard({ run }: { run: Run }) {
-  const r = run.result;
-  const b = r.brief;
-  return (
-    <section className="card header">
-      <div className="card-top">
-        <span className={`mode big mode-${(b.mode ?? "").toLowerCase()}`}>{b.mode}</span>
-        <span className="muted small">
-          run {run.id}, {run.at} · {r.measureMs === null ? "measurement reused" : `measured in ${r.measureMs} ms`} · decided in {r.ms} ms · model {r.model ? "on" : "off"}
-        </span>
-      </div>
-      <dl>
-        <dt>Grid</dt>
-        <dd>
-          {cellLine(r)}
-          {r.cell.shifted && <> · low measured confidence moves it one step</>}
-          {r.cell.llmStep && <> · the model's coherence read moves it one step</>}
-          {r.cell.gateMode && <> · gates route to {r.cell.gateMode}</>}
-        </dd>
-        <dt>Gates</dt>
-        <dd className="gates">
-          {b.gates.map((g) => (
-            <span key={g.gate} className={`gate gate-${g.status}`} title={g.checks.map((c) => `${c.name}: ${c.status}`).join("\n")}>
-              {g.gate}. {g.name}: {g.status}
-              {g.route !== "none" ? `, routes to ${g.route}` : ""}
-            </span>
-          ))}
-        </dd>
-        <dt>Confidence</dt>
-        <dd>{b.confidence?.level ?? "not computed"}</dd>
-      </dl>
-    </section>
+    </>
   );
 }
 
@@ -240,95 +238,124 @@ interface PanelProps {
 function OwnerPanel({ asks, latest, panel, setPanel, modelKey, setModelKey, running, onRun, onReset }: PanelProps) {
   const current = useMemo(() => new Map(latest.brief.signals.map((s) => [s.name, s])), [latest]);
   const hasKey = modelKey.trim() !== "";
-  const nothing = !asks.signals.length && !asks.advisory.length && !asks.stylesheets;
+  // Only signals with a fixed set of values are asked for; the others (History) only lower confidence.
+  const answerable = asks.signals.filter((a) => a.choices);
+  const nothing = !answerable.length && !asks.advisory.length && !asks.stylesheets;
+  // The answers differ from the ones the latest run used.
+  const dirty = JSON.stringify(overridesOf(panel, asks)) !== JSON.stringify(latest.overrides);
   return (
-    <aside className="panel">
-      <h2>Owner panel</h2>
-      <p className="muted small">
-        Only what the analysis could not find for this PR. Each value you enter is declared by the owner and replaces the assumed one; Re-run redoes the
-        decision on the server.
-      </p>
-      {nothing && <p>Everything the decision needs was measured or declared for this PR.</p>}
-      {asks.signals.length > 0 && (
-        <table className="signals">
-          <thead>
-            <tr>
-              <th>Unknown</th>
-              <th>Your value</th>
-              <th>Now</th>
-            </tr>
-          </thead>
-          <tbody>
-            {asks.signals.map((a) => {
-              const now = current.get(a.name);
-              const typed = panel.values[a.name];
-              const edited = typed !== undefined && typed.trim() !== "" && typed.trim() !== a.value;
-              const list = `choices-${a.name.replace(/\W+/g, "-")}`;
-              return (
-                <tr key={a.name} className={edited ? "edited" : ""}>
-                  <td className="name" title={a.note}>{a.name}</td>
-                  <td>
-                    <input
-                      value={typed ?? ""}
-                      placeholder={a.value}
-                      list={a.choices ? list : undefined}
-                      onChange={(e) => setPanel({ values: { ...panel.values, [a.name]: e.target.value } })}
-                      aria-label={a.name}
-                    />
-                    {a.choices && (
-                      <datalist id={list}>
-                        {a.choices.map((c) => <option key={c} value={c} />)}
-                      </datalist>
-                    )}
-                    {a.name === "Time to revert" && asks.revertMinutes && (
-                      <label className="minutes-row">
-                        or measured pipeline
-                        <input className="minutes" type="number" min={0} value={panel.revertMinutes} onChange={(e) => setPanel({ revertMinutes: e.target.value })} aria-label="revert minutes" />
-                        min
-                      </label>
-                    )}
-                  </td>
-                  <td>
-                    <span className="now">{now?.value}</span> <span className={`src src-${(now?.source ?? "").replace(/\W+/g, "-")}`}>{now?.source}</span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+    <aside className="panel" aria-label="Owner panel">
+      <div>
+        <div className="panel-title">Owner panel</div>
+        <p className="panel-intro">
+          Only what the analysis could not find for this PR. Each value you enter is declared by the owner and replaces the assumed one; Re-run redoes the
+          decision on the server.
+        </p>
+      </div>
+      {nothing && <p className="panel-intro">Everything the decision needs was measured or declared for this PR.</p>}
+
+      {answerable.map((a) => {
+        const now = current.get(a.name);
+        const chosen = panel.values[a.name] ?? "";
+        const minutes = a.name === "Time to revert" && asks.revertMinutes;
+        return (
+          <div className="ask" key={a.name}>
+            <div className="ask-top">
+              <span className="ask-name" title={a.note}>
+                {a.name}
+              </span>
+              {now && <Src source={now.source} />}
+            </div>
+            <div className="ask-now">
+              Now: <span>{now?.value}</span>
+            </div>
+            <div className="choices" role="group" aria-label={a.name}>
+              {a.choices!.map((c) => (
+                <button
+                  key={c}
+                  className={chosen === c ? "choice on" : "choice"}
+                  aria-pressed={chosen === c}
+                  onClick={() => setPanel({ values: { ...panel.values, [a.name]: chosen === c ? "" : c }, ...(minutes ? { revertMinutes: "" } : {}) })}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+            {minutes && (
+              <label className="minutes">
+                or measured pipeline
+                <input
+                  className="field"
+                  type="number"
+                  min={0}
+                  placeholder="—"
+                  value={panel.revertMinutes}
+                  onChange={(e) => setPanel({ revertMinutes: e.target.value, values: { ...panel.values, [a.name]: "" } })}
+                  aria-label="revert minutes"
+                />
+                min
+              </label>
+            )}
+          </div>
+        );
+      })}
 
       {asks.advisory.length > 0 && (
         <label className="switch">
           <input type="checkbox" checked={panel.advisoryAsRequired} onChange={(e) => setPanel({ advisoryAsRequired: e.target.checked })} />
-          <span>CI: {asks.advisory.join(", ")} is red but not required by the base branch. Treat it as required.</span>
+          <span>
+            <b>
+              Treat the failing CI {asks.advisory.length === 1 ? "check" : "checks"} {asks.advisory.join(", ")} as required
+            </b>
+            <span className="switch-note">
+              The base branch does not require {asks.advisory.length === 1 ? "it" : "them"}, so the failure is not counted now. Tick this if the release should not ship
+              while {asks.advisory.length === 1 ? "it fails" : "they fail"}: gate 1 then counts {asks.advisory.length === 1 ? "it" : "them"}, and a failing required check blocks the
+              release.
+            </span>
+          </span>
         </label>
       )}
       {asks.stylesheets > 0 && (
         <label className="switch">
           <input type="checkbox" checked={panel.stylesheetsCovered} onChange={(e) => setPanel({ stylesheetsCovered: e.target.checked })} />
-          <span>Flag: count the {asks.stylesheets} added stylesheet lines as covered by the flag.</span>
+          <span>
+            <b>Count the {asks.stylesheets} new CSS lines as behind the feature flag</b>
+            <span className="switch-note">
+              CSS cannot check a flag, so these lines are counted as outside it, one reason the flag reads partial. Tick this if they only style what the
+              flag shows: with the flag off they have no effect.
+            </span>
+          </span>
         </label>
       )}
 
-      <h3>Model (optional)</h3>
-      <label className="key">
-        Key, kept in this page's memory only
-        <input type="password" autoComplete="off" placeholder="sk-ant-…" value={modelKey} onChange={(e) => setModelKey(e.target.value)} />
-      </label>
-      <label className={hasKey ? "switch" : "switch disabled"}>
-        <input type="checkbox" disabled={!hasKey} checked={panel.model && hasKey} onChange={(e) => setPanel({ model: e.target.checked })} />
-        Model on
-      </label>
+      <div className="model">
+        <div className="model-title">
+          Model <span>(optional)</span>
+        </div>
+        <label className="ask-now" htmlFor="model-key">
+          Key, kept in this page's memory only
+        </label>
+        <input id="model-key" className="field key" type="password" autoComplete="off" placeholder="sk-ant-…" value={modelKey} onChange={(e) => setModelKey(e.target.value)} />
+        <label className={hasKey ? "switch plain" : "switch plain disabled"}>
+          <input type="checkbox" disabled={!hasKey} checked={panel.model && hasKey} onChange={(e) => setPanel({ model: e.target.checked })} />
+          <span>Model on</span>
+        </label>
+      </div>
 
       <div className="actions">
-        <button className="primary" onClick={onRun} disabled={running}>
+        <button className="btn" onClick={onRun} disabled={running}>
           {running ? "Running…" : "Re-run"}
         </button>
-        <button onClick={onReset} disabled={running}>
+        <button className="textbtn" onClick={onReset} disabled={running}>
           Clear answers
         </button>
       </div>
+      {dirty && !running && (
+        <div className="dirty" role="status">
+          <i />
+          Answers changed. Re-run to redo the decision.
+        </div>
+      )}
     </aside>
   );
 }
