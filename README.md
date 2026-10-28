@@ -5,12 +5,12 @@ A prototype of the release-safety model in [writeup.md](writeup.md). Given a rep
 ## Run
 
 ```sh
-bun install && bun run brief <repo-path> <base>..<head> [--full] [--out file] [--pr pr.json] [--llm-log file]
+bun install && bun run brief <repo-path> <base>..<head> [--full] [--out file] [--pr pr.json] [--llm-log file] [--overrides json]
 ```
 
 - The brief has two layouts, both rendered from the same brief data. The **short** layout is the default: the mode, the plan, the top reasons with one cited line each, what would move the mode, one table of signals, the gates and the changed files, in under half the words of the full layout. `--full` writes the **full** layout: every section with full evidence lists and full paths. `--out` writes either one.
-- The short layout never hides anything unfavourable. A gate that does not pass shows its full table and evidence lines. Disagreements, refused model proposals and secrets present at base appear in full when there are any, and are left out when there are none.
-
+- The short layout never hides anything unfavourable. A gate that does not pass shows its full table and evidence lines. Disagreements, refused model proposals, secrets present at base and owner overrides appear in full when there are any, and are left out when there are none.
+- `--overrides '<json>'` applies the release owner's values and switches before the decision: `{"signals": {"Reach": "low"}, "revertMinutes": 5, "advisoryAsRequired": true, "stylesheetsCovered": true, "model": false}`, every field optional. An owner value replaces an assumed or declared signal, tagged `declared by owner`; for a measured signal it is listed as a disagreement and the measured value stands. See DECISIONS.md, Demo Unit 2.
 - `--pr` points at a `gh pr view --json` export; by default it is found by matching the range against `data/*/REFS.txt`. `data/` is gitignored and not shipped; without an export the brief says no PR export was found and gate 1's CI check is unverifiable.
 
 ## Export a PR
@@ -84,3 +84,24 @@ The full layout (`--full`), section by section:
 The short layout keeps the mode, the plan, the reasons, the confidence and what would move the call. It drops the full evidence lists, the list of unknowns considered, the per-rule explanations and the owner's email (see DECISIONS.md, Round 5).
 
 Every rule traces to a sentence in the write-up; choices the write-up did not make are in [DECISIONS.md](DECISIONS.md). Code is in `src/` (`signals/` holds one extractor per signal), tests in `tests/`.
+
+## The demo page (apps/demo)
+
+A web page over the 21 arcade PRs: pick a PR, click Next, and the server runs its brief. Then answer what the run could not find out and re-run to see what moved.
+
+```sh
+bun run demo:bake     # once: bare clone and the 21 exports (already committed in apps/demo/fixtures); checks every PR measures
+bun run demo          # builds the page and serves it with the API on http://localhost:3000 (PORT to change)
+docker build -f apps/demo/Dockerfile -t release-brief-demo . && docker run -p 3000:3000 release-brief-demo
+```
+
+- **Stored inputs only.** `apps/demo/fixtures` holds the bare clone and the PR exports, and nothing computed from them. Nothing is fetched or cloned at runtime and no GitHub token is used. Only the model is called, and only with a key typed into the page.
+- **Next.** The server measures the PR (diff, gates, flag, path, reach, detection, confidence, revert and history) in a worker and streams each stage to the page. It then decides the brief. A PR takes about 0.4 to 5 seconds on its first run.
+- **Owner panel.** It asks only for what that PR's run could not find:
+  - the signals that came out assumed, such as Reach, Detection, Time to revert (with a measured pipeline time in minutes) or History;
+  - the CI switch, when the PR has red checks the base branch does not require;
+  - the stylesheet switch, when stylesheet lines are outside the flag.
+
+  Re-run reuses the measurement kept in server memory and only redoes the decision, in well under a second. With a model key, the page shows a progress line per call.
+- **What moved.** After a re-run, the page compares mode, grid cell, gates, reasons and provenance rows with the run before it. Only the latest run and the one before it are kept.
+- **Nothing a viewer enters is kept.** The key is held in the page's memory and sent only with a run that has the model on. The server writes no call log, and every line it quotes from the repo goes through the CLI's secret redaction.

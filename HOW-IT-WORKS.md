@@ -136,8 +136,9 @@ result (`moves`), the detectors per failure mode, the plan's short cells, and th
 model proposals accepted and refused. `renderFull` ignores all of these. One rule decides what
 the short layout may drop: nothing unfavourable is ever only behind `--full`. A gate that does
 not pass brings the same gate table and evidence lines as the full layout. Disagreements
-(refused model proposals and unsupported model claims among them) and secrets present at base
-are printed in full whenever there are any, and left out when there are none.
+(refused model proposals and unsupported model claims among them), secrets present at base and
+owner overrides are printed in full whenever there are any, and left out when there are none.
+The demo page shows the short layout.
 
 ## The model, when there is a key
 
@@ -170,6 +171,35 @@ Confidence is computed before any fill, so a model answer never raises it.
 
 **Reason wording** (`prose.ts`) adds two sentences beside a reason that already has evidence
 lines. It never changes the reason.
+
+## measure and decide
+
+`buildBrief` in `src/run.ts` is two steps. `measure(repo, range, pr)` does every git read and ts-morph
+pass (stages 1 to 3, plus what the model will be shown) and returns `Measured`, plain JSON.
+`decide(measured, overrides?, modelKey?)` applies the owner's overrides (`src/overrides.ts`), then runs
+the model contract, the policy, the grid, the one unknown and the plan, and renders the markdown. It
+reads git only to quote evidence lines. The CLI composes the two. The demo bakes `measure` once per PR
+and calls only `decide` at runtime.
+
+**Overrides.** An owner value replaces an assumed or declared signal and is tagged `declared by owner`,
+before the model is asked, so the model sees only what is still assumed. A measured signal keeps its
+value and the owner's value becomes a disagreement (W 2, "measured beats declared"). There are four
+switches. `model: false` sends nothing. `advisoryAsRequired` recomputes gate 1's CI checks with every
+rollup check required. `stylesheetsCovered` recomputes the flag with stylesheet lines inside it.
+`revertMinutes` sets Time to revert to a measured pipeline, fast under 15 minutes.
+
+## The demo (apps/demo)
+
+`bake.ts` stores `apps/demo/fixtures`: a bare clone of arcade with the PR refs, and the 21 exports. It then
+checks that every PR measures; nothing it computes is written. `server/app.ts` lists the exports, and on
+`POST /api/prs/:n/run` measures that PR in a worker (`measure-worker.ts`), streaming each stage as a
+server-sent event. It keeps the measurement in memory, decides with the request's overrides and streams
+the result. A later run of the same PR reuses the measurement. The result carries `asks`: the signals that
+came out assumed and the switches that apply, which is all the owner panel shows. The server drops
+`ANTHROPIC_API_KEY` from its environment, so the model runs only with a key sent by the page, and it quotes
+lines through gate 1's `redact`. `web/` is the React page: `Markdown.tsx` renders the brief, `compare.ts`
+computes what moved between a run and the one before it, and `App.tsx` holds the panel, the two runs and the
+key in component state.
 
 ## Tests
 

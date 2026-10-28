@@ -283,7 +283,7 @@ function runStarts(refs: string[]): string[] {
   return out;
 }
 
-export function featureFlag(diff: Diff, facts: FlagFacts): Signal<"none" | "partial" | "full"> {
+export function featureFlag(facts: FlagFacts): Signal<"none" | "partial" | "full"> {
   const byClass = (c: LineClass) => [...facts.lines].filter(([, v]) => v === c).map(([k]) => k);
   const control = byClass("control");
   const inside = byClass("inside");

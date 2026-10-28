@@ -54,3 +54,28 @@ test("lowered confidence names what lowered it, never a note that lowers nothing
   expect(short).toContain("Confidence low, high from measured facts. Lowered by: History: history unavailable (assumed).");
   expect(short).not.toContain("Lowered by: single-author");
 });
+
+test("an owner override appears in the short view in full", async () => {
+  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: PR_JSON, overrides: { signals: { Reach: "low" } } });
+  const short = renderShort(b, makeQuoter(REPO, b.base, b.head));
+  expect(short).toContain('## Owner overrides\n\n- Reach = low: declared by the owner; was "high" (assumed): ');
+  expect(short).toContain("| Reach | low | declared by owner |");
+}, 30_000);
+
+test("an owner switch that leaves a value measured is still listed under Owner overrides", async () => {
+  const b = await buildBrief({ repo: REPO, range: RANGE, prFile: PR_JSON, overrides: { stylesheetsCovered: true } });
+  const short = renderShort(b, makeQuoter(REPO, b.base, b.head));
+  expect(b.signals.find((s) => s.name === "Feature flag")!.source).toBe("measured");
+  expect(short).toMatch(/## Owner overrides\n\n- The owner counts stylesheet lines as covered by the flag: \d+ line\(s\) moved from outside to inside/);
+}, 30_000);
+
+test("low confidence is said to move the mode one step, even when a gate takes it further", async () => {
+  const b = await buildBrief({ repo: REPO, range: "206fa14..974d34c", prFile: new URL("./fixtures/pr11.json", import.meta.url).pathname, overrides: { advisoryAsRequired: true, signals: { Reach: "low" } } });
+  const short = renderShort(b, makeQuoter(REPO, b.base, b.head));
+  const line = short.split("\n").find((l) => l.startsWith("In one line:"))!;
+  // Grid Staged, low confidence one step to Human, the gate to Block.
+  expect([b.cell!.gridMode, b.cell!.shifted, b.mode]).toEqual(["Staged", true, "Block"]);
+  expect(line).toContain("low confidence moves it one step from Staged, and gate 1 routes it to Block.");
+  expect(line).not.toMatch(/moves it from \w+ to Block/);
+  expect(short).toContain("- The owner treats every check in the PR export's rollup as required by gate 1.");
+}, 60_000);

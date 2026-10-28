@@ -166,6 +166,7 @@ const SHORT_NAME: Record<string, string> = {
 const FAMILIARITY = "Confidence: familiarity";
 const LLM_READS = ["Failure mode (LLM second opinion)", "Confidence: diff vs task (LLM)"];
 const AT_BASE = "Secrets present at base";
+const OWNER = "declared by owner";
 
 /** The clause of a signal's note the evidence cell shows: the first, unless a later one carries the value. */
 const CLAUSE: Record<string, RegExp> = {
@@ -263,7 +264,8 @@ function oneLine(b: Brief): string | null {
     const blind = (b.detectors ?? []).filter((d) => !d.detectors.length).map((d) => d.mode);
     if (!c.detectFast && blind.length) parts.push(`with nothing found that detects ${/^[aeiou]/.test(blind[0]) ? "an" : "a"} ${blind.join(" or ")} failure`);
   }
-  if (c.shifted) parts.push(`and low confidence moves it from ${c.gridMode} to ${b.mode}`);
+  // One step only: a gate may take the mode further, and says so below.
+  if (c.shifted) parts.push(`and low confidence moves it one step from ${c.gridMode}`);
   const gated = b.gates.filter((g) => g.route !== "none").map((g) => String(g.gate));
   if (gated.length) parts.push(`and ${gated.length > 1 ? "gates" : "gate"} ${andList(gated)} ${gated.length > 1 ? "route" : "routes"} it to ${c.gateMode}`);
   return `In one line: ${parts.join(", ")}.`;
@@ -419,6 +421,19 @@ export function renderShort(b: Brief, quote: (r: string) => string | null): stri
   L.push("");
   L.push(whatWouldMove(b));
   L.push("");
+
+  // Every switch the owner turned on and every value they declared in place of a measured or assumed one.
+  const owned = [
+    ...(b.switches ?? []).map((w) => `- ${cap(w)}.`),
+    ...b.signals.filter((s) => s.source === OWNER).map((s) => `- ${s.name} = ${s.value}: ${s.note}`),
+    ...b.gates.flatMap((g) => g.checks.filter((c) => c.source === OWNER).map((c) => `- Gate ${g.gate}, ${c.name}: ${c.status}. ${c.note}`)),
+  ];
+  if (owned.length) {
+    L.push("## Owner overrides");
+    L.push("");
+    L.push(...owned);
+    L.push("");
+  }
 
   if (b.disagreements?.length) {
     L.push("## Disagreements");

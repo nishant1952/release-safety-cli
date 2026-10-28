@@ -51,6 +51,8 @@ export interface Brief {
   moves?: Unknown;
   /** detectors found per failure mode */
   detectors?: ModeResult[];
+  /** owner switches that took effect (src/overrides.ts) */
+  switches?: string[];
   /** model proposals accepted and refused by code */
   proposals?: { accepted: number; refused: number };
 }

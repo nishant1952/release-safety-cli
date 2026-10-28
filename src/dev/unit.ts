@@ -49,7 +49,7 @@ switch (unit) {
     const facts = flagFacts(diff);
     console.log("flags:", JSON.stringify(facts.flags));
     console.log("by call site:", JSON.stringify(facts.byCallSite));
-    printSignal(featureFlag(diff, facts));
+    printSignal(featureFlag(facts));
     const group = new Map<string, string[]>();
     for (const [r, c] of facts.lines) (group.get(c) ?? group.set(c, []).get(c)!).push(r);
     for (const [c, rs] of group) console.log(`${c} (${rs.length}): ${rs.join(" ")}`);

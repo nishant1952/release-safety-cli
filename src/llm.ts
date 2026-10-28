@@ -15,15 +15,23 @@ export const llmAvailable = () => Boolean(process.env.ANTHROPIC_API_KEY);
 const MAX_TOKENS = 4000;
 const EFFORT = "low" as const;
 
+export interface AskOptions {
+  /** a key for this call only, in place of ANTHROPIC_API_KEY */
+  apiKey?: string;
+  /** receives each call's log entry in place of the log file */
+  onCall?: (entry: LlmLogEntry) => void;
+}
+
 /** One structured-output call, logged. Returns null when unavailable, refused, or on any API error. */
-export async function askJson<T>(system: string, user: string, schema: Record<string, unknown>, purpose = "llm"): Promise<T | null> {
-  if (!llmAvailable()) return null;
+export async function askJson<T>(system: string, user: string, schema: Record<string, unknown>, purpose = "llm", opts: AskOptions = {}): Promise<T | null> {
+  const apiKey = opts.apiKey ?? process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
   // Nothing secret leaves the process: the gate 1 secret and PII scanners run over the whole payload.
   const sys = redact(system);
   const usr = redact(user);
   system = sys.text;
   user = usr.text;
-  const client = new Anthropic();
+  const client = new Anthropic({ apiKey });
   const started = performance.now();
   const entry: LlmLogEntry = {
     ts: new Date().toISOString(),
@@ -76,6 +84,20 @@ export async function askJson<T>(system: string, user: string, schema: Record<st
     return null;
   } finally {
     entry.latency_ms = Math.round(performance.now() - started);
-    logLlmCall(entry);
+    if (opts.onCall) opts.onCall(entry);
+    else logLlmCall(entry);
   }
+}
+
+export type CallProgress = { purpose: string; done: null } | { purpose: string; done: LlmLogEntry };
+
+/**
+ * askJson with a key held by the caller. Nothing is written to the log file: each call is reported to
+ * progress when it starts and when it ends, and the key goes no further than the client.
+ */
+export function askWithKey(apiKey: string, progress: (p: CallProgress) => void = () => {}): typeof askJson {
+  return (system, user, schema, purpose = "llm") => {
+    progress({ purpose, done: null });
+    return askJson(system, user, schema, purpose, { apiKey, onCall: (entry) => progress({ purpose, done: entry }) });
+  };
 }

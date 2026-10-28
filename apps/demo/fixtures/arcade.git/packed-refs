@@ -1,0 +1,22 @@
+# pack-refs with: peeled fully-peeled sorted 
+fab0ae6a10f26141471988163d341aef080bac25 refs/heads/chore/update-ec2-host
+0e61b2d6521d628c0c83234751a1ba27db7a8b3e refs/heads/feat/change-password
+974d34cedc57e3d20129bacebfe04e09c618227d refs/heads/feat/fireweave-initialise
+489d92b1f6ad2d1c96683fd09ec7d69bf384fab2 refs/heads/feat/game-difficulty
+71e8103d0d9c712ad22317d89e21adfdbe57dc5b refs/heads/feat/header-arrangement
+33a285e359945872a7fd451194669849dcce6ace refs/heads/feat/match-replay
+3b9c7ed7a1a33c57b7b4bfd41d35fa9bb49b1784 refs/heads/feat/multi-game-centre
+528c3084cf8860d409e13ed572797d13735f6c70 refs/heads/feat/openobserve-observability
+ef24a354011b95e96f7ab2693a8bd96eb4546430 refs/heads/feat/pin-games
+04c6f86ba6c593965523b69e58f930b68c3ca316 refs/heads/feat/pin-games-decisive-bots
+1ee249b2a29022222e7ef3e810c59250af00e0c0 refs/heads/feat/prod-compose-fast-deploy
+c5da112a135dec70034f81d75b0f54e71a159227 refs/heads/feat/profile-avatar-menu
+bd5cf7c8573f2a949e68344e9ea15c68d716270d refs/heads/fix/arcade-deploy-path
+a029d2f2aadfb56f66aeffcabfaedb21847f605d refs/heads/fix/deploy-shallow-fetch
+206fa1448e5718557a8be934f64681a8186a498a refs/heads/fw-base
+c49cd089508c863197db2e1443eb3f13546003d9 refs/heads/main
+8933ffe1b4d1f8beb0da2774cdf60bcae3aca70a refs/heads/pin-options
+48a2a83b2820472cff043a41af6f9e7f132d1baf refs/heads/plan/observability-strategy
+0d3e9d1551d1569e3ab641ffa7846e1e015a3d71 refs/heads/redesign/competitive-palette
+85298bc2ba565a657d17035a2b2f1c9dee567073 refs/heads/redesign/lobby-crazygames
+0c4e573a1d4768ad333827bbb0e64d23b3260f02 refs/heads/refactor/games-structure
