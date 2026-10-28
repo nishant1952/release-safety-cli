@@ -78,15 +78,21 @@ Every rule traces to a sentence in the write-up; choices the write-up did not ma
 
 ## The demo page (apps/demo)
 
-A web page over the 21 arcade PRs: pick a PR, read its brief, change what the owner knows, run, and see what moved.
+A web page over the 21 arcade PRs: pick a PR, click Next, and the server runs its brief. Then answer what the run could not find out and re-run to see what moved.
 
 ```sh
-bun run demo:bake     # once: bare clone, the 21 exports, measure() for each (already committed in apps/demo/fixtures)
+bun run demo:bake     # once: bare clone and the 21 exports (already committed in apps/demo/fixtures); checks every PR measures
 bun run demo          # builds the page and serves it with the API on http://localhost:3000 (PORT to change)
 docker build -f apps/demo/Dockerfile -t release-brief-demo . && docker run -p 3000:3000 release-brief-demo
 ```
 
-- Inputs are baked. The bare clone, the PR exports and each PR's measurement are in `apps/demo/fixtures`. At runtime nothing is fetched, cloned or measured, and no GitHub token is used. Only the model is called, and only with a key typed into the page.
-- A run calls `decide` on the baked measurement with the panel's overrides (the same object as the CLI's `--overrides`). Without the model it takes well under a second; with the model, the page shows a progress line per call.
-- The page: the PR list with each baseline mode and grid cell; the brief with a header card for mode, grid cell, gates and confidence; the owner panel, with every signal editable, the four switches, the model key field and Run. After a run, "What moved" compares mode, grid cell, gates, reasons and provenance rows with the previous run or the baked baseline. The last ten runs of each PR can be restored.
-- Nothing a viewer enters is kept. The key is held in the page's memory and sent only with a run that has the model on. The server writes no call log, and every line it quotes from the repo goes through the CLI's secret redaction.
+- **Stored inputs only.** `apps/demo/fixtures` holds the bare clone and the PR exports, and nothing computed from them. Nothing is fetched or cloned at runtime and no GitHub token is used. Only the model is called, and only with a key typed into the page.
+- **Next.** The server measures the PR (diff, gates, flag, path, reach, detection, confidence, revert and history) in a worker and streams each stage to the page. It then decides the brief. A PR takes about 0.4 to 5 seconds on its first run.
+- **Owner panel.** It asks only for what that PR's run could not find:
+  - the signals that came out assumed, such as Reach, Detection, Time to revert (with a measured pipeline time in minutes) or History;
+  - the CI switch, when the PR has red checks the base branch does not require;
+  - the stylesheet switch, when stylesheet lines are outside the flag.
+
+  Re-run reuses the measurement kept in server memory and only redoes the decision, in well under a second. With a model key, the page shows a progress line per call.
+- **What moved.** After a re-run, the page compares mode, grid cell, gates, reasons and provenance rows with the run before it. Only the latest run and the one before it are kept.
+- **Nothing a viewer enters is kept.** The key is held in the page's memory and sent only with a run that has the model on. The server writes no call log, and every line it quotes from the repo goes through the CLI's secret redaction.

@@ -1,8 +1,8 @@
 // Calls to the demo's API. A run's answer is a stream of server-sent events over the POST response.
-import type { PrDetail, PrSummary, Progress, RunResult } from "../../server/app";
+import type { Asks, PrSummary, Progress, RunResult } from "../../server/app";
 import type { Overrides } from "../../../../src/overrides";
 
-export type { PrDetail, PrSummary, Progress, RunResult, Overrides };
+export type { Asks, PrSummary, Progress, RunResult, Overrides };
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? `HTTP ${res.status}`);
@@ -10,10 +10,18 @@ async function json<T>(res: Response): Promise<T> {
 }
 
 export const listPrs = () => fetch("/api/prs").then((r) => json<PrSummary[]>(r));
-export const getPr = (n: number) => fetch(`/api/prs/${n}`).then((r) => json<PrDetail>(r));
 
-/** Runs decide on the baked measurement. The key goes in the body of this one request and is not kept by the server. */
-export async function runPr(n: number, overrides: Overrides, modelKey: string | null, onProgress: (p: Progress) => void): Promise<RunResult> {
+/**
+ * Runs a PR on the server: measured on its first run, then decided with the overrides. The key goes in the body of
+ * this one request and is not kept by the server.
+ */
+export async function runPr(
+  n: number,
+  overrides: Overrides,
+  modelKey: string | null,
+  onStage: (stage: string, ms: number) => void,
+  onProgress: (p: Progress) => void,
+): Promise<RunResult> {
   const res = await fetch(`/api/prs/${n}/run`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -34,7 +42,8 @@ export async function runPr(n: number, overrides: Overrides, modelKey: string | 
       const data = block.match(/^data: (.+)$/m)?.[1];
       if (!event || data === undefined) continue; // a keep-alive comment
       const payload = JSON.parse(data);
-      if (event === "progress") onProgress(payload);
+      if (event === "stage") onStage(payload.stage, payload.ms);
+      else if (event === "progress") onProgress(payload);
       else if (event === "result") return payload;
       else if (event === "error") throw new Error(payload.message);
     }

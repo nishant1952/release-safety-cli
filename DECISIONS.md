@@ -250,3 +250,23 @@ Source: the demo brief. The CLI rules are unchanged except where that brief says
 - apps/demo/Dockerfile, built from the repo root. It is based on `oven/bun:1.3.1` (the Bun version the repo is developed on) with git added, because measure and the quotes read the repo through git. It runs `bun install --frozen-lockfile`, then `bun run demo:bake` (the committed clone and exports are used, so nothing is cloned; the 21 PRs are measured again and the build fails if one fails), then builds the page. It runs the server with `PORT=3000`; no other environment is needed.
 - .dockerignore keeps `.env` (the local key), data/, logs/, node_modules/, the built page and .git out of the build context.
 - Docker Desktop would not start on the build machine, so the image itself was not built here. Its steps were run instead in a fresh clone of the commit with an empty environment: install, bake (which re-measured all 21 PRs to the committed bytes), page build, server with only PORT. The API and page answered.
+
+### Unit 8: measured when asked (owner's change after the first demo)
+- Source: the owner, after using the first demo. The page should run each PR on the server from the stored data, not show results computed in advance. This supersedes the parts of Units 3 to 5 that baked a measurement per PR and decided every baseline when the server started.
+- `apps/demo/fixtures/measured/` is gone. The bake stores the bare clone and the exports as before. It still measures all 21 PRs, as a check that fails the bake and the image build when one fails, but writes nothing from it.
+- `POST /api/prs/:n/run` measures the PR on its first run, in a Bun worker so the server can stream each stage (`stage` events: diff, gates, feature flag, path, reach, detection, confidence, reversibility, revert and history, each with its time). `measure` takes an optional stage callback for this; its result is unchanged.
+- The owner chose to reuse the measurement: it is kept in the server's memory per PR, and a later run of that PR only redoes the decision (`measureMs` is null, and the page says the measurement was reused). This is safe because the overrides never reach measure. A request that finds a measurement in flight waits for it. The memory holds only what measure derives from the stored inputs, never a viewer's input.
+- `GET /api/prs` lists number and title from the stored exports; there is no detail endpoint and no baseline.
+- Each run returns `asks`, what the owner panel shows:
+  - the rule signals that came out assumed, with the value the missing-data policy gave them, and their values when the decision tests them;
+  - whether Time to revert is assumed, in which case a measured pipeline time is asked for;
+  - the red checks the base branch does not require (the CI switch is shown only then);
+  - the added stylesheet lines outside a partial flag (the stylesheet switch is shown only then).
+
+  Measured and declared signals are not asked for. The CLI and decide still accept an owner value for any signal, with measured beats declared, as in Unit 2.
+- tests/baked.test.ts now measures each of the 21 PRs from the stored inputs and checks the brief equals out/prN.md. It adds about 75 seconds to `bun run test`.
+
+### Unit 9: pick a PR, Next, ask only for unknowns
+- The page: a dropdown of the 21 PRs ("#13 — title") and Next. While the server runs, a card lists each stage as it ends, then the decision's time. After a run the brief, the header card and (from the second run) "What moved" take its place.
+- The owner panel lists only `asks`: each unknown with an input (empty, the assumed value as placeholder; signals the decision tests offer their values), the brief's current value and provenance beside it, a minutes field under Time to revert, and the CI and stylesheet switches only when they apply. If nothing is assumed it says so. Then the model key and Re-run.
+- Only the latest run and the one before it are kept per PR (the owner's choice), with tabs to view either. "What moved" compares the two. The ten-run history, its restore button, and the control to compare with a baked baseline are gone (Unit 6), because there is no baseline.

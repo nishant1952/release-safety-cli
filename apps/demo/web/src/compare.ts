@@ -1,7 +1,6 @@
 // What moved between two runs of one PR: mode, grid cell, gates, confidence, the top reasons and the
 // provenance rows. Reasons and disagreements are compared by their text; a row is one signal, by name.
 import type { Reason } from "../../../../src/brief";
-import type { Overrides } from "../../../../src/overrides";
 import type { RunResult } from "../../server/app";
 
 export interface Change<T> {
@@ -63,14 +62,4 @@ export function diffRuns(before: RunResult, after: RunResult): BriefDiff {
     unchangedRows: rows.filter(same),
     disagreements: { added: aDis.filter((d) => !bDis.includes(d)), removed: bDis.filter((d) => !aDis.includes(d)) },
   };
-}
-
-/** "Reach = low; revert 5 min; model on", for the history list. */
-export function describeOverrides(o: Overrides, model: boolean): string {
-  const parts = Object.entries(o.signals ?? {}).map(([k, v]) => `${k} = ${v}`);
-  if (o.revertMinutes !== undefined && o.revertMinutes !== null) parts.push(`revert ${o.revertMinutes} min`);
-  if (o.advisoryAsRequired) parts.push("advisory checks required");
-  if (o.stylesheetsCovered) parts.push("stylesheets covered");
-  if (model) parts.push("model on");
-  return parts.join("; ") || "no overrides";
 }

@@ -13,8 +13,8 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 COPY . .
-# The bare clone and the exports are committed, so the bake clones nothing here; it re-measures the 21 PRs
-# and fails the build if any PR fails. Then the page is built.
+# The bare clone and the exports are committed, so the bake clones nothing here; it checks that each of the
+# 21 PRs measures and fails the build if one does not. Then the page is built. PRs are measured at runtime.
 RUN bun run demo:bake && bunx vite build --config apps/demo/vite.config.ts
 
 ENV PORT=3000

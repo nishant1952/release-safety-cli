@@ -176,13 +176,16 @@ rollup check required. `stylesheetsCovered` recomputes the flag with stylesheet 
 
 ## The demo (apps/demo)
 
-`bake.ts` writes `apps/demo/fixtures`: a bare clone of arcade with the PR refs, the 21 exports, and
-`measured/prN.json`. `server/app.ts` loads those and decides each baseline at start. It serves
-`GET /api/prs`, `GET /api/prs/:n` and `POST /api/prs/:n/run`; the last answers with server-sent events
-(progress per model call, then the result). The server drops `ANTHROPIC_API_KEY` from its environment,
-so the model runs only with a key sent by the page. It quotes lines through gate 1's `redact`.
-`web/` is the React page: `Markdown.tsx` renders the brief, `compare.ts` computes what moved between two
-runs, and `App.tsx` holds the panel, the runs and the key in component state.
+`bake.ts` stores `apps/demo/fixtures`: a bare clone of arcade with the PR refs, and the 21 exports. It then
+checks that every PR measures; nothing it computes is written. `server/app.ts` lists the exports, and on
+`POST /api/prs/:n/run` measures that PR in a worker (`measure-worker.ts`), streaming each stage as a
+server-sent event. It keeps the measurement in memory, decides with the request's overrides and streams
+the result. A later run of the same PR reuses the measurement. The result carries `asks`: the signals that
+came out assumed and the switches that apply, which is all the owner panel shows. The server drops
+`ANTHROPIC_API_KEY` from its environment, so the model runs only with a key sent by the page, and it quotes
+lines through gate 1's `redact`. `web/` is the React page: `Markdown.tsx` renders the brief, `compare.ts`
+computes what moved between a run and the one before it, and `App.tsx` holds the panel, the two runs and the
+key in component state.
 
 ## Tests
 

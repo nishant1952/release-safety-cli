@@ -1,11 +1,8 @@
-// The diff after a run, and the run history of the selected PR.
+// What moved between the latest run and the one before it.
 import type { Reason } from "../../../../src/brief";
 import type { RunResult } from "./api";
-import type { Run } from "./App";
-import { describeOverrides, diffRuns, type Change, type Row } from "./compare";
+import { diffRuns, type Change, type Row } from "./compare";
 import { inline } from "./Markdown";
-
-export type Compare = "previous" | "baseline";
 
 function Moved({ label, c }: { label: string; c: Change<string> }) {
   return (
@@ -38,22 +35,14 @@ function ReasonItem({ r, kind }: { r: Reason; kind: "added" | "removed" | "rewor
 
 const val = (v: Row["before"]) => (v ? `${v.value} (${v.source})` : "absent");
 
-export function DiffView({ before, after, beforeLabel, compare, setCompare }: { before: RunResult; after: RunResult; beforeLabel: string; compare: Compare; setCompare: (c: Compare) => void }) {
+export function DiffView({ before, after }: { before: RunResult; after: RunResult }) {
   const d = diffRuns(before, after);
   const gateChanges = d.gates.filter((g) => g.changed);
   return (
     <section className="card diff">
       <div className="card-top">
         <h2>What moved</h2>
-        <span className="muted small">against {beforeLabel}</span>
-        <span className="compare">
-          <label>
-            <input type="radio" checked={compare === "previous"} onChange={() => setCompare("previous")} /> previous run
-          </label>
-          <label>
-            <input type="radio" checked={compare === "baseline"} onChange={() => setCompare("baseline")} /> baked baseline
-          </label>
-        </span>
+        <span className="muted small">against the run before it</span>
       </div>
       <Moved label="Mode" c={d.mode} />
       <Moved label="Grid cell" c={d.cell} />
@@ -123,29 +112,6 @@ export function DiffView({ before, after, beforeLabel, compare, setCompare }: { 
           </table>
         </details>
       )}
-    </section>
-  );
-}
-
-export function History({ runs, shown, onShow, onRestore }: { runs: Run[]; shown: number | null; onShow: (id: number | null) => void; onRestore: (run: Run) => void }) {
-  return (
-    <section className="history">
-      <h3>History (last ten runs of this PR)</h3>
-      <ol>
-        <li className={shown === null ? "current" : ""}>
-          <button className="link" onClick={() => onShow(null)}>baked baseline</button>
-        </li>
-        {[...runs].reverse().map((r) => (
-          <li key={r.id} className={shown === r.id ? "current" : ""}>
-            <button className="link" onClick={() => onShow(r.id)}>
-              run {r.id} · {r.at} · {r.result.brief.mode} · {r.result.cell.damage} x {r.result.cell.window}
-            </button>
-            <span className="muted small"> {describeOverrides(r.result.overrides, r.result.model)}</span>{" "}
-            <button className="small-btn" onClick={() => onRestore(r)} title="show this run and put its inputs back in the panel">restore</button>
-          </li>
-        ))}
-      </ol>
-      {runs.length === 0 && <p className="muted small">No runs yet. Nothing is kept after the page closes.</p>}
     </section>
   );
 }
