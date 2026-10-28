@@ -100,19 +100,34 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
 }
 
 /** The expensive part: git reads and ts-morph. Never depends on the model or on anything a person enters. */
-export function measure(repo: string, range: string, pr: PrMeta | null, prFiles: string[] = pr ? [pr.file] : []): Measured {
-  const diff = loadDiff(repo, range);
+export function measure(
+  repo: string,
+  range: string,
+  pr: PrMeta | null,
+  prFiles: string[] = pr ? [pr.file] : [],
+  /** told when each stage ends, with its time in ms (the demo streams these) */
+  onStage: (stage: string, ms: number) => void = () => {},
+): Measured {
+  const stage = <T>(name: string, run: () => T): T => {
+    const started = performance.now();
+    const out = run();
+    onStage(name, Math.round(performance.now() - started));
+    return out;
+  };
+  const diff = stage("diff", () => loadDiff(repo, range));
   const git = new Git(diff.repo);
-  const gates = runGates(diff, pr);
-  const flags = flagFacts(diff);
-  const paths = pathFacts(diff);
-  const reach = reachFacts(diff);
+  const gates = stage("gates", () => runGates(diff, pr));
+  const flags = stage("feature flag", () => flagFacts(diff));
+  const paths = stage("path", () => pathFacts(diff));
+  const reach = stage("reach", () => reachFacts(diff));
   const failure = failureModeFacts(diff);
-  const detection = detectionFacts(diff, failure);
+  const detection = stage("detection", () => detectionFacts(diff, failure));
   // Never send a diff with a detected secret to the API.
   const secretHit = gates[0].checks.some((c) => c.name === "secrets" && c.status === "trip");
-  const confFacts = confidenceFacts(diff, pr);
+  const confFacts = stage("confidence", () => confidenceFacts(diff, pr));
   const conf = confidenceSignals(confFacts, pr !== null);
+  const early = stage("reversibility", () => [reversibility(diff), featureFlag(flags), pathSignal(paths), reachSignal(reach), failureModeSignal(failure)]);
+  const late = stage("revert and history", () => [detectionSignal(detection), revertSignal(revertFacts(diff)), historySignal(historyFacts(diff)), ...conf.signals]);
   const fullDiff = diffText(diff);
   const ctx = citationContext(diff, paths, reach, secretHit);
   return {
@@ -126,8 +141,8 @@ export function measure(repo: string, range: string, pr: PrMeta | null, prFiles:
     pr,
     prFiles,
     gates,
-    early: [reversibility(diff), featureFlag(flags), pathSignal(paths), reachSignal(reach), failureModeSignal(failure)],
-    late: [detectionSignal(detection), revertSignal(revertFacts(diff)), historySignal(historyFacts(diff)), ...conf.signals],
+    early,
+    late,
     flag: { ...flags, lines: [...flags.lines] },
     confidence: { measuredLevel: conf.measuredLevel, why: conf.why, disagreements: conf.disagreements },
     detectionDisagreements: detectionDisagreements(detection),

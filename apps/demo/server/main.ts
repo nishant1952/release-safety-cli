@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { createApp } from "./app";
 
 const DIST = new URL("../dist", import.meta.url).pathname;
-const app = await createApp();
+const app = createApp();
 
 const server = Bun.serve({
   port: Number(process.env.PORT ?? 3000),
@@ -19,4 +19,4 @@ const server = Bun.serve({
     return new Response(Bun.file(join(DIST, "index.html")), { headers: { "content-type": "text/html; charset=utf-8" } });
   },
 });
-console.log(`demo on http://localhost:${server.port} (${app.prs.length} PRs baked)`);
+console.log(`demo on http://localhost:${server.port} (${app.prs.length} PR exports; each is measured when asked for)`);

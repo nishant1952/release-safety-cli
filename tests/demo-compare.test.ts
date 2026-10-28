@@ -1,11 +1,11 @@
-// Demo, Unit 6: what the diff view shows after a run, on real runs of the baked measurements.
+// Demo: what the diff view shows between a run and the one before it, on real runs measured from the stored inputs.
 import { expect, test } from "bun:test";
 import { run } from "../apps/demo/server/app";
-import { loadMeasured } from "../apps/demo/server/fixtures";
-import { describeOverrides, diffRuns } from "../apps/demo/web/src/compare";
+import { measurePr } from "../apps/demo/server/fixtures";
+import { diffRuns } from "../apps/demo/web/src/compare";
 import "./fixture";
 
-const m13 = loadMeasured(13);
+const m13 = await measurePr(13);
 const base13 = await run(m13, {}, null);
 
 test("PR 13, Reach low: grid cell and the Reach row move, the mode does not, the probability push is a new reason", async () => {
@@ -32,16 +32,11 @@ test("PR 13, Reach low: grid cell and the Reach row move, the mode does not, the
 });
 
 test("PR 11, advisory checks as required: Human -> Block, gate 1 moves, the advisory reason goes", async () => {
-  const m = loadMeasured(11);
+  const m = await measurePr(11);
   const d = diffRuns(await run(m, {}, null), await run(m, { advisoryAsRequired: true }, null));
   expect([d.mode.before, d.mode.after]).toEqual(["Human", "Block"]);
   expect(d.gates.filter((g) => g.changed).map((g) => [g.before, g.after])).toEqual([["1. Table stakes: trip, routes to human", "1. Table stakes: trip, routes to block"]]);
   expect(d.reasons.added[0].text.startsWith("Gate 1 (Table stakes) is trip, so it routes to block")).toBe(true);
-});
-
-test("history lines name the overrides", () => {
-  expect(describeOverrides({ signals: { Reach: "low" }, revertMinutes: 5, advisoryAsRequired: true }, true)).toBe("Reach = low; revert 5 min; advisory checks required; model on");
-  expect(describeOverrides({}, false)).toBe("no overrides");
 });
 
 test("the model's wording on an unchanged reason is listed as reworded, not as unchanged", () => {

@@ -1,13 +1,11 @@
-// bun run demo:bake. Makes everything the demo reads, once, so nothing is fetched at runtime:
+// bun run demo:bake. Stores everything the demo reads, once, so nothing is fetched at runtime:
 //   fixtures/arcade.git   a bare clone of fireweave-HQ-Demo/arcade with every PR head (refs/pull/*/head)
 //   fixtures/prs/prN/     pr.json, REFS.txt and required-checks.json, copied from data/prN
-//   fixtures/measured/prN.json   measure() for each of the 21 PRs
-// Run from anywhere; paths are relative to the repo root. Exits 1 if any PR fails to measure.
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+// and then checks that each of the 21 PRs measures. Run from anywhere; paths are relative to the repo root.
+// Exits 1 if any PR fails to measure.
+import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { findPrFiles, loadPr } from "../../src/pr";
-import { measure } from "../../src/run";
-import { FIXTURES, MEASURED, PRS, PR_NUMBERS, REPO, rangeOf } from "./server/fixtures";
+import { FIXTURES, measurePr, PRS, PR_NUMBERS, REPO } from "./server/fixtures";
 
 process.chdir(new URL("../..", import.meta.url).pathname);
 const SOURCE = process.env.ARCADE_SOURCE ?? "https://github.com/fireweave-HQ-Demo/arcade.git";
@@ -48,19 +46,14 @@ for (const n of PR_NUMBERS) {
 }
 console.log(`exports for ${PR_NUMBERS.length} PRs in ${PRS}`);
 
-// 3. Measurement. The export is found by range exactly as the CLI finds it in data/, so pr17 and pr18 (one range)
-// carry the same "two exports match" disagreement as their out/ briefs.
-mkdirSync(MEASURED, { recursive: true });
+// 3. A check, not an output: every PR must measure from the stored clone and exports, or the bake (and the
+// image build) fails. Nothing is written: the server measures each PR when a viewer asks for it.
 const failed: string[] = [];
 for (const n of PR_NUMBERS) {
   const started = performance.now();
   try {
-    const range = rangeOf(readFileSync(join(PRS, `pr${n}`, "REFS.txt"), "utf8"));
-    const [b, h] = range.split("..");
-    const prFiles = findPrFiles(git("-C", REPO, "rev-parse", `${b}^{commit}`).trim(), git("-C", REPO, "rev-parse", `${h}^{commit}`).trim(), PRS);
-    const m = measure(REPO, range, await loadPr(prFiles[0] ?? null), prFiles);
-    writeFileSync(join(MEASURED, `pr${n}.json`), JSON.stringify(m, null, 1) + "\n");
-    console.log(`pr${n} ${range} measured in ${Math.round(performance.now() - started)} ms`);
+    const m = await measurePr(n);
+    console.log(`pr${n} ${m.base.slice(0, 8)}..${m.head.slice(0, 8)} measures in ${Math.round(performance.now() - started)} ms`);
   } catch (error) {
     failed.push(`pr${n}: ${(error as Error).message}`);
   }
@@ -69,4 +62,4 @@ if (failed.length) {
   console.error(`measurement failed for ${failed.length} PR(s):\n${failed.join("\n")}`);
   process.exit(1);
 }
-console.log(`baked ${PR_NUMBERS.length} PRs into ${FIXTURES}`);
+console.log(`stored inputs for ${PR_NUMBERS.length} PRs in ${FIXTURES}; all measure`);

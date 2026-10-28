@@ -1,13 +1,16 @@
-// The demo's API. Every brief is decided from a baked measurement: nothing is fetched, cloned or measured
-// at runtime, and nothing a viewer sends is kept. The model key in a run request is used for that run's
-// calls and dropped with the request.
+// The demo's API. A PR is measured on the server when a viewer asks for it, from the stored bare clone and PR
+// exports only: nothing is fetched or cloned, and nothing computed earlier is read. The measurement is kept in
+// memory so a re-run with the owner's inputs only redoes the decision. Nothing a viewer sends is kept; the
+// model key in a run request is used for that run's calls and dropped with the request.
 import type { Brief } from "../../../src/brief";
-import { redact } from "../../../src/gates";
+import { nonCodeKind } from "../../../src/files";
+import { redact, redAdvisory } from "../../../src/gates";
 import type { CallProgress } from "../../../src/llm";
 import { VALUES, type Overrides } from "../../../src/overrides";
+import { applyPolicy } from "../../../src/policy";
 import { makeQuoter } from "../../../src/render";
 import { decide, type Decided, type Measured } from "../../../src/run";
-import { loadMeasured, PR_NUMBERS } from "./fixtures";
+import { listExports, PR_NUMBERS } from "./fixtures";
 
 // Bun loads .env from the working directory. The demo never uses a key it was not handed by the page.
 delete process.env.ANTHROPIC_API_KEY;
@@ -21,22 +24,29 @@ export interface RunResult {
   model: boolean;
   /** time decide took, in milliseconds */
   ms: number;
+  /** time measure took, or null when the measurement in memory was reused */
+  measureMs: number | null;
+  /** what the owner panel asks for this PR */
+  asks: Asks;
 }
 
 export interface PrSummary {
   n: number;
   title: string;
-  mode: string;
-  cell: string;
 }
 
-export interface PrDetail extends PrSummary {
-  range: string;
-  baseline: RunResult;
-  /** the model's two reads; decide writes them after the owner's values, so they are not editable */
-  readOnly: string[];
-  /** suggested values for signals that have a fixed set */
-  choices: Record<string, string[]>;
+/**
+ * What the owner panel asks: only what the measurement could not find. The signals that were assumed (with the
+ * value the missing-data policy gave them), and the switches that apply to this PR.
+ */
+export interface Asks {
+  signals: { name: string; value: string; note: string; choices: string[] | null }[];
+  /** Time to revert is assumed, so a measured pipeline time is asked for */
+  revertMinutes: boolean;
+  /** red checks the base branch does not require */
+  advisory: string[];
+  /** added stylesheet lines outside the flag, when they are part of what keeps it partial */
+  stylesheets: number;
 }
 
 /** One model call, as the page shows it: never the prompt, never the key. */
@@ -44,12 +54,21 @@ export type Progress =
   | { purpose: string; phase: "start" }
   | { purpose: string; phase: "end"; outcome: string; latency_ms: number; tokens: number | null; usd: number | null; error: string | null };
 
-const READ_ONLY = ["Failure mode (LLM second opinion)", "Confidence: diff vs task (LLM)"];
-
-// The values the decision tests for, from src/overrides.ts; the minutes switch gives a measured pipeline.
-const CHOICES = VALUES;
-
-export const cellText = (c: Decided["cell"]) => `${c.damage} x ${c.window}`;
+/** What the owner panel asks for one measured PR. */
+export function asksOf(m: Measured): Asks {
+  const all = [...m.early, ...m.late, ...(m.atBase ? [m.atBase] : [])];
+  const rounded = applyPolicy(all, m.confidence.measuredLevel, []).signals;
+  const flag = m.early.find((s) => s.name === "Feature flag")!;
+  const cssOutside = m.flag.lines.filter(([ref, c]) => c === "outside" && nonCodeKind(ref.replace(/:\d+$/, "")) === "stylesheet").length;
+  return {
+    signals: rounded
+      .filter((s) => s.source === "assumed")
+      .map((s) => ({ name: s.name, value: s.value, note: s.note, choices: VALUES[s.name] ?? null })),
+    revertMinutes: rounded.some((s) => s.name === "Time to revert" && s.source === "assumed"),
+    advisory: redAdvisory(m.pr).map((c) => `${c.name} (${c.conclusion})`),
+    stylesheets: flag.value === "partial" ? cssOutside : 0,
+  };
+}
 
 /** The CLI's secret redaction, over every line quoted from the repo onto the screen. */
 export function redactingQuoter(m: Measured) {
@@ -60,7 +79,7 @@ export function redactingQuoter(m: Measured) {
   };
 }
 
-export async function run(m: Measured, overrides: Overrides, modelKey: string | null, progress?: (p: Progress) => void): Promise<RunResult> {
+export async function run(m: Measured, overrides: Overrides, modelKey: string | null, progress?: (p: Progress) => void, measureMs: number | null = null): Promise<RunResult> {
   // Without a key from the page the model is off, whatever the panel says: the environment's key was deleted above.
   const useModel = Boolean(modelKey) && overrides.model !== false;
   const onCall = (p: CallProgress) =>
@@ -80,7 +99,7 @@ export async function run(m: Measured, overrides: Overrides, modelKey: string | 
   const started = performance.now();
   // With a key and the model switched off, decide is still handed the key, so the brief says "switched off".
   const d = await decide(m, overrides, modelKey ?? undefined, { quote: redactingQuoter(m), progress: onCall });
-  return { ...d, overrides, model: useModel, ms: Math.round(performance.now() - started) };
+  return { ...d, overrides, model: useModel, ms: Math.round(performance.now() - started), measureMs, asks: asksOf(m) };
 }
 
 /** Request bodies are checked field by field; anything else is a 400. */
@@ -151,50 +170,60 @@ export interface App {
   prs: PrSummary[];
 }
 
-/** Loads the 21 measurements and decides each baseline once. */
-export async function createApp(): Promise<App> {
-  const measured = new Map<number, Measured>();
-  const baseline = new Map<number, RunResult>();
-  for (const n of PR_NUMBERS) {
-    const m = loadMeasured(n);
-    measured.set(n, m);
-    baseline.set(n, await run(m, {}, null));
-  }
-  const summary = (n: number): PrSummary => {
-    const b = baseline.get(n)!;
-    return { n, title: b.brief.title ?? "", mode: b.brief.mode ?? "", cell: cellText(b.cell) };
-  };
-  const prs = PR_NUMBERS.map(summary);
+/** measure() in a worker thread, reporting each stage as it ends. */
+function measureInWorker(n: number, onStage: (stage: string, ms: number) => void): Promise<Measured> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL("./measure-worker.ts", import.meta.url).href);
+    worker.onmessage = (e: MessageEvent) => {
+      if (e.data.stage) return onStage(e.data.stage, e.data.ms);
+      worker.terminate();
+      if (e.data.measured) resolve(e.data.measured);
+      else reject(new Error(`measurement failed: ${e.data.error}`));
+    };
+    worker.onerror = (e) => {
+      worker.terminate();
+      reject(new Error(`measurement failed: ${e.message}`));
+    };
+    worker.postMessage({ n });
+  });
+}
+
+export function createApp(): App {
+  const prs = listExports();
+  // Measurements made in this process, by PR. A request that finds one in flight waits for it.
+  const measured = new Map<number, Promise<Measured>>();
 
   async function fetch(req: Request): Promise<Response> {
-    const url = new URL(req.url);
-    const path = url.pathname;
+    const path = new URL(req.url).pathname;
     if (path === "/api/prs" && req.method === "GET") return Response.json(prs);
-    const match = path.match(/^\/api\/prs\/(\d+)(\/run)?$/);
-    if (!match || !measured.has(Number(match[1]))) return Response.json({ error: "not found" }, { status: 404 });
+    const match = path.match(/^\/api\/prs\/(\d+)\/run$/);
+    if (!match || !PR_NUMBERS.includes(Number(match[1]))) return Response.json({ error: "not found" }, { status: 404 });
+    if (req.method !== "POST") return Response.json({ error: "method not allowed" }, { status: 405 });
     const n = Number(match[1]);
-    const m = measured.get(n)!;
-    if (!match[2] && req.method === "GET") {
-      const detail: PrDetail = { ...summary(n), range: `${m.base.slice(0, 7)}..${m.head.slice(0, 7)}`, baseline: baseline.get(n)!, readOnly: READ_ONLY, choices: CHOICES };
-      return Response.json(detail);
+    let overrides: Overrides;
+    let modelKey: string | null;
+    try {
+      const body = (await req.json()) as { overrides?: unknown; modelKey?: unknown };
+      overrides = parseOverrides(body.overrides);
+      if (body.modelKey !== undefined && body.modelKey !== null && typeof body.modelKey !== "string") throw new BadRequest("modelKey must be a string");
+      modelKey = (body.modelKey as string | undefined)?.trim() || null;
+    } catch (error) {
+      return Response.json({ error: error instanceof BadRequest ? error.message : "the body must be JSON" }, { status: 400 });
     }
-    if (match[2] && req.method === "POST") {
-      let overrides: Overrides;
-      let modelKey: string | null;
-      try {
-        const body = (await req.json()) as { overrides?: unknown; modelKey?: unknown };
-        overrides = parseOverrides(body.overrides);
-        if (body.modelKey !== undefined && body.modelKey !== null && typeof body.modelKey !== "string") throw new BadRequest("modelKey must be a string");
-        modelKey = (body.modelKey as string | undefined)?.trim() || null;
-      } catch (error) {
-        return Response.json({ error: error instanceof BadRequest ? error.message : "the body must be JSON" }, { status: 400 });
-      }
-      return sse(async (send) => {
-        const result = await run(m, overrides, modelKey, (p) => send("progress", p));
-        send("result", result);
-      });
-    }
-    return Response.json({ error: "method not allowed" }, { status: 405 });
+    return sse(async (send) => {
+      let measureMs: number | null = null;
+      let m = measured.get(n);
+      if (!m) {
+        const started = performance.now();
+        m = measureInWorker(n, (stage, ms) => send("stage", { stage, ms }));
+        measured.set(n, m);
+        m.catch(() => measured.delete(n));
+        await m;
+        measureMs = Math.round(performance.now() - started);
+      } else send("stage", { stage: "measurement in memory reused", ms: 0 });
+      const result = await run(await m, overrides, modelKey, (p) => send("progress", p), measureMs);
+      send("result", result);
+    });
   }
 
   return { fetch, prs };

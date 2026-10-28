@@ -1,15 +1,16 @@
-// Demo, Unit 4: the API over the baked measurements. Runs are decided on the baked Measured; with a key from the
-// request the model calls stream progress as server-sent events. Nothing is fetched except the model.
+// Demo: the API. A PR is measured on the server the first time it is run (in a worker, streaming each stage),
+// from the stored clone and exports; later runs reuse that measurement and only redo the decision. With a key
+// from the request the model calls stream progress as server-sent events. Nothing is fetched except the model.
 import { afterAll, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createApp, redactingQuoter, type PrDetail, type PrSummary, type RunResult } from "../apps/demo/server/app";
-import { loadMeasured } from "../apps/demo/server/fixtures";
+import { createApp, redactingQuoter, type PrSummary, type RunResult } from "../apps/demo/server/app";
+import { measurePr } from "../apps/demo/server/fixtures";
 import { resetLlmLog, setLlmLogPath } from "../src/llmlog";
 import "./fixture";
 
-const app = await createApp();
+const app = createApp();
 const get = (path: string) => app.fetch(new Request(`http://demo${path}`));
 const post = (path: string, body: unknown) =>
   app.fetch(new Request(`http://demo${path}`, { method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" } }));
@@ -24,42 +25,55 @@ async function events(res: Response): Promise<{ event: string; data: any }[]> {
 }
 const resultOf = async (res: Response) => (await events(res)).find((e) => e.event === "result")!.data as RunResult;
 
-test("GET /api/prs: the 21 PRs with their baked baseline mode and grid cell", async () => {
+test("GET /api/prs: the 21 stored exports, number and title only; nothing is decided in advance", async () => {
   const prs: PrSummary[] = await (await get("/api/prs")).json();
   expect(prs.length).toBe(21);
-  expect(prs.find((p) => p.n === 13)).toEqual({ n: 13, title: "Add a profile avatar menu beside logout", mode: "Human", cell: "high x long" });
-  expect(prs.find((p) => p.n === 4)).toMatchObject({ mode: "Staged", cell: "low x long" });
+  expect(prs.find((p) => p.n === 13)).toEqual({ n: 13, title: "Add a profile avatar menu beside logout" });
+  expect((await post("/api/prs/22/run", {})).status).toBe(404);
 });
 
-test("GET /api/prs/13: the baseline renders out/pr13.md; the model reads are read-only", async () => {
-  const d: PrDetail = await (await get("/api/prs/13")).json();
-  expect(d.baseline.markdown).toBe(readFileSync(new URL("../out/pr13.md", import.meta.url), "utf8"));
-  expect([d.range, d.baseline.model, d.readOnly]).toEqual(["30ac194..c5da112", false, ["Failure mode (LLM second opinion)", "Confidence: diff vs task (LLM)"]]);
-  expect((await get("/api/prs/22")).status).toBe(404);
-});
+test("first run of PR 13 measures it on the server, stage by stage, and renders out/pr13.md", async () => {
+  const ev = await events(await post("/api/prs/13/run", { overrides: {} }));
+  expect(ev.filter((e) => e.event === "stage").map((e) => e.data.stage)).toEqual([
+    "diff", "gates", "feature flag", "path", "reach", "detection", "confidence", "reversibility", "revert and history",
+  ]);
+  const r = ev.find((e) => e.event === "result")!.data as RunResult;
+  expect(r.markdown).toBe(readFileSync(new URL("../out/pr13.md", import.meta.url), "utf8"));
+  expect(r.measureMs).toBeGreaterThan(0);
+  // The panel asks only for what was assumed: Reach, Time to revert (with minutes), History.
+  expect(r.asks.signals.map((s) => [s.name, s.value])).toEqual([
+    ["Reach", "high"], ["Time to revert", "full build and deploy"], ["History", "history unavailable"],
+  ]);
+  expect([r.asks.revertMinutes, r.asks.advisory, r.asks.stylesheets]).toEqual([true, [], 49]);
+}, 60_000);
 
-test("POST /api/prs/13/run: Reach low as owner, decided in under a second", async () => {
-  const r = await resultOf(await post("/api/prs/13/run", { overrides: { signals: { Reach: "low" } } }));
-  expect([r.cell.damage, r.cell.window, r.cell.gridMode, r.brief.mode, r.model]).toEqual(["low", "long", "Staged", "Human", false]);
+test("a re-run reuses the measurement and only redoes the decision, in under a second", async () => {
+  const ev = await events(await post("/api/prs/13/run", { overrides: { signals: { Reach: "low" } } }));
+  expect(ev.filter((e) => e.event === "stage").map((e) => e.data.stage)).toEqual(["measurement in memory reused"]);
+  const r = ev.find((e) => e.event === "result")!.data as RunResult;
+  expect([r.cell.damage, r.cell.window, r.cell.gridMode, r.brief.mode, r.model, r.measureMs]).toEqual(["low", "long", "Staged", "Human", false, null]);
   expect(r.ms).toBeLessThan(1000);
-  // The baseline is unchanged by a run.
-  const d: PrDetail = await (await get("/api/prs/13")).json();
-  expect(d.baseline.brief.mode).toBe("Human");
-  expect(d.baseline.cell.damage).toBe("high");
-});
+}, 60_000);
+
+test("PR 11 asks about its red advisory check; PR 4 has nothing assumed but its revert time", async () => {
+  const r11 = await resultOf(await post("/api/prs/11/run", {}));
+  expect(r11.asks.advisory).toEqual(["FireWeave — flag contract (FAILURE)"]);
+  expect(r11.asks.stylesheets).toBe(0);
+  const r4 = await resultOf(await post("/api/prs/4/run", {}));
+  expect([r4.asks.signals.map((s) => s.name), r4.asks.revertMinutes]).toEqual([["Time to revert", "History"], true]);
+}, 60_000);
 
 test("a bad body is a 400, an unknown signal an error event", async () => {
   expect((await post("/api/prs/13/run", { overrides: { revertMinutes: "five" } })).status).toBe(400);
   expect((await post("/api/prs/13/run", { overrides: { colour: "red" } })).status).toBe(400);
   const ev = await events(await post("/api/prs/13/run", { overrides: { signals: { Reech: "low" } } }));
-  expect(ev).toEqual([{ event: "error", data: { message: 'no signal named "Reech"' } }]);
-});
+  expect(ev.at(-1)).toEqual({ event: "error", data: { message: 'no signal named "Reech"' } });
+}, 30_000);
 
-test("quoted lines are redacted: PR 1's .env.example password at base never reaches the screen", () => {
-  const m = loadMeasured(1);
-  const line = redactingQuoter(m)(".env.example:9")!;
+test("quoted lines are redacted: PR 1's .env.example password at base never reaches the screen", async () => {
+  const line = redactingQuoter(await measurePr(1))(".env.example:9")!;
   expect(line).toBe("OPENOBSERVE_PASSWORD=[REDACTED:credential]");
-});
+}, 30_000);
 
 // The model, with a key from the request, against a local stand-in for the API.
 const logFile = join(tmpdir(), `demo-api-test-${process.pid}.jsonl`);
