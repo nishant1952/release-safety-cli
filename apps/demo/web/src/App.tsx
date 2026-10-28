@@ -90,7 +90,11 @@ export function App() {
         n,
         overrides,
         key,
-        (stage, ms) => setSteps((l) => [...l, stage === "measurement in memory reused" ? "measurement from the first run reused" : `measured: ${stage} (${ms} ms)`]),
+        (stage, ms) =>
+          setSteps((l) => [
+            ...l,
+            stage === "measurement in memory reused" ? "measurement from the first run reused" : stage.startsWith("waiting") ? stage : `measured: ${stage} (${ms} ms)`,
+          ]),
         (p) => setSteps((l) => [...l, progressLine(p)]),
       );
       setSessions((all) => {

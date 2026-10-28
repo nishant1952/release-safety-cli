@@ -5,7 +5,7 @@ import { afterAll, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createApp, redactingQuoter, type PrSummary, type RunResult } from "../apps/demo/server/app";
+import { createApp, redactingQuoter, run, type PrSummary, type RunResult } from "../apps/demo/server/app";
 import { measurePr } from "../apps/demo/server/fixtures";
 import { resetLlmLog, setLlmLogPath } from "../src/llmlog";
 import "./fixture";
@@ -53,6 +53,9 @@ test("a re-run reuses the measurement and only redoes the decision, in under a s
   const r = ev.find((e) => e.event === "result")!.data as RunResult;
   expect([r.cell.damage, r.cell.window, r.cell.gridMode, r.brief.mode, r.model, r.measureMs]).toEqual(["low", "long", "Staged", "Human", false, null]);
   expect(r.ms).toBeLessThan(1000);
+  // The measurement that came back from the worker and was reused gives the same brief as one measured fresh.
+  const fresh = await run(await measurePr(13), { signals: { Reach: "low" } }, null);
+  expect(r.markdown).toBe(fresh.markdown);
 }, 60_000);
 
 test("PR 11 asks about its red advisory check; PR 4 has nothing assumed but its revert time", async () => {

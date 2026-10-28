@@ -170,20 +170,28 @@ export interface App {
   prs: PrSummary[];
 }
 
+/** The longest PR measures in about 6 s; a worker that takes far longer is stopped rather than waited on forever. */
+const MEASURE_TIMEOUT_MS = 120_000;
+
 /** measure() in a worker thread, reporting each stage as it ends. */
 function measureInWorker(n: number, onStage: (stage: string, ms: number) => void): Promise<Measured> {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./measure-worker.ts", import.meta.url).href);
+    const fail = (why: string) => {
+      clearTimeout(timer);
+      worker.terminate();
+      reject(new Error(`measurement failed: ${why}`));
+    };
+    const timer = setTimeout(() => fail(`no answer after ${MEASURE_TIMEOUT_MS / 1000} s`), MEASURE_TIMEOUT_MS);
     worker.onmessage = (e: MessageEvent) => {
       if (e.data.stage) return onStage(e.data.stage, e.data.ms);
+      if (!e.data.measured) return fail(e.data.error);
+      clearTimeout(timer);
       worker.terminate();
-      if (e.data.measured) resolve(e.data.measured);
-      else reject(new Error(`measurement failed: ${e.data.error}`));
+      resolve(e.data.measured);
     };
-    worker.onerror = (e) => {
-      worker.terminate();
-      reject(new Error(`measurement failed: ${e.message}`));
-    };
+    worker.onerror = (e) => fail(e.message);
+    worker.addEventListener("close", () => fail("the worker exited"));
     worker.postMessage({ n });
   });
 }
@@ -192,6 +200,7 @@ export function createApp(): App {
   const prs = listExports();
   // Measurements made in this process, by PR. A request that finds one in flight waits for it.
   const measured = new Map<number, Promise<Measured>>();
+  const ready = new Set<number>();
 
   async function fetch(req: Request): Promise<Response> {
     const path = new URL(req.url).pathname;
@@ -217,9 +226,12 @@ export function createApp(): App {
         const started = performance.now();
         m = measureInWorker(n, (stage, ms) => send("stage", { stage, ms }));
         measured.set(n, m);
-        m.catch(() => measured.delete(n));
+        m.then(() => ready.add(n)).catch(() => measured.delete(n));
         await m;
         measureMs = Math.round(performance.now() - started);
+      } else if (!ready.has(n)) {
+        send("stage", { stage: "waiting for the measurement another run started", ms: 0 });
+        await m;
       } else send("stage", { stage: "measurement in memory reused", ms: 0 });
       const result = await run(await m, overrides, modelKey, (p) => send("progress", p), measureMs);
       send("result", result);
