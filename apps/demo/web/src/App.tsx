@@ -26,16 +26,14 @@ export interface Run {
   result: RunResult;
 }
 
-/** One PR's runs: only the latest and the one before it are kept. */
+/** One PR's runs: only the latest is kept. */
 interface Session {
   panel: Panel;
   latest: Run | null;
-  previous: Run | null;
-  viewing: "latest" | "previous";
 }
 
 const EMPTY: Panel = { values: {}, model: false, advisoryAsRequired: false, stylesheetsCovered: false, revertMinutes: "", confidence: "" };
-const NEW_SESSION: Session = { panel: EMPTY, latest: null, previous: null, viewing: "latest" };
+const NEW_SESSION: Session = { panel: EMPTY, latest: null };
 
 export function overridesOf(panel: Panel, asks: Asks | null): Overrides {
   const o: Overrides = {};
@@ -87,7 +85,7 @@ export function App() {
   };
 
   const session = active === null ? NEW_SESSION : (sessions[active] ?? NEW_SESSION);
-  const shownRun = session.viewing === "previous" && session.previous ? session.previous : session.latest;
+  const run = session.latest;
   const asks = session.latest?.result.asks ?? null;
   const update = (n: number, s: Partial<Session>) => setSessions((all) => ({ ...all, [n]: { ...(all[n] ?? NEW_SESSION), ...s } }));
 
@@ -111,7 +109,7 @@ export function App() {
       setSessions((all) => {
         const s = all[n] ?? NEW_SESSION;
         const id = (s.latest?.id ?? 0) + 1;
-        return { ...all, [n]: { ...s, previous: s.latest, latest: { id, at: new Date().toLocaleTimeString(), result }, viewing: "latest" } };
+        return { ...all, [n]: { ...s, latest: { id, at: new Date().toLocaleTimeString(), result } } };
       });
     } catch (e) {
       const message = (e as Error).message;
@@ -129,7 +127,7 @@ export function App() {
   };
   const pickedRan = picked !== null && Boolean(sessions[picked]?.latest);
 
-  const r = shownRun?.result;
+  const r = run?.result;
 
   return (
     <>
@@ -171,30 +169,19 @@ export function App() {
             )}
           </section>
 
-          {shownRun && r && (
-            <div className={running ? "sections dim" : "sections"} key={`${active}-${shownRun.id}-${session.viewing}`}>
+          {run && r && (
+            <div className={running ? "sections dim" : "sections"} key={`${active}-${run.id}`}>
               <Section
                 n={2}
                 title="Verdict"
                 className={`sec-verdict mode-${(r.brief.mode ?? "").toLowerCase()}`}
                 aside={
                   <span className="sec-aside mono">
-                    #{active} · run {shownRun.id} · {shownRun.at} · {r.measureMs === null ? "measurement reused" : `measured ${r.measureMs.toLocaleString("en-US")} ms`} · decided{" "}
+                    #{active} · run {run.id} · {run.at} · {r.measureMs === null ? "measurement reused" : `measured ${r.measureMs.toLocaleString("en-US")} ms`} · decided{" "}
                     {r.ms} ms · model {r.model ? "on" : "off"}
                   </span>
                 }
               >
-                {session.previous && (
-                  <div className="views">
-                    <span className="muted">Showing</span>
-                    <button className={session.viewing === "latest" ? "textbtn on" : "textbtn"} onClick={() => update(active!, { viewing: "latest" })}>
-                      latest run, {session.latest!.at}
-                    </button>
-                    <button className={session.viewing === "previous" ? "textbtn on" : "textbtn"} onClick={() => update(active!, { viewing: "previous" })}>
-                      the run before it, {session.previous.at}
-                    </button>
-                  </div>
-                )}
                 <Verdict r={r} />
               </Section>
               <Section
