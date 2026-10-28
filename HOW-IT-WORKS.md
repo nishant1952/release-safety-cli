@@ -9,7 +9,7 @@ how the prose is produced without a model.
 bun run brief <repo> <base>..<head>
         |
         v
- cli.ts -- parses args --> run.ts (the pipeline) --> render.ts (markdown) --> stdout or --out
+ cli.ts -- parses args --> run.ts (the pipeline) --> render.ts (markdown, short or --full) --> stdout or --out
 ```
 
 Everything in the pipeline reads the repo through one class, `src/git.ts`, which shells out to
@@ -126,6 +126,19 @@ the line. So the brief reads as prose because someone wrote the prose once, with
 the holes are filled from measurements. The honesty test in `tests/brief.test.ts` checks that
 no template describes the contents of something the run never read.
 
+## Two layouts from one brief
+
+`render.ts` has two renderers, and both take the brief object that `buildBrief` returns, never
+each other's text. `renderFull` is the layout every earlier round wrote, unchanged. `renderShort`
+is the default: it rebuilds each part from the brief's structured fields rather than shortening
+the full layout's sentences. It uses the grid cell and its steps (`cell`), the one-unknown
+result (`moves`), the detectors per failure mode, the plan's short cells, and the counts of
+model proposals accepted and refused. `renderFull` ignores all of these. One rule decides what
+the short layout may drop: nothing unfavourable is ever only behind `--full`. A gate that does
+not pass brings the same gate table and evidence lines as the full layout. Disagreements
+(refused model proposals and unsupported model claims among them) and secrets present at base
+are printed in full whenever there are any, and left out when there are none.
+
 ## The model, when there is a key
 
 With `ANTHROPIC_API_KEY` set there are two kinds of call, both through `askJson` in `llm.ts`,
@@ -163,6 +176,6 @@ lines. It never changes the reason.
 One file per unit under `tests/`, each pinning real PR 13 output: specific line numbers,
 specific values. `bun run test` typechecks (`tsc --noEmit`) and then runs them. Model tests
 inject a canned answer through `buildBrief`, and `payload.test.ts` checks the bytes sent to a
-local stand-in for the API. `brief.test.ts` compares the full rendered brief to the committed
-`out/pr13.md` byte for byte, so any rule change shows up as a golden-file diff you have
-to consciously accept.
+local stand-in for the API. `brief.test.ts` compares both rendered layouts to the committed
+`out/pr13.md` (short) and `out/pr13-full.md` (full) byte for byte, so any rule change shows up
+as a golden-file diff you have to consciously accept. The honesty test runs against both.

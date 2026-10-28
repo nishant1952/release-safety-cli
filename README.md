@@ -5,8 +5,11 @@ A prototype of the release-safety model in [writeup.md](writeup.md). Given a rep
 ## Run
 
 ```sh
-bun install && bun run brief <repo-path> <base>..<head> [--out file] [--pr pr.json] [--llm-log file]
+bun install && bun run brief <repo-path> <base>..<head> [--full] [--out file] [--pr pr.json] [--llm-log file]
 ```
+
+- The brief has two layouts, both rendered from the same brief data. The **short** layout is the default: the mode, the plan, the top reasons with one cited line each, what would move the mode, one table of signals, the gates and the changed files, in under half the words of the full layout. `--full` writes the **full** layout: every section with full evidence lists and full paths. `--out` writes either one.
+- The short layout never hides anything unfavourable. A gate that does not pass shows its full table and evidence lines. Disagreements, refused model proposals and secrets present at base appear in full when there are any, and are left out when there are none.
 
 - `--pr` points at a `gh pr view --json` export; by default it is found by matching the range against `data/*/REFS.txt`. `data/` is gitignored and not shipped; without an export the brief says no PR export was found and gate 1's CI check is unverifiable.
 
@@ -59,11 +62,16 @@ With `ANTHROPIC_API_KEY` in the environment or `.env` (Bun loads it), two option
 The PR 13 brief:
 
 ```sh
-bun run brief /Users/nishant/fireweave-study/arcade 30ac194..c5da112a --out out/pr13.md
+bun run brief /Users/nishant/fireweave-study/arcade 30ac194..c5da112a --pr tests/fixtures/pr13.json --out out/pr13.md
+bun run brief /Users/nishant/fireweave-study/arcade 30ac194..c5da112a --pr tests/fixtures/pr13.json --full --out out/pr13-full.md
 bun run test        # tsc --noEmit, then bun test
 ```
 
+`out/prN.md` is each PR's short brief without a key, and `out/prN-full.md` the full one. `out/prN-with-ai.md` (PRs 1, 10 and 13) are full-layout briefs from a run with the model, kept as they were.
+
 ## What the brief contains
+
+The full layout (`--full`), section by section:
 
 1. **Mode** (Auto, Staged, Human or Block) and how it was reached: gate routes, grid cell, probability shift.
 2. **Plan**: the section 3 preset for that mode, filled with what the signals found (slice, guardrails per failure mode, undo, owner), each value tagged with its source.
@@ -72,5 +80,7 @@ bun run test        # tsc --noEmit, then bun test
 5. **The one unknown**: the first assumed input that, flipped to its favourable value, changes the mode, or a statement that none does and what holds the call.
 6. **Disagreements** between sources (catalog vs code, PR description vs commit trailers, code vs LLM), including refused model proposals and unsupported model claims.
 7. **Gates** and a **provenance table**: every signal's value and whether it is measured, declared or assumed.
+
+The short layout keeps the mode, the plan, the reasons, the confidence and what would move the call. It drops the full evidence lists, the list of unknowns considered, the per-rule explanations and the owner's email (see DECISIONS.md, Round 5).
 
 Every rule traces to a sentence in the write-up; choices the write-up did not make are in [DECISIONS.md](DECISIONS.md). Code is in `src/` (`signals/` holds one extractor per signal), tests in `tests/`.

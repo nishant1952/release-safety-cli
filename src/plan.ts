@@ -18,7 +18,8 @@ export interface PlanInput {
   codeowners: boolean;
 }
 
-export type PlanRow = { row: string; value: string };
+/** short: the short layout's cell, set where it differs from value (no provenance wrapper or line refs, owner without email) */
+export type PlanRow = { row: string; value: string; short?: string };
 
 const get = (signals: Signal[], name: string) => signals.find((s) => s.name === name)!;
 
@@ -34,26 +35,36 @@ function guardrails(detectors: ModeResult[]): string {
     .join("; ");
 }
 
+/** "Watch latency metric `x`, deploy health check. No business checks found on the changed path." */
+function guardrailsShort(detectors: ModeResult[]): string {
+  const map = PLANS.guardrailsByFailureMode as Record<string, string>;
+  const found = [...new Set(detectors.flatMap((r) => r.detectors.map((d) => d.what.replace(/ metric (\S+)$/, " metric `$1`"))))];
+  const none = detectors.filter((r) => !r.detectors.length).map((r) => map[r.mode]);
+  return [found.length ? `Watch ${found.join(", ")}.` : "", none.length ? `No ${none.join(" or ")} found on the changed path.` : ""].filter(Boolean).join(" ");
+}
+
 function undoAndSlice(signals: Signal[], flagKey: string | null) {
   const flagSig = get(signals, "Feature flag");
   const revertSig = get(signals, "Time to revert");
   const flag = flagSig.value;
   const flip = `flip \`${flagKey}\` off (flag ${flag}, ${flagSig.source})`;
   const redeploy = `revert and redeploy (time to revert: ${revertSig.value}, ${revertSig.source})`;
-  if (flag === "full") return { undo: `${PLANS.undo.flag} Undo: ${flip}.`, slice: `flag percentage on \`${flagKey}\`` };
+  const redeployShort = `revert and redeploy (${revertSig.value}, ${revertSig.source})`;
+  if (flag === "full") return { undo: `${PLANS.undo.flag} Undo: ${flip}.`, undoShort: `Flip \`${flagKey}\` off.`, slice: `flag percentage on \`${flagKey}\`` };
   if (flag === "partial")
     return {
       undo: `${flip} for the code inside the flag; ${redeploy} for the edits outside it.`,
+      undoShort: `Flip \`${flagKey}\` off for the code inside the flag; ${redeployShort} for the edits outside it.`,
       slice: `flag percentage on \`${flagKey}\` for the code inside it; edits outside the flag reach everyone at deploy (rollout mechanism is not extracted, so all-at-once is assumed)`,
     };
-  return { undo: `${PLANS.undo.noFlag}. Undo: ${redeploy}.`, slice: "canary or percentage deploy (rollout mechanism is not extracted, so all-at-once is assumed)" };
+  return { undo: `${PLANS.undo.noFlag}. Undo: ${redeploy}.`, undoShort: `No flag: ${redeployShort}.`, slice: "canary or percentage deploy (rollout mechanism is not extracted, so all-at-once is assumed)" };
 }
 
 export function buildPlan(p: PlanInput): PlanRow[] {
   const mode = p.decision.mode;
   if (mode === "Block") return [{ row: "Release", value: "Blocked by a gate. Fix the gate before a plan is proposed." }];
   const preset = PLANS.presets[mode];
-  const { undo, slice } = undoAndSlice(p.signals, p.flagKey);
+  const { undo, undoShort, slice } = undoAndSlice(p.signals, p.flagKey);
   const staged = PLANS.presets.Staged;
   // Human: "Proposed by the system, approved or edited by the owner"; the system proposes the staged preset.
   const proposed = (text: string) => `Proposed by the system: ${text}. Approved or edited by the owner`;
@@ -65,15 +76,18 @@ export function buildPlan(p: PlanInput): PlanRow[] {
   } else {
     const exposure = `${staged.Exposure}; slice by ${slice}`;
     const soak = `${staged["Soak per step"]} (traffic is not an input, so the hours are not scaled)`;
-    rows.push({ row: "Exposure", value: mode === "Staged" ? exposure : proposed(exposure) });
-    rows.push({ row: "Soak per step", value: mode === "Staged" ? soak : proposed(soak) });
-    rows.push({ row: "Guardrails", value: `${preset.Guardrails}. ${guardrails(p.detectors)}` });
+    rows.push({ row: "Exposure", value: mode === "Staged" ? exposure : proposed(exposure), short: exposure });
+    rows.push({ row: "Soak per step", value: mode === "Staged" ? soak : proposed(soak), short: soak });
+    rows.push({ row: "Guardrails", value: `${preset.Guardrails}. ${guardrails(p.detectors)}`, short: guardrailsShort(p.detectors) });
   }
   rows.push({ row: "Abort", value: preset.Abort });
-  rows.push({ row: "Undo", value: undo });
+  rows.push({ row: "Undo", value: undo, short: undoShort });
+  const name = p.owner?.replace(/\s*<[^>]*>$/, "");
+  const noCodeowners = p.codeowners ? "" : "; the repo has no CODEOWNERS file";
   rows.push({
     row: "Paged",
-    value: mode === "Human" ? `${preset.Paged}: ${p.owner ? `${p.owner} (earlier author of the most touched files, measured from git${p.codeowners ? "" : "; the repo has no CODEOWNERS file"})` : "no earlier author found in git"}` : preset.Paged,
+    value: mode === "Human" ? `${preset.Paged}: ${p.owner ? `${p.owner} (earlier author of the most touched files, measured from git${noCodeowners})` : "no earlier author found in git"}` : preset.Paged,
+    short: mode === "Human" && name ? `${preset.Paged}: ${name}, earlier author of the most touched files (git)${noCodeowners}` : undefined,
   });
   rows.push({ row: "Sign-off", value: preset["Sign-off"] });
   return rows;

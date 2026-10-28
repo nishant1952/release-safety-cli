@@ -88,11 +88,13 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
   const decisionInput = { gates, signals, measuredConfidence: conf.measuredLevel, coherent };
   const decision = decide(decisionInput);
   const assumedProbability = signals.filter((s) => s.source === "assumed" && policy.why.some((w) => w.startsWith(`${s.name}:`))).map((s) => s.name);
-  const unknown = unknownText(oneUnknown(decisionInput, assumedProbability));
+  const moves = oneUnknown(decisionInput, assumedProbability);
+  const unknown = unknownText(moves);
+  const detectors = perMode(detection);
   const plan = buildPlan({
     decision,
     signals,
-    detectors: perMode(detection),
+    detectors,
     flagKey: flags.flags[0]?.key ?? null,
     owner: ownerOf(confFacts.fileAuthors),
     codeowners: new Git(diff.repo).listFiles(diff.head).some((p) => /(^|\/)CODEOWNERS$/.test(p)),
@@ -111,12 +113,16 @@ export async function buildBrief(opts: RunOptions): Promise<Brief> {
     modeLine: modeLine(decision),
     plan,
     reasons: await addProse(decision.reasons, makeQuoter(diff.repo, diff.base, diff.head), opts.ask, available, secretHit),
-    confidence: { level: finalLevel, why: [...measuredWhy, ...relabelFilled(policy.why, contract.ruling)] },
+    confidence: { level: finalLevel, why: [...measuredWhy, ...relabelFilled(policy.why, contract.ruling)], measuredLevel: conf.measuredLevel, measured: conf.why },
     unknown,
     // A refused model proposal is a code-vs-model disagreement, listed with the rule that refused it. It does not
     // lower confidence: code kept the assumed value, so nothing the decision rests on changed.
     // A coherence item the diff does not support is listed the same way, without lowering confidence.
     disagreements: [...disagreements, ...contract.ruling.refused, ...contract.unsupported],
+    cell: decision,
+    moves,
+    detectors,
+    proposals: { accepted: contract.ruling.accepted.length, refused: contract.ruling.refused.length },
   };
 }
 

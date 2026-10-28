@@ -1,8 +1,10 @@
 # Release brief: Update EC2 host to 54.147.34.187
 
-Range `f26e6b0..fab0ae6`, 1 files changed. Title: PR title, declared.
+Range `f26e6b0..fab0ae6`, 1 files, +1 −1. All three gates pass. Sources agree.
 
-**Mode: Staged.** Grid: low damage x long window = Staged.
+**Mode: Staged.** Low damage × long window. Confidence low.
+
+In one line: an unflagged change that touches no code path (measured), undone by a full build and deploy (assumed).
 
 ## Plan
 
@@ -10,62 +12,46 @@ Range `f26e6b0..fab0ae6`, 1 files changed. Title: PR title, declared.
 |---|---|
 | Exposure | Small slice, soak, widen; slice by canary or percentage deploy (rollout mechanism is not extracted, so all-at-once is assumed) |
 | Soak per step | Hours, scaled to traffic (traffic is not an input, so the hours are not scaled) |
-| Guardrails | Follow the failure mode: resources and latency for infra, business checks for domain, auth errors for security.  |
+| Guardrails |  |
 | Abort | Guardrail breach: back one step or to 0%. Thin data: hold |
-| Undo | Without one, undo is a rollback or redeploy and a slice is a canary or percentage deploy. Undo: revert and redeploy (time to revert: full build and deploy, assumed). |
+| Undo | No flag: revert and redeploy (full build and deploy, assumed). |
 | Paged | Service on-call on abort |
 | Sign-off | None |
 
-## Top reasons
+## Why Staged
 
-1. Low damage: the path is not a code path (measured).
-   - no line to cite: this reason rests on something missing from the input or the repo
-2. Long window: undo is slow: the flag is none and time to revert is full build and deploy (assumed).
-   - `.github/workflows/deploy.yml:15` `timeout-minutes: 5`
+1. **Low damage.** Path not a code path (measured).
+   No line to cite.
+2. **Long window.** No flag, so undo is full build and deploy (assumed: no rollback, pipeline time unmeasured).
+   `.github/workflows/deploy.yml:15` `timeout-minutes: 5`
 
-## Confidence
+Confidence low, high from measured facts. Lowered by: Failure mode (LLM second opinion): unavailable (assumed); History: history unavailable (assumed); Confidence: diff vs task (LLM): unavailable (assumed).
 
-**low**
-- single-author repo: familiarity dropped (W appendix)
-- Failure mode (LLM second opinion): unavailable (assumed), lowers confidence, does not raise risk (W 2)
-- History: history unavailable (assumed), lowers confidence, does not raise risk (W 2)
-- Confidence: diff vs task (LLM): unavailable (assumed), lowers confidence, does not raise risk (W 2)
+## What would move it
 
-## The one unknown
+If Time to revert (assumed full build and deploy) were measured pipeline under 15 minutes, the mode would move from Staged to Auto. No single known input moves it either.
 
-**Time to revert**: assumed full build and deploy. If it were measured pipeline under 15 minutes, the mode would move from Staged to Auto.
-
-## Disagreements
-
-Disagreements: none between sources.
-
-## Gates
-
-| Gate | Result | Route | Checks |
-|---|---|---|---|
-| 1. Table stakes | pass | none | secrets: pass (measured); PII: pass (measured); hardcoded environment values: pass (measured); required CI checks: pass (measured) |
-| 2. API contract | pass | none | breaking change to route, schema or public signature: pass (measured) |
-| 3. Destructive schema or data change | pass | none | destructive schema change or mutation of existing data: pass (measured) |
-
-## Provenance
+## Signals
 
 | Signal | Value | Source | Evidence |
 |---|---|---|---|
-| Reversible or irreversible | reversible | measured | none. no persisted write, outbound side effect, queue publish or external API client in 1 added lines |
-| Feature flag | none | measured | none. no flag call (getBooleanValue) or control point anchor in the changed files |
-| Path | not a code path | measured | none. every changed file is a non-code file: README.md (docs) |
-| Reach | none | measured | none. every changed file is a non-code file, so no system is reached: README.md (docs) |
-| Failure mode | none (docs, tests or editor config only) | measured | `README.md:65`. rules on touched paths: README.md -> none. Matched on file path; each evidence line is the file's first change |
-| Failure mode (LLM second opinion) | unavailable | assumed | none. no ANTHROPIC_API_KEY; rules only |
-| Detection apparatus | fast | measured | none. no failure mode a detector must watch (docs, tests, editor config or stylesheets only) |
-| Time to revert | full build and deploy | assumed | `.github/workflows/deploy.yml:15`. no one-click rollback in 1 workflow file(s); CI run history is not an input, so pipeline duration is not measured. Declared job timeout: 5 min (a bound, not a measurement). Unknown rounds to slow: a full build and deploy to revert (W 2) |
-| History | history unavailable | assumed | `commit 0fb48b9`. measured: 5 earlier commits touch the changed files, 0 reverts, 1 fix commits; repo history before base spans 1h (2026-10-06 to 2026-10-06). Too thin to read as a record (thin: < 5 commits or < 7 days) |
-| Provenance | agent-assisted (Cursor) | measured | `commit fab0ae6`. commit trailers: Cursor <cursoragent@cursor.com>; PR description: "Made with Cursor"; author(s) in git: Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>. Whether a human was in the loop is not verifiable from the input |
-| Confidence: test coverage | no code files changed | measured | none. tests that import a changed file; 0 covered by tests that existed before the change. Uncovered: none |
-| Confidence: familiarity | single-author repo, people part dropped | measured | none. repo authors before base: Kalyan Chowdary <kalyanchowdary@Kalyans-MacBook-Pro.local>; per file: README.md (1). Reviewer familiarity needs review data: the PR export lists 0 reviews |
-| Confidence: review depth | 0 reviews | declared | none. the PR export lists 0 reviews |
-| Confidence: diff vs task (LLM) | unavailable | assumed | none. no ANTHROPIC_API_KEY |
+| Reversible | reversible | measured | no persisted write, outbound side effect, queue publish or external API client in 1 added lines |
+| Feature flag | none | measured | no flag call (getBooleanValue) or control point anchor in the changed files |
+| Path | not a code path | measured | every changed file is a non-code file: README.md (docs) |
+| Reach | none | measured | every changed file is a non-code file, so no system is reached: README.md (docs) |
+| Failure mode | none (docs, tests or editor config only) | measured | `README.md:65`. Matched on file path |
+| Detection | fast | measured | no failure mode a detector must watch |
+| Time to revert | full build and deploy | assumed | `deploy.yml:15`. no one-click rollback in 1 workflow file(s) |
+| History | history unavailable | assumed | `commit 0fb48b9`. Too thin to read as a record |
+| Provenance | agent-assisted (Cursor) | measured | `commit fab0ae6`. commit trailers: Cursor |
+| Test coverage | no code files changed | measured | 0 covered by tests that existed before the change |
+| Reviews | 0 reviews | declared | familiarity: single-author repo, people part dropped (measured) |
+| Model | off | — | no ANTHROPIC_API_KEY; failure mode and task check not run |
+
+## Gates
+
+All pass.
 
 ## Changed files
 
-- `README.md` (modified, +1 -1)
+`README.md` +1 −1

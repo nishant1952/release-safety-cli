@@ -1,6 +1,10 @@
 // The data a brief is rendered from. W 3: "the mode, the top reasons, the confidence, and the
 // one missing fact that would most change the call". Fields are filled as units run.
+import type { Decision } from "./decide";
+import type { PlanRow } from "./plan";
+import type { ModeResult } from "./signals/detection";
 import type { GateResult, Signal } from "./types";
+import type { Unknown } from "./unknown";
 
 export interface Reason {
   text: string;
@@ -34,9 +38,19 @@ export interface Brief {
   signals: Signal<string>[];
   mode: string | null;
   modeLine: string | null;
-  plan: { row: string; value: string }[] | null;
+  plan: PlanRow[] | null;
   reasons: Reason[];
-  confidence: { level: string; why: string[] } | null;
+  /** measuredLevel and measured: the level from measured facts only, and those facts (read by the short layout) */
+  confidence: { level: string; why: string[]; measuredLevel?: string; measured?: string[] } | null;
   unknown: string | null;
   disagreements: string[] | null;
+  // Read by the short layout only; the full layout renders the prose fields above.
+  /** the grid cell and the steps from it to the mode */
+  cell?: Pick<Decision, "damage" | "window" | "undoFast" | "detectFast" | "gridMode" | "gateMode" | "shifted" | "llmStep" | "flagAdvice">;
+  /** the one-unknown result that unknown is written from */
+  moves?: Unknown;
+  /** detectors found per failure mode */
+  detectors?: ModeResult[];
+  /** model proposals accepted and refused by code */
+  proposals?: { accepted: number; refused: number };
 }

@@ -2,7 +2,7 @@
 import { expect, test } from "bun:test";
 import { modelEvidence } from "../src/decide";
 import { relabelFilled, type ContractAnswer } from "../src/model";
-import { makeQuoter, renderBrief } from "../src/render";
+import { makeQuoter, renderFull } from "../src/render";
 import { buildBrief } from "../src/run";
 import type { Signal } from "../src/types";
 import { PR_JSON, RANGE, REPO } from "./fixture";
@@ -15,7 +15,7 @@ test("PR 13: top reason 1 opens with the model's cited line and sentence, then t
   };
   const ask = (async (_s: string, _u: string, _x: unknown, purpose: string) => (purpose === "model contract" ? answer : null)) as any;
   const b = await buildBrief({ repo: REPO, range: RANGE, prFile: PR_JSON, ask });
-  const md = renderBrief(b, makeQuoter(REPO, b.base, b.head));
+  const md = renderFull(b, makeQuoter(REPO, b.base, b.head));
   const reason1 = md.split("## Top reasons\n\n")[1].split("\n2. ")[0].split("\n");
   expect(reason1.slice(0, 4)).toEqual([
     "1. Low damage: the reach is low (model (cited)).",
